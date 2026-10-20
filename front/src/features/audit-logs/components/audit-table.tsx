@@ -219,7 +219,7 @@ export function AuditTable({
 
   if (isLoading) {
     return (
-      <Card className="bg-white border border-[#E2E8F0] shadow-xs">
+      <Card className="bg-card border-border shadow-xs">
         <CardHeader>
           <Skeleton className="h-5 w-48" />
           <Skeleton className="h-4 w-72" />
@@ -235,37 +235,37 @@ export function AuditTable({
   }
 
   return (
-    <Card className="flex flex-col bg-white border border-[#E2E8F0] shadow-xs">
+    <Card className="flex flex-col bg-card border-border shadow-xs">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <CardTitle className="text-base font-bold text-[#243447]">
+            <CardTitle className="text-base font-bold text-foreground">
               Histórico de Decisões & Auditoria
             </CardTitle>
-            <CardDescription className="text-xs text-[#5B6E84]">
+            <CardDescription className="text-xs text-muted-foreground">
               Rastreabilidade de decisões tomadas pelo motor, incluindo bloqueios de 72h
             </CardDescription>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-[#5B6E84]" />
+              <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Buscar decisão ou cliente..."
                 value={globalFilter ?? ""}
                 onChange={(e) => setGlobalFilter(e.target.value)}
-                className="h-8 w-44 sm:w-56 rounded-md border border-[#E2E8F0] pl-8 pr-3 text-xs bg-white text-[#243447] focus:outline-none focus:ring-1 focus:ring-[#0077C8]"
+                className="h-8 w-44 sm:w-56 rounded-md border border-input pl-8 pr-3 text-xs bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
-            <div className="flex items-center rounded-md border border-[#E2E8F0] bg-[#F4F7FA] p-0.5 text-xs">
+            <div className="flex items-center rounded-md border border-border bg-muted/60 p-0.5 text-xs">
               <button
                 onClick={() => setStatusFilter("ALL")}
                 className={`px-2 py-1 rounded text-[11px] font-bold transition-colors ${
                   statusFilter === "ALL"
-                    ? "bg-[#003B7A] text-white shadow-xs"
-                    : "text-[#5B6E84] hover:text-[#243447]"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Todas ({data.length})
@@ -274,8 +274,8 @@ export function AuditTable({
                 onClick={() => setStatusFilter("BLOQUEADAS")}
                 className={`px-2 py-1 rounded text-[11px] font-bold transition-colors ${
                   statusFilter === "BLOQUEADAS"
-                    ? "bg-[#B96B08] text-white shadow-xs"
-                    : "text-[#5B6E84] hover:text-[#243447]"
+                    ? "bg-azul-warning text-white shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Bloqueios
@@ -284,8 +284,8 @@ export function AuditTable({
                 onClick={() => setStatusFilter("EXECUTADAS")}
                 className={`px-2 py-1 rounded text-[11px] font-bold transition-colors ${
                   statusFilter === "EXECUTADAS"
-                    ? "bg-[#16805D] text-white shadow-xs"
-                    : "text-[#5B6E84] hover:text-[#243447]"
+                    ? "bg-azul-success text-white shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Executadas
@@ -296,9 +296,9 @@ export function AuditTable({
       </CardHeader>
 
       <CardContent className="pt-0">
-        <div className="overflow-x-auto rounded-lg border border-[#E2E8F0]">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#EAF4FC]/60 text-[#003B7A] uppercase text-[11px] font-bold border-b border-[#E2E8F0]">
+            <thead className="bg-secondary/60 text-secondary-foreground uppercase text-[11px] font-bold border-b border-border">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
@@ -311,7 +311,7 @@ export function AuditTable({
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-[#E2E8F0]">
+            <tbody className="divide-y divide-border">
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => {
                   const isSelected = selectedDecisao?.decisao_id === row.original.decisao_id;
@@ -321,8 +321,8 @@ export function AuditTable({
                       onClick={() => onSelectDecisao(row.original)}
                       className={`cursor-pointer transition-colors ${
                         isSelected
-                          ? "bg-[#EAF4FC] font-semibold"
-                          : "hover:bg-[#F4F7FA]/70"
+                          ? "bg-secondary font-semibold"
+                          : "hover:bg-muted/40"
                       }`}
                     >
                       {row.getVisibleCells().map((cell) => (
@@ -335,7 +335,7 @@ export function AuditTable({
                 })
               ) : (
                 <tr>
-                  <td colSpan={columns.length} className="h-24 text-center text-[#5B6E84]">
+                  <td colSpan={columns.length} className="h-24 text-center text-muted-foreground">
                     Nenhum registro de decisão encontrado.
                   </td>
                 </tr>
@@ -345,7 +345,7 @@ export function AuditTable({
         </div>
 
         {/* Paginação */}
-        <div className="flex items-center justify-between pt-4 text-xs text-[#5B6E84]">
+        <div className="flex items-center justify-between pt-4 text-xs text-muted-foreground">
           <span>
             Página {table.getState().pagination.pageIndex + 1} de{" "}
             {Math.max(1, table.getPageCount())} ({filteredData.length} registros)
@@ -356,7 +356,7 @@ export function AuditTable({
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="h-8 px-2.5 border-[#E2E8F0] text-[#003B7A]"
+              className="h-8 px-2.5 border-border text-foreground hover:bg-muted"
             >
               <ChevronLeft className="h-4 w-4" />
               <span>Anterior</span>
@@ -366,7 +366,7 @@ export function AuditTable({
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="h-8 px-2.5 border-[#E2E8F0] text-[#003B7A]"
+              className="h-8 px-2.5 border-border text-foreground hover:bg-muted"
             >
               <span>Próxima</span>
               <ChevronRight className="h-4 w-4" />

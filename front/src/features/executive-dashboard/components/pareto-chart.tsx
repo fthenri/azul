@@ -25,7 +25,7 @@ interface ParetoChartProps {
 export function ParetoChart({ data, isLoading }: ParetoChartProps) {
   if (isLoading) {
     return (
-      <Card className="h-[400px] bg-white border border-[#E2E8F0] shadow-xs">
+      <Card className="h-[400px] bg-card border-border shadow-xs">
         <CardHeader>
           <Skeleton className="h-5 w-48" />
           <Skeleton className="h-4 w-72" />
@@ -39,12 +39,12 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
 
   if (!data || data.length === 0) {
     return (
-      <Card className="h-[400px] bg-white border border-[#E2E8F0] shadow-xs">
+      <Card className="h-[400px] bg-card border-border shadow-xs">
         <CardHeader>
-          <CardTitle className="text-base text-[#243447]">Curva de Concentração de Valor (Pareto)</CardTitle>
-          <CardDescription className="text-xs text-[#5B6E84]">Sem dados disponíveis</CardDescription>
+          <CardTitle className="text-base text-foreground">Curva de Concentração de Valor (Pareto)</CardTitle>
+          <CardDescription className="text-xs text-muted-foreground">Sem dados disponíveis</CardDescription>
         </CardHeader>
-        <CardContent className="flex h-[300px] items-center justify-center text-sm text-[#5B6E84]">
+        <CardContent className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
           Nenhum dado de concentração retornado pelo backend.
         </CardContent>
       </Card>
@@ -57,14 +57,14 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
   }));
 
   return (
-    <Card className="flex flex-col bg-white border border-[#E2E8F0] shadow-xs">
+    <Card className="flex flex-col bg-card border-border shadow-xs">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base font-bold text-[#243447]">
+            <CardTitle className="text-base font-bold text-foreground">
               Curva de Concentração de Valor (Pareto 80/20)
             </CardTitle>
-            <CardDescription className="text-xs text-[#5B6E84]">
+            <CardDescription className="text-xs text-muted-foreground">
               Valor acumulado (R$) por decil e percentual acumulado sobre o total da carteira
             </CardDescription>
           </div>
@@ -77,16 +77,16 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
               data={chartData}
               margin={{ top: 10, right: 20, left: 20, bottom: 20 }}
             >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="decil_clientes"
-                tick={{ fontSize: 11, fill: "#5B6E84" }}
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                 tickLine={false}
               />
               <YAxis
                 yAxisId="left"
                 orientation="left"
-                tick={{ fontSize: 11, fill: "#5B6E84" }}
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                 tickFormatter={(val) => `R$ ${(val / 1000000).toFixed(1)}M`}
                 tickLine={false}
                 axisLine={false}
@@ -95,7 +95,7 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
                 yAxisId="right"
                 orientation="right"
                 domain={[0, 100]}
-                tick={{ fontSize: 11, fill: "#5B6E84" }}
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                 tickFormatter={(val) => `${val}%`}
                 tickLine={false}
                 axisLine={false}
@@ -105,12 +105,12 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
                   if (!active || !payload || !payload.length) return null;
                   const item = payload[0].payload as ParetoData & { percentual_pct: number };
                   return (
-                    <div className="rounded-lg border border-[#E2E8F0] bg-white p-3 shadow-md text-xs">
-                      <p className="font-bold text-[#243447] mb-1">{label}</p>
-                      <p className="text-[#003B7A] font-semibold">
+                    <div className="rounded-lg border border-border bg-popover p-3 shadow-md text-xs">
+                      <p className="font-bold text-popover-foreground mb-1">{label}</p>
+                      <p className="text-azul-navy dark:text-[#38BDF8] font-semibold">
                         Valor Acumulado: {formatCurrency(item.valor_acumulado)}
                       </p>
-                      <p className="text-[#0077C8] font-semibold">
+                      <p className="text-azul-action font-semibold">
                         Percentual Acumulado: {formatPercent(item.percentual_acumulado)}
                       </p>
                     </div>

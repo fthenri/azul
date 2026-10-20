@@ -8,7 +8,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F4F7FA] dark:bg-background">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-150">
       {/* Sidebar Fixa à Esquerda */}
       <Sidebar
         isOpen={mobileMenuOpen}

@@ -18,23 +18,23 @@ export function ArbitrationPanel({ result }: ArbitrationPanelProps) {
   const isBloqueada = decisao_final.acao_vencedora.toLowerCase().includes("bloqueada");
 
   return (
-    <Card className="flex flex-col border border-[#E2E8F0] bg-white shadow-xs">
-      <CardHeader className="pb-3 bg-[#F4F7FA]/70 border-b border-[#E2E8F0]">
+    <Card className="flex flex-col border border-border bg-card shadow-xs">
+      <CardHeader className="pb-3 bg-muted/40 border-b border-border">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Scale className="h-5 w-5 text-[#003B7A]" />
+            <Scale className="h-5 w-5 text-azul-navy dark:text-[#38BDF8]" />
             <div>
-              <CardTitle className="text-base font-bold text-[#243447]">
+              <CardTitle className="text-base font-bold text-foreground">
                 Decisão do Árbitro Matemático
               </CardTitle>
-              <CardDescription className="text-xs text-[#5B6E84]">
+              <CardDescription className="text-xs text-muted-foreground">
                 Otimização de Uplift: Seleção da melhor ação preservando o teto de gastos
               </CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[#5B6E84] font-medium">Classificação Uplift:</span>
-            <Badge className="bg-[#0077C8] text-white text-xs font-bold">
+            <span className="text-xs text-muted-foreground font-medium">Classificação Uplift:</span>
+            <Badge className="bg-primary text-primary-foreground text-xs font-bold">
               {uplift_status}
             </Badge>
           </div>
@@ -77,12 +77,12 @@ export function ArbitrationPanel({ result }: ArbitrationPanelProps) {
 
         {/* Ranking de Ações Avaliadas */}
         <div>
-          <h5 className="text-xs font-bold text-[#5B6E84] uppercase tracking-wider mb-2">
+          <h5 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
             Ranking Comparativo de Custos & Retorno Líquido
           </h5>
-          <div className="overflow-x-auto rounded-lg border border-[#E2E8F0]">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#EAF4FC]/60 text-[#003B7A] uppercase text-[11px] font-bold border-b border-[#E2E8F0]">
+              <thead className="bg-secondary/60 text-secondary-foreground uppercase text-[11px] font-bold border-b border-border">
                 <tr>
                   <th className="py-2.5 px-3">Posição / Ação</th>
                   <th className="py-2.5 px-3 text-right">Custo da Ação</th>
@@ -90,7 +90,7 @@ export function ArbitrationPanel({ result }: ArbitrationPanelProps) {
                   <th className="py-2.5 px-3 text-center">Status no Árbitro</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E2E8F0]">
+              <tbody className="divide-y divide-border">
                 {ranking_acoes.map((item, idx) => {
                   const isWinner = item.acao === decisao_final.acao_vencedora;
                   return (
@@ -98,34 +98,34 @@ export function ArbitrationPanel({ result }: ArbitrationPanelProps) {
                       key={item.acao}
                       className={`transition-colors ${
                         isWinner
-                          ? "bg-[#EAF4FC]/70 font-semibold"
-                          : "hover:bg-[#F4F7FA]/70"
+                          ? "bg-secondary/70 font-semibold"
+                          : "hover:bg-muted/40"
                       }`}
                     >
                       <td className="py-3 px-3 flex items-center gap-2">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E2E8F0] text-[10px] font-bold text-[#003B7A]">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-foreground">
                           {idx + 1}
                         </span>
-                        <span className="text-[#243447]">{item.acao}</span>
+                        <span className="text-foreground">{item.acao}</span>
                         {isWinner && (
-                          <Badge className="text-[9px] py-0 px-1 bg-[#0077C8] text-white">
+                          <Badge className="text-[9px] py-0 px-1 bg-primary text-primary-foreground">
                             Vencedora
                           </Badge>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-right text-[#5B6E84]">
+                      <td className="py-3 px-3 text-right text-muted-foreground">
                         {formatCurrency(item.custo_acao)}
                       </td>
-                      <td className="py-3 px-3 text-right font-bold text-[#16805D]">
+                      <td className="py-3 px-3 text-right font-bold text-azul-success">
                         {formatCurrency(item.retorno_liquido)}
                       </td>
                       <td className="py-3 px-3 text-center">
                         {item.retorno_liquido > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-[#16805D] font-medium">
+                          <span className="inline-flex items-center gap-1 text-[11px] text-azul-success font-medium">
                             <CheckCircle className="h-3 w-3" /> ROI Positivo
                           </span>
                         ) : (
-                          <span className="text-[11px] text-[#C43D4B] font-medium">
+                          <span className="text-[11px] text-azul-danger font-medium">
                             Inviável
                           </span>
                         )}

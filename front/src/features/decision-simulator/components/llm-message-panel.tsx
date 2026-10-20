@@ -27,28 +27,28 @@ export function LlmMessagePanel({ decisaoFinal }: LlmMessagePanelProps) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {/* 1. Mensagem Gerada pelo Agente LLM */}
-      <Card className="flex flex-col bg-white border border-[#E2E8F0] shadow-xs">
+      <Card className="flex flex-col bg-card border-border shadow-xs">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-[#0077C8]" />
-              <CardTitle className="text-base font-bold text-[#243447]">
+              <Bot className="h-5 w-5 text-azul-action" />
+              <CardTitle className="text-base font-bold text-foreground">
                 Comunicação Gerada (Agente LLM)
               </CardTitle>
             </div>
-            <Badge variant="outline" className="text-[10px] text-[#003B7A] border-[#0077C8]/30 bg-[#EAF4FC] font-semibold">
+            <Badge variant="outline" className="text-[10px] text-azul-navy dark:text-[#38BDF8] border-border bg-secondary font-semibold">
               RAG Guardrail Ativo
             </Badge>
           </div>
-          <CardDescription className="text-xs text-[#5B6E84]">
+          <CardDescription className="text-xs text-muted-foreground">
             Mensagem personalizada e empática calibrada sem alucinação de benefícios
           </CardDescription>
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col justify-between space-y-4">
-          <div className="rounded-xl bg-[#002855] text-white p-4 font-sans text-xs sm:text-sm leading-relaxed border border-[#003B7A] shadow-inner">
+          <div className="rounded-xl bg-[#002855] text-white p-4 font-sans text-xs sm:text-sm leading-relaxed border border-[#003B7A] dark:border-border shadow-inner">
             <div className="flex items-center gap-2 mb-2 text-[#EAF4FC]/70 text-xs font-mono border-b border-white/10 pb-2">
-              <MessageSquare className="h-3.5 w-3.5 text-[#0077C8]" />
+              <MessageSquare className="h-3.5 w-3.5 text-[#38BDF8]" />
               <span>Canal Push / E-mail / WhatsApp</span>
             </div>
             <p className="whitespace-pre-wrap">{decisaoFinal.mensagem_llm}</p>
@@ -59,16 +59,16 @@ export function LlmMessagePanel({ decisaoFinal }: LlmMessagePanelProps) {
               variant="outline"
               size="sm"
               onClick={handleCopy}
-              className="text-xs gap-1.5 cursor-pointer border-[#E2E8F0] hover:bg-[#EAF4FC] hover:text-[#003B7A]"
+              className="text-xs gap-1.5 cursor-pointer border-border hover:bg-muted"
             >
               {copied ? (
                 <>
-                  <Check className="h-3.5 w-3.5 text-[#16805D]" />
-                  <span className="text-[#16805D] font-bold">Copiado!</span>
+                  <Check className="h-3.5 w-3.5 text-azul-success" />
+                  <span className="text-azul-success font-bold">Copiado!</span>
                 </>
               ) : (
                 <>
-                  <Copy className="h-3.5 w-3.5 text-[#0077C8]" />
+                  <Copy className="h-3.5 w-3.5 text-azul-action" />
                   <span>Copiar Mensagem</span>
                 </>
               )}
@@ -78,36 +78,36 @@ export function LlmMessagePanel({ decisaoFinal }: LlmMessagePanelProps) {
       </Card>
 
       {/* 2. Evidência Regulatória / RAG Consultada */}
-      <Card className="flex flex-col bg-white border border-[#E2E8F0] shadow-xs">
+      <Card className="flex flex-col bg-card border-border shadow-xs">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-[#003B7A]" />
-              <CardTitle className="text-base font-bold text-[#243447]">
+              <BookOpen className="h-5 w-5 text-azul-navy dark:text-[#38BDF8]" />
+              <CardTitle className="text-base font-bold text-foreground">
                 Evidência Regulatória & Regra RAG
               </CardTitle>
             </div>
-            <Badge variant="secondary" className="text-[10px] bg-[#EAF4FC] text-[#003B7A] font-bold">
+            <Badge variant="secondary" className="text-[10px] bg-secondary text-secondary-foreground font-bold">
               Azul Fidelidade
             </Badge>
           </div>
-          <CardDescription className="text-xs text-[#5B6E84]">
+          <CardDescription className="text-xs text-muted-foreground">
             Trecho do manual e regulamento consultado pelo agente antes da concessão
           </CardDescription>
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col justify-between">
-          <div className="rounded-xl border border-[#0077C8]/30 bg-[#EAF4FC] p-4 text-xs sm:text-sm leading-relaxed text-[#243447]">
-            <div className="flex items-center gap-2 text-[#003B7A] font-bold text-xs mb-2">
-              <BookOpen className="h-4 w-4 text-[#0077C8]" />
+          <div className="rounded-xl border border-border bg-secondary/70 p-4 text-xs sm:text-sm leading-relaxed text-foreground">
+            <div className="flex items-center gap-2 text-azul-navy dark:text-[#38BDF8] font-bold text-xs mb-2">
+              <BookOpen className="h-4 w-4 text-azul-action" />
               <span>Diretriz Institucional de Retenção</span>
             </div>
-            <p className="italic text-[#243447]">
+            <p className="italic text-foreground">
               &quot;{decisaoFinal.regra_rag_consultada}&quot;
             </p>
           </div>
 
-          <p className="text-[11px] text-[#5B6E84] mt-4">
+          <p className="text-[11px] text-muted-foreground mt-4">
             Em conformidade com a Resolução ANAC 400 e os termos contratuais do programa de passageiro frequente.
           </p>
         </CardContent>

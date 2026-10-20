@@ -2,9 +2,9 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Menu, Sparkles, Activity, Shield } from "lucide-react";
+import { Menu, Sparkles, Shield } from "lucide-react";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
-import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 interface HeaderProps {
   onOpenMobileMenu: () => void;
@@ -39,7 +39,7 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
   const context = getPageContext();
 
   return (
-    <header className="sticky top-0 z-30 flex flex-col border-b border-border bg-white dark:bg-card">
+    <header className="sticky top-0 z-30 flex flex-col border-b border-border bg-card/95 backdrop-blur-xs">
       {/* Banner de Demonstração quando ativo */}
       {isDemoMode && (
         <div className="bg-[#B96B08]/10 border-b border-[#B96B08]/20 px-4 py-1 text-center text-xs font-semibold text-[#B96B08] dark:text-amber-300 flex items-center justify-center gap-2">
@@ -55,10 +55,10 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
           {/* Botão Hambúrguer para telas menores */}
           <button
             onClick={onOpenMobileMenu}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted lg:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted lg:hidden cursor-pointer"
             aria-label="Abrir Menu de Navegação"
           >
-            <Menu className="h-5 w-5 text-azul-navy" />
+            <Menu className="h-5 w-5 text-azul-action" />
           </button>
 
           {/* Breadcrumb e Contexto */}
@@ -68,21 +68,21 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
                 {context.category}
               </span>
               <span className="text-xs text-muted-foreground">/</span>
-              <span className="text-sm font-bold text-azul-text dark:text-foreground">
+              <span className="text-sm font-bold text-foreground">
                 {context.title}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Indicadores do Header */}
+        {/* Indicadores do Header & ThemeToggle */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-azul-soft border border-blue-200 text-azul-navy text-[11px] font-semibold">
-            <Shield className="h-3.5 w-3.5 text-azul-action" />
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary border border-border text-secondary-foreground text-[11px] font-semibold">
+            <Shield className="h-3.5 w-3.5 text-primary" />
             <span>{context.tag}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium pl-2 border-l border-border">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium px-2 border-l border-border">
             <span className="relative flex h-2 w-2">
               <span
                 className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
@@ -96,9 +96,12 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
               />
             </span>
             <span className="hidden md:inline">
-              {isDemoMode ? "Mock /contract.md" : "Backend /api/v1"}
+              {isDemoMode ? "Mock" : "API Real"}
             </span>
           </div>
+
+          {/* Botão de Troca de Tema (Claro / Escuro Shadcn) */}
+          <ThemeToggle />
         </div>
       </div>
     </header>

@@ -16,7 +16,7 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="p-6 bg-white border border-[#E2E8F0] shadow-xs">
+          <Card key={i} className="p-6 bg-card border-border shadow-xs">
             <div className="flex items-center justify-between">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-9 w-9 rounded-lg" />
@@ -78,11 +78,11 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
         return (
           <Card
             key={kpi.title}
-            className={`overflow-hidden border ${kpi.border} bg-white shadow-xs hover:shadow-sm transition-all`}
+            className={`overflow-hidden border ${kpi.border} bg-card text-card-foreground shadow-xs hover:shadow-sm transition-all`}
           >
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#5B6E84]">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {kpi.title}
                 </span>
                 <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${kpi.bg} ${kpi.color}`}>
@@ -90,7 +90,7 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
                 </div>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-2xl font-bold tracking-tight text-[#243447]">
+                <span className="text-2xl font-bold tracking-tight text-foreground">
                   {kpi.value}
                 </span>
                 {kpi.highlight && (
@@ -99,7 +99,7 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
                   </Badge>
                 )}
               </div>
-              <p className="mt-1 text-xs text-[#5B6E84]">{kpi.description}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{kpi.description}</p>
             </CardContent>
           </Card>
         );

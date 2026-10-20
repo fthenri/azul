@@ -43,24 +43,24 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
   };
 
   return (
-    <Card className="flex flex-col bg-white border border-[#E2E8F0] shadow-xs">
+    <Card className="flex flex-col bg-card border-border shadow-xs">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-[#0077C8]" />
+          <Users className="h-5 w-5 text-azul-action" />
           <div>
-            <CardTitle className="text-base font-bold text-[#243447]">
+            <CardTitle className="text-base font-bold text-foreground">
               Matriz Estratégica: Personas × Faixa de Valor
             </CardTitle>
-            <CardDescription className="text-xs text-[#5B6E84]">
+            <CardDescription className="text-xs text-muted-foreground">
               Mapeamento de prioridades de retenção e proteção de margem por perfil de viajante
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="overflow-x-auto rounded-lg border border-[#E2E8F0]">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#EAF4FC]/60 text-[#003B7A] uppercase text-[11px] font-bold border-b border-[#E2E8F0]">
+            <thead className="bg-secondary/60 text-secondary-foreground uppercase text-[11px] font-bold border-b border-border">
               <tr>
                 <th className="py-3 px-4">Persona</th>
                 <th className="py-3 px-4">Faixa de Valor (CLV Médio)</th>
@@ -69,20 +69,20 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
                 <th className="py-3 px-4">Diretriz Estratégica</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E2E8F0]">
+            <tbody className="divide-y divide-border">
               {data.map((item) => {
                 const faixa = getFaixaValor(item.clv_medio);
                 const criticidade = getCriticidade(item.risco_evasao_medio);
                 const CritIcon = criticidade.icon;
 
                 return (
-                  <tr key={item.persona} className="hover:bg-[#F4F7FA]/70 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-[#243447]">
+                  <tr key={item.persona} className="hover:bg-muted/40 transition-colors">
+                    <td className="py-3.5 px-4 font-bold text-foreground">
                       {item.persona}
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#003B7A]">
+                        <span className="font-bold text-azul-navy dark:text-[#38BDF8]">
                           {formatCurrency(item.clv_medio)}
                         </span>
                         <Badge variant={faixa.badge} className="text-[10px]">
@@ -101,10 +101,10 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
                         </span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-right font-semibold text-[#243447]">
+                    <td className="py-3.5 px-4 text-right font-semibold text-foreground">
                       {formatNumber(item.tamanho_bolha)} clientes
                     </td>
-                    <td className="py-3.5 px-4 text-[#5B6E84]">
+                    <td className="py-3.5 px-4 text-muted-foreground">
                       {item.risco_evasao_medio >= 0.4 && item.clv_medio >= 4000 ? (
                         <span className="text-[#C43D4B] font-semibold">
                           Prioridade Máxima: Simulação Proativa
