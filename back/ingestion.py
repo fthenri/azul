@@ -1,12 +1,3 @@
-"""Camada Bronze - Script Oficial de Ingestão de Dados da ANAC (Azul Linhas Aéreas).
-
-Este módulo realiza a busca dinâmica de datasets públicos da ANAC via API CKAN
-(dados.gov.br), faz o download dos arquivos CSV mais recentes de Voo Regular
-Ativo (VRA) e Microdados de Tarifas Aéreas Comercializadas, filtra estritamente
-os registros da Azul ('AZU') e persiste o resultado em formato Parquet otimizado
-(compressão snappy via pyarrow) na Camada Bronze do Data Lake.
-"""
-
 from __future__ import annotations
 
 import io
@@ -25,7 +16,6 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-# Configuração de Observabilidade (Logging)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
@@ -34,7 +24,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("azul.ingestion.bronze")
 
-# Constantes da API CKAN e Repositórios Oficiais da ANAC
 CKAN_PACKAGE_SEARCH_URL = "https://dados.gov.br/api/3/action/package_search"
 ANAC_VRA_BASE_URL = (
     "https://sistemas.anac.gov.br/dadosabertos/Voos%20e%20opera%C3%A7%C3%B5es%20a%C3%A9reas/"
@@ -42,8 +31,6 @@ ANAC_VRA_BASE_URL = (
 )
 ANAC_TARIFAS_BASE_URL = "https://sas.anac.gov.br/sas/tarifadomestica/"
 
-# URLs diretas dos arquivos CSV mais recentes nos servidores da ANAC (caso a listagem de
-# diretório receba página de desafio JS/TSPD do firewall F5 BIG-IP do gov.br)
 ANAC_VRA_DIRECT_CSV_URLS: tuple[str, ...] = (
     "https://sistemas.anac.gov.br/dadosabertos/Voos%20e%20opera%C3%A7%C3%B5es%20a%C3%A9reas/"
     "Voo%20Regular%20Ativo%20%28VRA%29/2026/08%20-%20Agosto/VRA_20268.csv",
@@ -58,39 +45,21 @@ ANAC_TARIFAS_DIRECT_CSV_URLS: tuple[str, ...] = (
     "https://sas.anac.gov.br/sas/tarifadomestica/2025/202512.csv",
 )
 
-TARGET_AIRLINE_CODE = "AZU"
-
-# Possíveis nomes da coluna de código ICAO da companhia aérea nos CSVs da ANAC
-AIRLINE_COLUMN_CANDIDATES: tuple[str, ...] = (
-    "ICAO Empresa Aérea",
-    "Sigla ICAO Empresa Aérea",
-    "EMPRESA",
-    "Empresa",
-    "Empresa Aérea",
-    "SG_EMPRESA_ICAO",
-    "Sigla da Empresa",
-    "Designador OACI da Empresa",
-)
+# Removidas as constantes TARGET_AIRLINE_CODE e AIRLINE_COLUMN_CANDIDATES para manter a Bronze agnóstica a regras de negócio.
 
 
 def resolve_bronze_dir() -> Path:
-    """Resolve o diretório da camada Bronze (azul/data_lake/bronze) de forma agnóstica ao cwd."""
     script_dir = Path(__file__).resolve().parent
-    # Caso 1: Executando dentro do container Docker (/app/data_lake/bronze)
     docker_path = script_dir / "data_lake" / "bronze"
     if (script_dir / "data_lake").exists():
         return docker_path
-
-    # Caso 2: Estrutura local padrão (azul/back/ingestion.py -> azul/data_lake/bronze)
-    project_root_path = script_dir.parent / "data_lake" / "bronze"
-    return project_root_path
+    return script_dir.parent / "data_lake" / "bronze"
 
 
 def create_http_session(
     retries: int = 3,
     backoff_factor: float = 1.0,
 ) -> requests.Session:
-    """Cria uma sessão HTTP resiliente com headers de navegador (evita bloqueio WAF/F5 TSPD)."""
     session = requests.Session()
     retry_strategy = Retry(
         total=retries,
@@ -123,7 +92,6 @@ def create_http_session(
 
 
 def _is_waf_or_html_challenge(raw_bytes: bytes) -> bool:
-    """Detecta se a resposta HTTP é uma página HTML/CAPTCHA do firewall F5 TSPD em vez de CSV."""
     head = raw_bytes[:2048].decode("latin1", errors="ignore").strip().lower()
     if not head:
         return True
@@ -140,7 +108,6 @@ def _is_waf_or_html_challenge(raw_bytes: bytes) -> bool:
 
 
 def _extract_latest_csv_from_ckan_payload(payload: dict[str, Any]) -> str | None:
-    """Percorre o JSON de resposta do CKAN e extrai a URL do recurso CSV mais recente."""
     result_block = payload.get("result", {})
     packages: list[dict[str, Any]] = result_block.get("results", [])
 
@@ -174,19 +141,16 @@ def _discover_csv_from_anac_directory(
     session: requests.Session,
     timeout: int = 30,
 ) -> str:
-    """Navega nos diretórios abertos da ANAC (Apache/IIS) ou utiliza URL direta do CSV."""
     logger.info("Consultando diretório aberto da ANAC em: %s", base_url)
     try:
         resp = session.get(base_url, timeout=timeout)
         resp.raise_for_status()
 
-        # 1. Verifica se já existem arquivos .csv diretamente no diretório base
         csv_links = re.findall(r'href=["\']([^"\']+\.csv)["\']', resp.text, flags=re.IGNORECASE)
         if csv_links:
             csv_links.sort()
             return urljoin(base_url, csv_links[-1])
 
-        # 2. Busca subdiretórios de ano (ex: "2026/" no Apache ou "/sas/tarifadomestica/2026/" no IIS)
         year_matches = re.findall(
             r'href=["\']([^"\']*?(20\d{2})/?)["\']',
             resp.text,
@@ -213,7 +177,6 @@ def _discover_csv_from_anac_directory(
                     year_csvs.sort()
                     return urljoin(year_url, year_csvs[-1])
 
-                # 3. Subpastas de meses (ex: VRA possui "01%20-%20Janeiro/" .. "12%20-%20Dezembro/")
                 month_dirs = re.findall(
                     r'href=["\']([^"\']+/)["\']',
                     year_resp.text,
@@ -243,7 +206,6 @@ def _discover_csv_from_anac_directory(
     except requests.RequestException as exc:
         logger.warning("Falha ao listar diretório base %s: %s", base_url, exc)
 
-    # 4. Caso o WAF (F5 TSPD) intercepte a listagem HTML do diretório, usa a URL direta do CSV
     if direct_csv_candidates:
         selected_direct_url = direct_csv_candidates[0]
         logger.info(
@@ -262,20 +224,6 @@ def fetch_latest_csv_url(
     session: requests.Session | None = None,
     timeout: int = 30,
 ) -> str:
-    """Busca dinamicamente a URL do arquivo CSV mais recente na API CKAN (dados.gov.br).
-
-    Args:
-        search_query: Termo de pesquisa (ex: 'Voo Regular Ativo' ou
-            'Microdados de Tarifas Aéreas Comercializadas').
-        fallback_anac_url: URL do diretório de dados abertos da ANAC caso a API CKAN
-            esteja indisponível ou exija autenticação.
-        direct_csv_candidates: URLs diretas de arquivos CSV oficiais na ANAC.
-        session: Sessão HTTP opcional.
-        timeout: Tempo limite da requisição em segundos.
-
-    Returns:
-        URL direta para download do arquivo CSV mais recente.
-    """
     own_session = session is None
     http = session or create_http_session()
 
@@ -330,7 +278,6 @@ def fetch_latest_csv_url(
 
 
 def _generate_anac_contingency_csv_bytes(dataset_kind: str) -> bytes:
-    """Gera payload CSV fiel ao schema oficial da ANAC caso o firewall F5 TSPD bloqueie o IP."""
     rng = random.Random(42)
     airports = ("SBKP", "SBGR", "SBRJ", "SBCF", "SBPA", "SBRF", "SBSV", "SBCT", "SBBR", "SBEG")
     airlines = (
@@ -350,7 +297,6 @@ def _generate_anac_contingency_csv_bytes(dataset_kind: str) -> bytes:
         )
         base_dt = datetime(2026, 8, 1, 6, 0)
         for i in range(2500):
-            # ~48% dos voos da Azul ('AZU') e restante distribuído entre congêneres
             icao, name = airlines[0] if i % 2 == 0 else airlines[(i % 2) + 1]
             orig, dest = rng.sample(airports, 2)
             flight_num = f"{rng.randint(2000, 6999)}"
@@ -381,40 +327,7 @@ def _generate_anac_contingency_csv_bytes(dataset_kind: str) -> bytes:
     return buffer.getvalue().encode("latin1")
 
 
-def _detect_airline_column(df: pd.DataFrame, airline_code: str = TARGET_AIRLINE_CODE) -> str:
-    """Identifica a coluna que contém a sigla ICAO da empresa aérea no DataFrame."""
-    # 1. Busca direta por nomes de colunas conhecidos (case-insensitive)
-    normalized_map = {col.strip().lower(): col for col in df.columns}
-    for candidate in AIRLINE_COLUMN_CANDIDATES:
-        key = candidate.strip().lower()
-        if key in normalized_map:
-            col_name = normalized_map[key]
-            sample_vals = df[col_name].dropna().astype(str).str.strip().str.upper()
-            if (sample_vals == airline_code).any():
-                return col_name
-
-    # 2. Busca por substring relevante no cabeçalho ('empresa', 'icao', 'cia')
-    for col in df.columns:
-        col_lower = col.strip().lower()
-        if any(token in col_lower for token in ("empresa", "icao", "cia", "oaci")):
-            sample_vals = df[col].dropna().astype(str).str.strip().str.upper()
-            if (sample_vals == airline_code).any():
-                return col
-
-    # 3. Varredura em colunas do tipo object/string procurando o código 'AZU'
-    for col in df.select_dtypes(include=["object", "string"]).columns:
-        sample_vals = df[col].dropna().astype(str).str.strip().str.upper()
-        if (sample_vals == airline_code).any():
-            return col
-
-    raise KeyError(
-        f"Nenhuma coluna correspondente à sigla da companhia aérea ('{airline_code}') "
-        f"foi encontrada. Colunas disponíveis: {list(df.columns)}"
-    )
-
-
 def _read_anac_csv_bytes(raw_bytes: bytes, source_url: str) -> pd.DataFrame:
-    """Lê os bytes de um CSV (ou ZIP contendo CSV) tratando encoding (utf-8/latin1) e separador ';'."""
     if source_url.lower().endswith(".zip") or zipfile.is_zipfile(io.BytesIO(raw_bytes)):
         with zipfile.ZipFile(io.BytesIO(raw_bytes)) as zf:
             csv_names = [name for name in zf.namelist() if name.lower().endswith(".csv")]
@@ -424,7 +337,6 @@ def _read_anac_csv_bytes(raw_bytes: bytes, source_url: str) -> pd.DataFrame:
     else:
         csv_bytes = raw_bytes
 
-    # Detecta se o arquivo está em UTF-8 (padrão recente do VRA) ou Latin-1 (padrão legado ANAC)
     try:
         csv_bytes[:32768].decode("utf-8-sig")
         detected_encoding = "utf-8-sig"
@@ -458,8 +370,7 @@ def _read_anac_csv_bytes(raw_bytes: bytes, source_url: str) -> pd.DataFrame:
             on_bad_lines="skip",
         )
 
-    # Limpa possíveis espaços em branco e BOM nos nomes das colunas
-    df.columns = [str(col).strip().lstrip("\ufeff").strip('"') for col in df.columns]
+    # Removida a limpeza/mutação de nomes de colunas para preservar o estado bruto original na Bronze.
     return df
 
 
@@ -468,24 +379,9 @@ def download_and_process_dataset(
     output_parquet_path: Path,
     dataset_kind: str = "vra",
     candidate_urls: tuple[str, ...] = (),
-    airline_code: str = TARGET_AIRLINE_CODE,
     session: requests.Session | None = None,
     timeout: int = 180,
 ) -> Path:
-    """Faz o download do CSV da ANAC, filtra os registros da Azul e salva em Parquet.
-
-    Args:
-        csv_url: URL principal do arquivo CSV a ser baixado.
-        output_parquet_path: Caminho de destino do arquivo .parquet na camada Bronze.
-        dataset_kind: Identificador do dataset ('vra' ou 'tarifas') para contingência WAF.
-        candidate_urls: URLs alternativas caso a URL principal sofra bloqueio ou 404.
-        airline_code: Sigla ICAO da companhia aérea a ser filtrada (padrão: 'AZU').
-        session: Sessão HTTP opcional.
-        timeout: Timeout de leitura para download de arquivos grandes.
-
-    Returns:
-        Path do arquivo Parquet gerado.
-    """
     own_session = session is None
     http = session or create_http_session()
 
@@ -526,35 +422,28 @@ def download_and_process_dataset(
         )
         raw_bytes = _generate_anac_contingency_csv_bytes(dataset_kind=dataset_kind)
 
-    df = _read_anac_csv_bytes(raw_bytes, source_url=effective_url)
-    total_rows = len(df)
+    df_raw = _read_anac_csv_bytes(raw_bytes, source_url=effective_url)
+    total_rows = len(df_raw)
 
-    airline_col = _detect_airline_column(df, airline_code=airline_code)
-    df_azul = df[
-        df[airline_col].astype(str).str.strip().str.upper() == airline_code.upper()
-    ].copy()
-    filtered_rows = len(df_azul)
-
+    # Alterado: Removido o filtro `ICAO == 'AZU'` na Bronze; todos os registros brutos são persistidos sem descarte ou mutação.
     logger.info(
-        "%d linhas totais lidas, %d linhas da Azul filtradas (coluna: '%s')",
+        "%d linhas totais lidas e mantidas integralmente em estado bruto (sem filtro de negócio).",
         total_rows,
-        filtered_rows,
-        airline_col,
     )
 
     output_parquet_path.parent.mkdir(parents=True, exist_ok=True)
-    df_azul.to_parquet(
+    # Alterado: Salva o DataFrame bruto (`df_raw`) diretamente em Parquet sem filtrar companhias aéreas.
+    df_raw.to_parquet(
         output_parquet_path,
         engine="pyarrow",
         compression="snappy",
         index=False,
     )
-    logger.info("Salvo com sucesso em Parquet: %s", output_parquet_path)
+    logger.info("Salvo com sucesso em Parquet (Camada Bronze Bruta): %s", output_parquet_path)
     return output_parquet_path
 
 
 def run_bronze_ingestion() -> dict[str, Path]:
-    """Executa o pipeline completo de ingestão da Camada Bronze (VRA e Tarifas da Azul)."""
     bronze_dir = resolve_bronze_dir()
     bronze_dir.mkdir(parents=True, exist_ok=True)
 
@@ -590,7 +479,7 @@ def run_bronze_ingestion() -> dict[str, Path]:
             direct_urls = tuple(dataset["direct_urls"])  # type: ignore[arg-type]
             output_path = Path(dataset["output_path"])
 
-            logger.info("Iniciando ingestão do dataset: %s", dataset_name)
+            logger.info("Iniciando ingestão bruta do dataset: %s", dataset_name)
             try:
                 csv_url = fetch_latest_csv_url(
                     search_query=search_query,
@@ -598,12 +487,12 @@ def run_bronze_ingestion() -> dict[str, Path]:
                     direct_csv_candidates=direct_urls,
                     session=session,
                 )
+                # Alterado: Chamada sem parâmetro `airline_code`, preservando 100% dos registros brutos da ANAC.
                 saved_path = download_and_process_dataset(
                     csv_url=csv_url,
                     output_parquet_path=output_path,
                     dataset_kind=dataset_kind,
                     candidate_urls=direct_urls,
-                    airline_code=TARGET_AIRLINE_CODE,
                     session=session,
                 )
                 saved_files[dataset_name] = saved_path
