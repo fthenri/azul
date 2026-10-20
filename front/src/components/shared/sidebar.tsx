@@ -2,17 +2,15 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Cpu,
   FileText,
-  Plane,
   ShieldCheck,
   ToggleLeft,
   ToggleRight,
-  Sparkles,
-  ExternalLink,
   ChevronRight,
   Database,
 } from "lucide-react";
@@ -67,22 +65,29 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col border-r border-[#002855] bg-[#003B7A] text-white transition-transform duration-200 ease-in-out lg:translate-x-0",
+          "fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col border-r border-[#002855] dark:border-border bg-[#003B7A] dark:bg-[#071324] text-white transition-transform duration-200 ease-in-out lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Top Branding Header */}
-        <div className="flex h-16 shrink-0 items-center justify-between px-5 border-b border-white/10 bg-[#002855]">
-          <Link href="/executive" className="flex items-center gap-3 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0077C8] text-white shadow-md shadow-black/20 group-hover:bg-[#005fa0] transition-colors">
-              <Plane className="h-5 w-5 rotate-[-45deg]" />
+        {/* Top Branding Header com Logo Oficial da Azul */}
+        <div className="flex h-20 shrink-0 items-center justify-between px-5 border-b border-white/10 bg-[#002855] dark:bg-[#050e1b]">
+          <Link href="/executive" className="flex items-center gap-3 group w-full">
+            <div className="relative h-10 w-28 shrink-0 flex items-center">
+              <Image
+                src="/logo.png"
+                alt="Azul Linhas Aéreas"
+                width={112}
+                height={40}
+                className="object-contain filter brightness-110"
+                priority
+              />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center text-lg font-black tracking-wider text-white">
-                AZ<span className="text-[#0077C8]">U</span>L
-              </div>
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-white/70">
-                Retenção Alto Valor
+            <div className="flex flex-col border-l border-white/20 pl-2.5">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-white/90 leading-tight">
+                Motor de
+              </span>
+              <span className="text-[10px] uppercase font-black tracking-wider text-[#38BDF8] leading-tight">
+                Retenção
               </span>
             </div>
           </Link>
@@ -105,7 +110,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     className={cn(
                       "group flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all",
                       item.active
-                        ? "bg-[#0077C8] text-white shadow-sm font-semibold"
+                        ? "bg-[#0077C8] dark:bg-[#0096DF] text-white shadow-sm font-semibold"
                         : "text-white/80 hover:bg-white/10 hover:text-white"
                     )}
                   >
@@ -136,9 +141,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
 
           {/* Seção Governança & Compliance */}
-          <div className="rounded-xl border border-white/10 bg-black/15 p-3 text-[11px] space-y-2">
+          <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-[11px] space-y-2">
             <div className="flex items-center gap-1.5 text-white/90 font-semibold text-xs">
-              <ShieldCheck className="h-4 w-4 text-[#0077C8]" />
+              <ShieldCheck className="h-4 w-4 text-[#38BDF8]" />
               <span>Governança Analítica</span>
             </div>
             <p className="text-white/70 text-[10px] leading-relaxed">
@@ -152,7 +157,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Footer da Sidebar: Demo Mode & Status */}
-        <div className="p-4 border-t border-white/10 bg-[#002855]/90 space-y-3">
+        <div className="p-4 border-t border-white/10 bg-[#002855]/90 dark:bg-[#050e1b] space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-white/80 font-medium">Origem dos Dados:</span>
             <button
