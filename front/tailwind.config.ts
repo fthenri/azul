@@ -18,6 +18,19 @@ const config: Config = {
     },
     extend: {
       colors: {
+        azul: {
+          navy: "#003B7A",
+          "navy-dark": "#002855",
+          action: "#0077C8",
+          "action-hover": "#005fa0",
+          soft: "#EAF4FC",
+          bg: "#F4F7FA",
+          text: "#243447",
+          "text-muted": "#5B6E84",
+          success: "#16805D",
+          warning: "#B96B08",
+          danger: "#C43D4B",
+        },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

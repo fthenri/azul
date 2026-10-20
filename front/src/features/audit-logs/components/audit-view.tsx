@@ -25,19 +25,19 @@ export function AuditView() {
   } = useAuditLogs();
 
   return (
-    <div className="container mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight text-[#003B7A] sm:text-3xl">
               Logs & Explicabilidade
             </h1>
-            <span className="rounded bg-slate-200 text-slate-800 text-[11px] font-semibold px-2 py-0.5 dark:bg-slate-800 dark:text-slate-200">
+            <span className="rounded bg-[#EAF4FC] text-[#003B7A] border border-[#0077C8]/20 text-[11px] font-bold px-2.5 py-0.5">
               Auditoria Regulatória
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-[#5B6E84] mt-1">
             Rastreabilidade de decisões tomadas, bloqueios de segurança e decomposição de risco via SHAP
           </p>
         </div>
@@ -48,7 +48,7 @@ export function AuditView() {
             size="sm"
             onClick={() => refetchDecisoes()}
             disabled={isLoadingDecisoes}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-[#E2E8F0] text-[#003B7A] hover:bg-[#EAF4FC]"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isLoadingDecisoes ? "animate-spin" : ""}`} />
             <span>Atualizar Logs</span>

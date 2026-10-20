@@ -16,10 +16,10 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="p-6">
+          <Card key={i} className="p-6 bg-white border border-[#E2E8F0] shadow-xs">
             <div className="flex items-center justify-between">
               <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-9 w-9 rounded-full" />
+              <Skeleton className="h-9 w-9 rounded-lg" />
             </div>
             <Skeleton className="mt-4 h-8 w-32" />
             <Skeleton className="mt-2 h-3 w-40" />
@@ -37,36 +37,36 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
       value: formatCurrency(data.valor_protegido),
       description: "CLV de clientes preservado pelo motor",
       icon: ShieldCheck,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-50 dark:bg-emerald-950/40",
-      border: "border-emerald-100 dark:border-emerald-900/40",
+      color: "text-[#16805D]",
+      bg: "bg-[#16805D]/10",
+      border: "border-[#16805D]/20",
     },
     {
       title: "Valor Gerado",
       value: formatCurrency(data.valor_gerado),
-      description: "Receita adicional e compras auxiliares",
+      description: "Receita adicional e compras de auxiliares",
       icon: TrendingUp,
-      color: "text-blue-600 dark:text-blue-400",
-      bg: "bg-blue-50 dark:bg-blue-950/40",
-      border: "border-blue-100 dark:border-blue-900/40",
+      color: "text-[#0077C8]",
+      bg: "bg-[#0077C8]/10",
+      border: "border-[#0077C8]/20",
     },
     {
       title: "Custo Total",
       value: formatCurrency(data.custo_total),
       description: "Ações concedidas e vouchers aplicados",
       icon: DollarSign,
-      color: "text-amber-600 dark:text-amber-400",
-      bg: "bg-amber-50 dark:bg-amber-950/40",
-      border: "border-amber-100 dark:border-amber-900/40",
+      color: "text-[#B96B08]",
+      bg: "bg-[#B96B08]/10",
+      border: "border-[#B96B08]/20",
     },
     {
       title: "ROI por Real Gasto",
       value: formatRatio(data.roi_por_real_gasto),
       description: "Retorno líquido por R$ 1 investido",
       icon: Award,
-      color: "text-purple-600 dark:text-purple-400",
-      bg: "bg-purple-50 dark:bg-purple-950/40",
-      border: "border-purple-100 dark:border-purple-900/40",
+      color: "text-[#003B7A]",
+      bg: "bg-[#EAF4FC]",
+      border: "border-[#0077C8]/30",
       highlight: true,
     },
   ];
@@ -78,28 +78,28 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
         return (
           <Card
             key={kpi.title}
-            className={`overflow-hidden border ${kpi.border} bg-card hover:shadow-md transition-shadow`}
+            className={`overflow-hidden border ${kpi.border} bg-white shadow-xs hover:shadow-sm transition-all`}
           >
-            <CardContent className="p-6">
+            <CardContent className="p-5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#5B6E84]">
                   {kpi.title}
                 </span>
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${kpi.bg} ${kpi.color}`}>
+                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${kpi.bg} ${kpi.color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-2xl font-bold tracking-tight text-foreground">
+                <span className="text-2xl font-bold tracking-tight text-[#243447]">
                   {kpi.value}
                 </span>
                 {kpi.highlight && (
-                  <Badge variant="success" className="text-[10px]">
+                  <Badge className="bg-[#16805D] text-white text-[10px] px-1.5 py-0">
                     Alta Eficiência
                   </Badge>
                 )}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">{kpi.description}</p>
+              <p className="mt-1 text-xs text-[#5B6E84]">{kpi.description}</p>
             </CardContent>
           </Card>
         );

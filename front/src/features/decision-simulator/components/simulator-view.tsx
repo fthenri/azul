@@ -27,19 +27,19 @@ export function SimulatorView() {
   } = useSimulation();
 
   return (
-    <div className="container mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight text-[#003B7A] sm:text-3xl">
               Central de Decisões
             </h1>
-            <span className="rounded bg-purple-100 text-purple-800 text-[11px] font-semibold px-2 py-0.5 dark:bg-purple-900/40 dark:text-purple-300">
+            <span className="rounded bg-[#EAF4FC] text-[#003B7A] border border-[#0077C8]/20 text-[11px] font-bold px-2.5 py-0.5">
               Simulador em Tempo Real
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-[#5B6E84] mt-1">
             Simulação de ações de retenção com Árbitro Matemático (Uplift) e geração de mensagens com LLM + RAG
           </p>
         </div>
@@ -50,7 +50,7 @@ export function SimulatorView() {
             size="sm"
             onClick={() => refetchMomentos()}
             disabled={isLoadingMomentos}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-[#E2E8F0] text-[#003B7A] hover:bg-[#EAF4FC]"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isLoadingMomentos ? "animate-spin" : ""}`} />
             <span>Atualizar Fila</span>

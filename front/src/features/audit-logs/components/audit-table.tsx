@@ -19,7 +19,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Eye,
-  Filter,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -71,7 +70,7 @@ export function AuditTable({
         accessorKey: "decisao_id",
         header: "ID Decisão",
         cell: ({ row }) => (
-          <span className="font-mono text-xs font-semibold text-foreground">
+          <span className="font-mono text-xs font-bold text-[#003B7A]">
             {row.original.decisao_id}
           </span>
         ),
@@ -80,7 +79,7 @@ export function AuditTable({
         accessorKey: "cliente_id",
         header: "Cliente",
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-muted-foreground">
+          <span className="font-mono text-xs text-[#5B6E84]">
             {row.original.cliente_id}
           </span>
         ),
@@ -90,14 +89,14 @@ export function AuditTable({
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 font-semibold uppercase text-[11px] hover:text-foreground"
+            className="flex items-center gap-1 font-bold uppercase text-[11px] text-[#003B7A] hover:text-[#0077C8]"
           >
             <span>Data / Hora</span>
             <ArrowUpDown className="h-3 w-3" />
           </button>
         ),
         cell: ({ row }) => (
-          <span className="text-xs text-muted-foreground whitespace-nowrap">
+          <span className="text-xs text-[#5B6E84] whitespace-nowrap">
             {formatDateTime(row.original.data_decisao)}
           </span>
         ),
@@ -112,7 +111,7 @@ export function AuditTable({
                 ? "destructive"
                 : "secondary"
             }
-            className="text-[10px] px-2 py-0"
+            className="text-[10px] px-2 py-0 font-bold"
           >
             {row.original.tipo_simulacao}
           </Badge>
@@ -125,11 +124,11 @@ export function AuditTable({
           const isBloqueada = !!row.original.motivo_bloqueio;
           return (
             <div className="flex flex-col">
-              <span className="font-semibold text-xs text-foreground">
+              <span className="font-bold text-xs text-[#243447]">
                 {row.original.acao_executada}
               </span>
               {isBloqueada && (
-                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium line-clamp-1">
+                <span className="text-[10px] text-[#B96B08] font-semibold line-clamp-1">
                   {row.original.motivo_bloqueio}
                 </span>
               )}
@@ -142,14 +141,14 @@ export function AuditTable({
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 font-semibold uppercase text-[11px] hover:text-foreground ml-auto"
+            className="flex items-center gap-1 font-bold uppercase text-[11px] text-[#003B7A] hover:text-[#0077C8] ml-auto"
           >
             <span>Custo Realizado</span>
             <ArrowUpDown className="h-3 w-3" />
           </button>
         ),
         cell: ({ row }) => (
-          <div className="text-right font-medium text-xs text-foreground">
+          <div className="text-right font-bold text-xs text-[#243447]">
             {formatCurrency(row.original.custo_realizado)}
           </div>
         ),
@@ -162,13 +161,13 @@ export function AuditTable({
           return (
             <div className="flex justify-center">
               {isBloqueada ? (
-                <span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span className="inline-flex items-center gap-1 text-[11px] text-[#B96B08] font-semibold">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#B96B08]" />
                   <span className="hidden sm:inline">Bloqueado</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                  <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="inline-flex items-center gap-1 text-[11px] text-[#16805D] font-semibold">
+                  <CheckCircle className="h-3.5 w-3.5 shrink-0 text-[#16805D]" />
                   <span className="hidden sm:inline">Executado</span>
                 </span>
               )}
@@ -187,9 +186,9 @@ export function AuditTable({
               e.stopPropagation();
               onSelectDecisao(row.original);
             }}
-            className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950"
+            className="h-7 px-2 text-xs text-[#0077C8] hover:text-[#003B7A] hover:bg-[#EAF4FC]"
           >
-            <Eye className="h-3.5 w-3.5 mr-1" />
+            <Eye className="h-3.5 w-3.5 mr-1 text-[#0077C8]" />
             <span>Detalhes</span>
           </Button>
         ),
@@ -220,7 +219,7 @@ export function AuditTable({
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="bg-white border border-[#E2E8F0] shadow-xs">
         <CardHeader>
           <Skeleton className="h-5 w-48" />
           <Skeleton className="h-4 w-72" />
@@ -236,58 +235,57 @@ export function AuditTable({
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col bg-white border border-[#E2E8F0] shadow-xs">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <CardTitle className="text-base font-semibold">
+            <CardTitle className="text-base font-bold text-[#243447]">
               Histórico de Decisões & Auditoria
             </CardTitle>
-            <CardDescription className="text-xs">
-              Rastreabilidade completa de todas as decisões tomadas pelo motor, incluindo bloqueios de 72h
+            <CardDescription className="text-xs text-[#5B6E84]">
+              Rastreabilidade de decisões tomadas pelo motor, incluindo bloqueios de 72h
             </CardDescription>
           </div>
 
-          {/* Filtros e Busca */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+              <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-[#5B6E84]" />
               <input
                 type="text"
                 placeholder="Buscar decisão ou cliente..."
                 value={globalFilter ?? ""}
                 onChange={(e) => setGlobalFilter(e.target.value)}
-                className="h-8 w-44 sm:w-56 rounded-md border border-input pl-8 pr-3 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 w-44 sm:w-56 rounded-md border border-[#E2E8F0] pl-8 pr-3 text-xs bg-white text-[#243447] focus:outline-none focus:ring-1 focus:ring-[#0077C8]"
               />
             </div>
 
-            <div className="flex items-center rounded-md border border-input bg-card p-0.5 text-xs">
+            <div className="flex items-center rounded-md border border-[#E2E8F0] bg-[#F4F7FA] p-0.5 text-xs">
               <button
                 onClick={() => setStatusFilter("ALL")}
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                className={`px-2 py-1 rounded text-[11px] font-bold transition-colors ${
                   statusFilter === "ALL"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-[#003B7A] text-white shadow-xs"
+                    : "text-[#5B6E84] hover:text-[#243447]"
                 }`}
               >
                 Todas ({data.length})
               </button>
               <button
                 onClick={() => setStatusFilter("BLOQUEADAS")}
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                className={`px-2 py-1 rounded text-[11px] font-bold transition-colors ${
                   statusFilter === "BLOQUEADAS"
-                    ? "bg-amber-500 text-white"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-[#B96B08] text-white shadow-xs"
+                    : "text-[#5B6E84] hover:text-[#243447]"
                 }`}
               >
                 Bloqueios
               </button>
               <button
                 onClick={() => setStatusFilter("EXECUTADAS")}
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                className={`px-2 py-1 rounded text-[11px] font-bold transition-colors ${
                   statusFilter === "EXECUTADAS"
-                    ? "bg-emerald-600 text-white"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-[#16805D] text-white shadow-xs"
+                    : "text-[#5B6E84] hover:text-[#243447]"
                 }`}
               >
                 Executadas
@@ -298,9 +296,9 @@ export function AuditTable({
       </CardHeader>
 
       <CardContent className="pt-0">
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div className="overflow-x-auto rounded-lg border border-[#E2E8F0]">
           <table className="w-full text-left text-xs">
-            <thead className="bg-muted/60 text-muted-foreground uppercase text-[11px] font-semibold border-b">
+            <thead className="bg-[#EAF4FC]/60 text-[#003B7A] uppercase text-[11px] font-bold border-b border-[#E2E8F0]">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
@@ -313,7 +311,7 @@ export function AuditTable({
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-[#E2E8F0]">
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => {
                   const isSelected = selectedDecisao?.decisao_id === row.original.decisao_id;
@@ -323,8 +321,8 @@ export function AuditTable({
                       onClick={() => onSelectDecisao(row.original)}
                       className={`cursor-pointer transition-colors ${
                         isSelected
-                          ? "bg-blue-50/70 dark:bg-blue-950/30"
-                          : "hover:bg-muted/30"
+                          ? "bg-[#EAF4FC] font-semibold"
+                          : "hover:bg-[#F4F7FA]/70"
                       }`}
                     >
                       {row.getVisibleCells().map((cell) => (
@@ -337,7 +335,7 @@ export function AuditTable({
                 })
               ) : (
                 <tr>
-                  <td colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                  <td colSpan={columns.length} className="h-24 text-center text-[#5B6E84]">
                     Nenhum registro de decisão encontrado.
                   </td>
                 </tr>
@@ -347,7 +345,7 @@ export function AuditTable({
         </div>
 
         {/* Paginação */}
-        <div className="flex items-center justify-between pt-4 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between pt-4 text-xs text-[#5B6E84]">
           <span>
             Página {table.getState().pagination.pageIndex + 1} de{" "}
             {Math.max(1, table.getPageCount())} ({filteredData.length} registros)
@@ -358,7 +356,7 @@ export function AuditTable({
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="h-8 px-2.5"
+              className="h-8 px-2.5 border-[#E2E8F0] text-[#003B7A]"
             >
               <ChevronLeft className="h-4 w-4" />
               <span>Anterior</span>
@@ -368,7 +366,7 @@ export function AuditTable({
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="h-8 px-2.5"
+              className="h-8 px-2.5 border-[#E2E8F0] text-[#003B7A]"
             >
               <span>Próxima</span>
               <ChevronRight className="h-4 w-4" />

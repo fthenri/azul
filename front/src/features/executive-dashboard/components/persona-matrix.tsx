@@ -14,7 +14,6 @@ interface PersonaMatrixProps {
 export function PersonaMatrix({ data }: PersonaMatrixProps) {
   if (!data || data.length === 0) return null;
 
-  // Classifica faixa de valor e criticidade de risco sem mutar ou inventar endpoints
   const getFaixaValor = (clv: number) => {
     if (clv >= 7000) return { label: "Tier Alto Valor", badge: "default" as const };
     if (clv >= 3000) return { label: "Tier Médio Valor", badge: "secondary" as const };
@@ -26,42 +25,42 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
       return {
         label: "Crítico (> 70%)",
         icon: ShieldAlert,
-        color: "text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-950/40 dark:border-rose-900",
+        color: "text-[#C43D4B] bg-[#C43D4B]/10 border-[#C43D4B]/20",
       };
     }
     if (risco >= 0.4) {
       return {
         label: "Moderado (40-70%)",
         icon: AlertTriangle,
-        color: "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-900",
+        color: "text-[#B96B08] bg-[#B96B08]/10 border-[#B96B08]/20",
       };
     }
     return {
       label: "Controlado (< 40%)",
       icon: CheckCircle2,
-      color: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-900",
+      color: "text-[#16805D] bg-[#16805D]/10 border-[#16805D]/20",
     };
   };
 
   return (
-    <Card className="flex flex-col">
-      <CardHeader>
+    <Card className="flex flex-col bg-white border border-[#E2E8F0] shadow-xs">
+      <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-blue-600" />
+          <Users className="h-5 w-5 text-[#0077C8]" />
           <div>
-            <CardTitle className="text-base font-semibold">
+            <CardTitle className="text-base font-bold text-[#243447]">
               Matriz Estratégica: Personas × Faixa de Valor
             </CardTitle>
-            <CardDescription className="text-xs">
+            <CardDescription className="text-xs text-[#5B6E84]">
               Mapeamento de prioridades de retenção e proteção de margem por perfil de viajante
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div className="overflow-x-auto rounded-lg border border-[#E2E8F0]">
           <table className="w-full text-left text-xs">
-            <thead className="bg-muted/60 text-muted-foreground uppercase text-[11px] font-semibold border-b">
+            <thead className="bg-[#EAF4FC]/60 text-[#003B7A] uppercase text-[11px] font-bold border-b border-[#E2E8F0]">
               <tr>
                 <th className="py-3 px-4">Persona</th>
                 <th className="py-3 px-4">Faixa de Valor (CLV Médio)</th>
@@ -70,20 +69,20 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
                 <th className="py-3 px-4">Diretriz Estratégica</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-[#E2E8F0]">
               {data.map((item) => {
                 const faixa = getFaixaValor(item.clv_medio);
                 const criticidade = getCriticidade(item.risco_evasao_medio);
                 const CritIcon = criticidade.icon;
 
                 return (
-                  <tr key={item.persona} className="hover:bg-muted/30 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-foreground">
+                  <tr key={item.persona} className="hover:bg-[#F4F7FA]/70 transition-colors">
+                    <td className="py-3.5 px-4 font-bold text-[#243447]">
                       {item.persona}
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-blue-600">
+                        <span className="font-bold text-[#003B7A]">
                           {formatCurrency(item.clv_medio)}
                         </span>
                         <Badge variant={faixa.badge} className="text-[10px]">
@@ -102,20 +101,20 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
                         </span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-right font-medium text-foreground">
+                    <td className="py-3.5 px-4 text-right font-semibold text-[#243447]">
                       {formatNumber(item.tamanho_bolha)} clientes
                     </td>
-                    <td className="py-3.5 px-4 text-muted-foreground">
+                    <td className="py-3.5 px-4 text-[#5B6E84]">
                       {item.risco_evasao_medio >= 0.4 && item.clv_medio >= 4000 ? (
-                        <span className="text-rose-700 dark:text-rose-400 font-medium">
+                        <span className="text-[#C43D4B] font-semibold">
                           Prioridade Máxima: Simulação Proativa
                         </span>
                       ) : item.risco_evasao_medio >= 0.4 ? (
-                        <span className="text-amber-700 dark:text-amber-400">
+                        <span className="text-[#B96B08] font-medium">
                           Atenção Operacional em Falhas
                         </span>
                       ) : (
-                        <span className="text-emerald-700 dark:text-emerald-400">
+                        <span className="text-[#16805D] font-medium">
                           Fidelização Contínua
                         </span>
                       )}

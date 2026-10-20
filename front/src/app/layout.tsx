@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppQueryProvider } from "@/components/providers/query-provider";
 import { DemoModeProvider } from "@/components/providers/demo-mode-context";
-import { Navbar } from "@/components/shared/navbar";
+import { DashboardLayout } from "@/components/shared/dashboard-layout";
 
 export const metadata: Metadata = {
-  title: "Motor de Retenção de Alto Valor | Azul",
-  description: "Interface de Retenção, Decisões e Explicabilidade — Azul Linhas Aéreas",
+  title: "Motor de Retenção de Alto Valor | Azul Linhas Aéreas",
+  description: "Plataforma Analítica B2B de Retenção e Decisões — Azul Linhas Aéreas",
 };
 
 export default function RootLayout({
@@ -16,13 +16,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans antialiased text-foreground">
+      <body className="min-h-screen bg-[#F4F7FA] font-sans antialiased text-[#243447]">
         <AppQueryProvider>
           <DemoModeProvider>
-            <div className="relative flex min-h-screen flex-col">
-              <Navbar />
-              <main className="flex-1">{children}</main>
-            </div>
+            <DashboardLayout>{children}</DashboardLayout>
           </DemoModeProvider>
         </AppQueryProvider>
       </body>
