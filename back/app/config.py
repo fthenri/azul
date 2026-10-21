@@ -45,9 +45,14 @@ class Settings(BaseSettings):
     # Configurações de CORS
     cors_origins: List[str] = [
         "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3002",
         "http://localhost:8000",
     ]
+    cors_origin_regex: str = r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$"
 
     def model_post_init(self, __context: object) -> None:
         """Resolve caminhos relativos para absolutos caso não informados."""
