@@ -14,35 +14,21 @@ services:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - WATCHPACK_POLLING=true
+    depends_on:
+      - backend
 
-  # =========================================================================
-  # Serviços temporariamente desativados (descomente quando o backend estiver pronto)
-  # =========================================================================
-  # db:
-  #   image: postgres:15-alpine
-  #   container_name: azul_db
-  #   environment:
-  #     POSTGRES_USER: azul_user
-  #     POSTGRES_PASSWORD: azul_password
-  #     POSTGRES_DB: azul_crm
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #
-  # backend:
-  #   build: 
-  #     context: ./back
-  #   container_name: azul_backend
-  #   ports:
-  #     - "8000:8000"
-  #   volumes:
-  #     - ./back:/app
-  #     - ./data_lake:/app/data_lake  # Mapeamento do Data Lake para o backend ler os Parquets
-  #   environment:
-  #     - DATABASE_URL=postgresql://azul_user:azul_password@db:5432/azul_crm
-  #   depends_on:
-  #     - db
-
-# volumes:
-#   postgres_data:
+  backend:
+    build: 
+      context: ./back
+      dockerfile: Dockerfile
+    container_name: azul_backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./back:/app/back
+      - ./data_lake:/app/data_lake
+      - ./regras_azul_fidelidade.md:/app/regras_azul_fidelidade.md
+    environment:
+      - ENVIRONMENT=dev
+      - HOST=0.0.0.0
+      - PORT=8000
