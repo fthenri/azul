@@ -118,7 +118,8 @@ def get_duckdb_client(settings: Optional[Settings] = None) -> DuckDBClient:
     if _duckdb_client_instance is None:
         with _instance_lock:
             if _duckdb_client_instance is None:
-                client = DuckDBClient(settings=settings)
+                resolved_settings = settings or get_settings()
+                client = DuckDBClient(settings=resolved_settings)
                 client.initialize()
                 _duckdb_client_instance = client
     return _duckdb_client_instance
