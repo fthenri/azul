@@ -314,6 +314,8 @@ Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do p
 | `valor_monetario_base` | `float64` | Não | Somatório do valor pago em tarifas aéreas ANAC nos voos realizados (`R$`). |
 | `valor_monetario_expandido` | `float64` | Não | Valor monetário base acrescido das receitas anuais projetadas do Clube e Cartão Co-branded (`R$`). |
 | `clv_previsto` | `float64` | Não | Valor econômico futuro estimado do cliente para os próximos 12 meses via RFM Preditivo (`R$`). |
+| `clv_acumulado_perc` | `float64` | Não | Percentual acumulado do CLV no dataset na ordenação decrescente de valor (Curva de Pareto). |
+| `faixa_pareto` | `string` | Não | Segmento de concentração de receita: `'Top 10% Receita'`, `'Top 20% Receita'`, `'Top 50% Receita'`, `'Cauda Longa'`. |
 
 ### 5.5. Schema de `evasao_clientes.parquet` (Camada Gold — Cérebro 2 — 5.000 registros)
 

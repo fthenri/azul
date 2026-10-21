@@ -96,6 +96,27 @@ def build_gold_clv(
         df_gold["valor_monetario_expandido"] * fator_recencia * fator_frequencia
     ).round(2).astype(np.float64)
 
+    # Ordenação decrescente de valor e cálculo da Curva de Pareto acumulada (clv_acumulado_perc) com segmentação por faixas de concentração de receita.
+    df_sorted = df_gold.sort_values("clv_previsto", ascending=False).reset_index(drop=True)
+    clv_cumsum = df_sorted["clv_previsto"].cumsum()
+    total_clv = float(df_sorted["clv_previsto"].sum())
+    df_sorted["clv_acumulado_perc"] = (clv_cumsum / (total_clv + 1e-9)).round(4).astype(np.float64)
+
+    pareto_conditions = [
+        df_sorted["clv_acumulado_perc"] <= 0.10,
+        df_sorted["clv_acumulado_perc"] <= 0.20,
+        df_sorted["clv_acumulado_perc"] <= 0.50,
+    ]
+    pareto_choices = [
+        "Top 10% Receita",
+        "Top 20% Receita",
+        "Top 50% Receita",
+    ]
+    df_sorted["faixa_pareto"] = pd.Series(
+        np.select(pareto_conditions, pareto_choices, default="Cauda Longa"),
+        dtype="string",
+    )
+
     output_cols = [
         "id_cliente",
         "recencia_dias",
@@ -103,8 +124,10 @@ def build_gold_clv(
         "valor_monetario_base",
         "valor_monetario_expandido",
         "clv_previsto",
+        "clv_acumulado_perc",
+        "faixa_pareto",
     ]
-    df_result = df_gold[output_cols]
+    df_result = df_sorted[output_cols]
 
     gold_output_path.parent.mkdir(parents=True, exist_ok=True)
     df_result.to_parquet(
