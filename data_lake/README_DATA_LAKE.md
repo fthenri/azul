@@ -25,6 +25,7 @@ azul/data_lake/
 └── gold/
     ├── clv_clientes.parquet          # Cérebro 1: RFM Preditivo e CLV projetado para 12 meses
     ├── evasao_clientes.parquet       # Cérebro 2: Risco de Evasão / Limite de Dor (XGBoost + NLP)
+    ├── shap_clientes.parquet         # Cérebro 2: Explicabilidade Matemática SHAP (TreeExplainer)
     └── personas_clientes.parquet     # Cérebro 3: Efeito Manada e Segmentação de Personas (K-Means)
 ```
 
@@ -322,7 +323,20 @@ Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do p
 | `score_atrito_acumulado` | `float64` | Não | Pontuação contínua de dor operacional acumulada pelo passageiro, calibrada por NLP e amortecida por decaimento temporal exponencial. |
 | `risco_evasao` | `float64` | Não | Probabilidade contínua estimada de evasão / churn ($0.0$ a $1.0$) calculada via `XGBClassifier`. |
 
-### 5.6. Schema de `personas_clientes.parquet` (Camada Gold — Cérebro 3 — 5.000 registros)
+### 5.6. Schema de `shap_clientes.parquet` (Camada Gold — Cérebro 2 / Explicabilidade — 5.000 registros)
+
+| Coluna | Tipo Físico (Parquet / Pandas) | Nulável | Regra de Domínio / Descrição Técnica |
+| :--- | :--- | :---: | :--- |
+| `id_cliente` | `string` (FK $\rightarrow$ `clientes_silver`) | Não | Identificador único persistente do cliente no CRM / TudoAzul. |
+| `shap_base_value` | `float64` | Não | Valor esperado base do modelo XGBoost (`explainer.expected_value`) para o gráfico em cascata (*waterfall*). |
+| `shap_score_atrito_acumulado` | `float64` | Não | Contribuição marginal SHAP do score de atrito acumulado na probabilidade de churn. |
+| `shap_recencia_dias` | `float64` | Não | Contribuição marginal SHAP da inatividade (recência de voo). |
+| `shap_qtd_cancelamentos` | `float64` | Não | Contribuição marginal SHAP do volume histórico de cancelamentos enfrentados. |
+| `shap_qtd_atrasos_criticos` | `float64` | Não | Contribuição marginal SHAP de atrasos superiores a 15 minutos. |
+| `shap_qtd_bagagem_extraviada` | `float64` | Não | Contribuição marginal SHAP de ocorrências de bagagem extraviada/danificada. |
+| `shap_qtd_falha_app` | `float64` | Não | Contribuição marginal SHAP de falhas no check-in digital via aplicativo. |
+
+### 5.7. Schema de `personas_clientes.parquet` (Camada Gold — Cérebro 3 — 5.000 registros)
 
 | Coluna | Tipo Físico (Parquet / Pandas) | Nulável | Regra de Domínio / Descrição Técnica |
 | :--- | :--- | :---: | :--- |
