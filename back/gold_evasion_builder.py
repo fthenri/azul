@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -173,6 +174,36 @@ def build_gold_evasion(
         len(df_result),
         float(df_result["risco_evasao"].mean() * 100.0),
     )
+
+    # Extração dos valores SHAP via TreeExplainer e estruturação da explicabilidade matemática por cliente (pesos locais e valor base).
+    import shap
+
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(X)
+    raw_expected = explainer.expected_value
+    base_val = float(raw_expected[1] if isinstance(raw_expected, (list, np.ndarray)) else raw_expected)
+
+    shap_data: dict[str, Any] = {
+        "id_cliente": df_gold["id_cliente"].astype("string"),
+        "shap_base_value": np.float64(base_val),
+    }
+    for idx, col in enumerate(feature_cols):
+        shap_data[f"shap_{col}"] = shap_values[:, idx].astype(np.float64)
+
+    df_shap = pd.DataFrame(shap_data)
+    shap_output_path = gold_output_path.parent / "shap_clientes.parquet"
+    df_shap.to_parquet(
+        shap_output_path,
+        engine="pyarrow",
+        compression="snappy",
+        index=False,
+    )
+    logger.info(
+        "Explicabilidade SHAP salva com sucesso em %s (%d registros)",
+        shap_output_path,
+        len(df_shap),
+    )
+
     return df_result
 
 
