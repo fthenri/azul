@@ -356,3 +356,58 @@ Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do p
 # 6. Construção da Camada Gold — Cérebro 3 (Segmentação de Personas e Efeito Manada via K-Means)
 .venv/bin/python -u back/gold_personas_builder.py
 ```
+
+---
+
+## 7. Braço Executor (Árbitro de Decisão e RAG-LLM)
+
+Responsável: [`azul/back/executor_decisao.py`](../back/executor_decisao.py)  
+Base de Conhecimento RAG: [`azul/regras_azul_fidelidade.md`](../regras_azul_fidelidade.md)
+
+### 7.1. Visão Geral (Inferência *Just-in-Time* no Modo Reativo)
+Diferentemente dos scripts construtores das camadas Bronze, Silver e Gold — que operam em lote (*batch processing*) gerando arquivos Parquet —, o script [`executor_decisao.py`](../back/executor_decisao.py) atua como o **motor de decisão transacional (*Just-in-Time*)** da arquitetura.
+
+Quando um evento de atrito ocorre na malha, o Braço Executor realiza leitura seletiva (*predicate pushdown* via `filters=[("id_cliente", "==", id_cliente)]`) nos 3 artefatos da Camada Gold (`clv_clientes.parquet`, `evasao_clientes.parquet` e `personas_clientes.parquet`) e na entidade de clientes da Silver (`clientes_silver.parquet`), consolidando instantaneamente o estado 360º do passageiro para arbitrar a melhor resposta financeira e comunicacional.
+
+### 7.2. Árbitro Matemático e Lógica de Uplift
+O **Árbitro Matemático** garante disciplina financeira estrita: nenhuma ação de retenção é disparada sem comprovação de Retorno Líquido positivo. Para cada ação candidata $a$ do catálogo, avalia-se a equação de **Uplift Econômico**:
+
+$$\text{Retorno Líquido}(a) = \left(\text{CLV}_{\text{Previsto}} \times \text{Risco}_{\text{Evasão}} \times \text{Eficácia}(a)\right) - \text{Custo}(a)$$
+
+Onde $\text{CLV}_{\text{Previsto}} \times \text{Risco}_{\text{Evasão}}$ representa o **Valor Esperado em Risco** (perda financeira iminente caso a Azul não intervenha), e $\text{Eficácia}(a)$ representa a probabilidade de a ação neutralizar o churn.
+
+#### Catálogo Homologado de Ações, Custos Fixos e Eficácia (`CATALOGO_ACOES`)
+
+| Código da Ação | Custo Fixo Interno (`R$`) | Taxa de Eficácia ($\text{Eficácia}_a$) | Escopo Operacional e Regra de Negócio |
+| :--- | :---: | :---: | :--- |
+| **`UPGRADE_EXECUTIVA`** | `R$ 1.500,00` | `90%` (`0.90`) | Voucher de upgrade para a **Classe Executiva** em voos internacionais (clientes de altíssimo CLV). |
+| **`ACESSO_LOUNGE_VCP`** | `R$ 120,00` | `70%` (`0.70`) | Acesso ao **Lounge Azul** em Viracopos (`VCP`), Lisboa, Orlando ou Fort Lauderdale. |
+| **`BONUS_5000_PONTOS`** | `R$ 150,00` | `60%` (`0.60`) | Crédito de `5.000` pontos no **Azul Fidelidade** (custo interno de `R$ 30,00` por milheiro). |
+| **`ISENCAO_BAGAGEM_EXTRA`** | `R$ 100,00` | `50%` (`0.50`) | Franquia de `1` bagagem despachada extra de `23kg`. **Bloqueado para Diamante.** |
+| **`CORTESIA_ESPACO_AZUL`** | `R$ 50,00` | `40%` (`0.40`) | Assento com maior espaço em voo doméstico. **Bloqueado para Diamante.** |
+| **`MENSAGEM_EXECUTIVA_VIP`** | `R$ 1,00` | `20%` (`0.20`) | Pedido formal de desculpas assinado pela Diretoria, sem custo de benefício físico. |
+| **`NAO_FAZER_NADA`** | `R$ 0,00` | `0%` (`0.00`) | Acionado obrigatoriamente quando todas as ações apresentam $\text{Retorno Líquido} \le 0$. |
+
+> [!WARNING]
+> **Trava de Regras de Negócio (*Hard-Block* — Categoria Diamante):**
+> Conforme estipulado no contrato do programa **Azul Fidelidade** ([`regras_azul_fidelidade.md`](../regras_azul_fidelidade.md)), clientes da categoria **`Diamante`** já possuem por direito cortesias ilimitadas no **Espaço Azul** em voos nacionais e franquia máxima de **3 bagagens de 23kg grátis**. O Árbitro aplica um *hard-block* determinístico que impede o teste e a oferta de `CORTESIA_ESPACO_AZUL` e `ISENCAO_BAGAGEM_EXTRA` para clientes `Diamante`, prevenindo ofertas redundantes que gerariam frustração reputacional.
+
+### 7.3. Agente LLM Simulado com RAG (`gerar_mensagem_llm`)
+Após a seleção matemática da ação vencedora pelo Árbitro, o Agente gera a comunicação personalizada ancorada no arquivo [`regras_azul_fidelidade.md`](../regras_azul_fidelidade.md) carregado em memória como contexto estrito de **RAG (*Retrieval-Augmented Generation*)**:
+
+1. **Prevenção de Alucinações Operacionais**:
+   - O Agente respeita rigorosamente a infraestrutura física da companhia: **nunca** promete "Primeira Classe" (inexistente na frota da Azul), ofertando exclusivamente a **Classe Executiva** em voos internacionais, o **Espaço Azul** em voos nacionais e o **Lounge Azul** nos aeroportos homologados (`Viracopos/VCP`, `Lisboa`, `Orlando` e `Fort Lauderdale`).
+2. **Adaptação de Tom de Voz por Persona (Cérebro 3)**:
+   - **`Executivo Frequente`**: Tom executivo, direto e focado em pontualidade, produtividade a bordo e respeito à agenda corporativa.
+   - **`Família/Lazer`**: Tom acolhedor e empático, reconhecendo o impacto coletivo do contratempo sobre o grupo familiar (`PNR`).
+   - **`Caçador de Pontos`**: Tom estratégico, valorizando o acúmulo e a maximização de benefícios no programa **Azul Fidelidade**.
+   - **`Viajante Regional`**: Tom próximo e cordial, destacando a conectividade da malha regional brasileira da Azul.
+3. **Silêncio Inteligente (`NAO_FAZER_NADA`)**:
+   - Quando nenhuma ação atinge ROI positivo, nenhuma mensagem externa é disparada ao passageiro, registrando-se apenas a decisão interna de preservação de caixa.
+
+### 7.4. Comando de Teste e Simulação Local
+Para executar a simulação determinística (`seed=42`) do Braço Executor avaliando três perfis contrastantes da Camada Gold (**CLV Muito Alto**, **CLV Médio** e **CLV Baixo**):
+
+```bash
+.venv/bin/python -u back/executor_decisao.py
+```
