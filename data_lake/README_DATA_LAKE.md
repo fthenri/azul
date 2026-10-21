@@ -24,8 +24,8 @@ azul/data_lake/
 │   └── avaliacoes_silver.parquet     # Avaliações enriquecidas com NLP (score_sentimento em [-1.0, 1.0])
 └── gold/
     ├── clv_clientes.parquet          # Cérebro 1: RFM Preditivo e CLV projetado para 12 meses
-    ├── personas_clientes.parquet     # Cérebro 3: Efeito Manada e Segmentação de Personas (K-Means)
-    └── ...                           # Cérebro 2 (Limite de Dor / XGBoost + SHAP) e Feature Store
+    ├── evasao_clientes.parquet       # Cérebro 2: Risco de Evasão / Limite de Dor (XGBoost + NLP)
+    └── personas_clientes.parquet     # Cérebro 3: Efeito Manada e Segmentação de Personas (K-Means)
 ```
 
 ---
@@ -124,6 +124,7 @@ As funções `_compute_text_sentiment_score` e `process_silver_reviews` transfor
 ## 4. Camada Gold (Modelos e Inteligência Analítica — Os 3 Cérebros)
 
 - Responsável pelo Cérebro 1 (CLV / RFM Preditivo): [`azul/back/gold_clv_builder.py`](../back/gold_clv_builder.py)
+- Responsável pelo Cérebro 2 (Risco de Evasão / Limite de Dor): [`azul/back/gold_evasion_builder.py`](../back/gold_evasion_builder.py)
 - Responsável pelo Cérebro 3 (Efeito Manada / Personas): [`azul/back/gold_personas_builder.py`](../back/gold_personas_builder.py)
 
 A camada **Gold** é o ápice analítico do Data Lake, projetada como uma **Feature Store Analítica** que hospeda os três motores matemáticos essenciais da solução de retenção:
@@ -175,7 +176,53 @@ Essa formulação garante à banca avaliadora que o Árbitro de Retenção tomar
 
 ---
 
-### 4.2. Cérebro 3: Efeito Manada e Segmentação de Personas (`gold_personas_builder.py`)
+### 4.2. Cérebro 2: Risco de Evasão e Limite de Dor (`gold_evasion_builder.py`)
+
+O **Cérebro 2** modela o limiar de tolerância a falhas do cliente (churn prediction). Em vez de adotar pesos arbitrários ou heurísticas não-calibradas, este motor preditivo integra **Processamento de Linguagem Natural (NLP)** para extrair empiricamente a dor das queixas reais de passageiros e treina um classificador supervisionado de gradiente impulsionado (**XGBoost**) para calcular a probabilidade individual de evasão (`risco_evasao` $\in [0.0, 1.0]$).
+
+#### 4.2.1. Calibrador NLP e Pesos de Dor ($w_{\text{tipo}}$)
+A função `calibrate_nlp_pain_weights` consome [`avaliacoes_silver.parquet`](../data_lake/silver/avaliacoes_silver.parquet), calcula a média do `score_sentimento` ($\in [-1.0, 1.0]$) gerado pelo estágio de NLP para cada tópico de queixa e inverte a escala para gerar o multiplicador de penalidade:
+$$w_{\text{tipo}} = 1.0 - \text{media\_sentimento}_{\text{topico}}$$
+
+Dessa forma, ocorrências cujo sentimento é intensamente negativo produzem multiplicadores de dor mais elevados:
+
+| Tópico de Ocorrência | Média `score_sentimento` (Silver) | Peso de Dor Empírico ($w_{\text{tipo}}$) | Interpretação no Pipeline |
+| :--- | :---: | :---: | :--- |
+| **`Cancelamento`** | `-0.7678` | **`1.7678`** | Dor máxima: quebra grave de contrato de transporte e planos de viagem. |
+| **`Bagagem`** | `-0.6797` | **`1.6797`** | Dor severa: privação de pertences pessoais e transtorno logístico no desembarque. |
+| **`Atraso`** | `-0.6292` | **`1.6292`** | Dor alta: perda de compromissos ou conexões imediatas. |
+| **`App`** | `-0.2843` | **`1.2843`** | Dor moderada: fricção tecnológica no check-in/emissão digital. |
+| **`Atendimento`** | `+0.8758` | **`0.1242`** | Fator protetor: neutraliza atritos operacionais menores. |
+
+#### 4.2.2. Cálculo do Limite de Dor com Decaimento Temporal Exponencial
+Ao iterar sobre o histórico de voos do passageiro em [`viagens_silver.parquet`](../data_lake/silver/viagens_silver.parquet), o pipeline avalia cada evento de disrupção operacional sofrido pelo cliente, combinando a gravidade do problema, o peso calibrado de dor $w_{\text{tipo}}$ e um modelo de esquecimento/superação temporal:
+
+1. **Gravidade do Evento**:
+   - *Cancelamento* (`situacao_voo == 'CANCELADO'` ou `atraso_enfrentado_minutos == -1.0`): $3.0 \times w_{\text{cancelamento}}$ (impacto crítico fixo).
+   - *Atrasos*: $w_{\text{atraso}} \times \ln(1 + \text{atraso\_minutos} / 15.0)$ (gravidade contínua e saturada logaritmicamente a cada quarto de hora).
+   - *Extravio de Bagagem* (`teve_bagagem_extraviada == True`): $2.5 \times w_{\text{bagagem}}$.
+   - *Falha no Check-in/App* (`falha_app_checkin == True`): $1.0 \times w_{\text{app}}$.
+2. **Decaimento Temporal Exponencial**:
+   $$\text{impacto\_evento} = \text{impacto\_bruto} \times \exp(-\lambda \cdot \text{dias\_decorridos})$$
+   onde $\lambda = 0.015$, resultando em uma meia-vida de atrito de aproximadamente $46$ dias. Problemas recentes impactam diretamente a decisão imediata de churn, enquanto atritos ocorridos há meses têm seu peso amortecido.
+3. **Score de Atrito Acumulado**:
+   $$\text{score\_atrito\_acumulado} = \sum_{\text{eventos}} \text{impacto\_evento}$$
+   Agrupado por `id_cliente` (média global na base: $19.58$, variando de $0.00$ a $202.28$).
+
+#### 4.2.3. Modelagem Preditiva com XGBoost e Target Sintético
+1. **Target Sintético via Probabilidade Logística**: Como dados reais de cancelamento de cadastro ou churn não existem em bases regulatórias abertas, foi calibrado um target latente `evadiu` ($\in \{0, 1\}$) governado pela interação entre atrito acumulado e inatividade (recência), com semente fixa `seed=42`:
+   $$\text{logit} = -0.85 + 1.45 \cdot z_{\text{atrito}} + 0.55 \cdot z_{\text{recencia}}$$
+   $$P(\text{churn\_latente}) = \frac{1}{1 + \exp(-\text{logit})}$$
+2. **Treinamento Supervisionado (`XGBClassifier`)**:
+   - Ajustado com hiperparâmetros robustos contra overfitting: `n_estimators=120`, `max_depth=4`, `learning_rate=0.05`, `subsample=0.85`, `colsample_bytree=0.85`, `eval_metric='logloss'`.
+   - Vetor de entrada: `['score_atrito_acumulado', 'recencia_dias', 'qtd_cancelamentos', 'qtd_atrasos_criticos', 'qtd_bagagem_extraviada', 'qtd_falha_app']`.
+3. **Probabilidade de Evasão (`risco_evasao`)**:
+   - Extraída continuamente através de `predict_proba(X)[:, 1]`, fornecendo uma régua calibrada de $0.0$ a $1.0$ (distribuição observada: mínimo de $6.70\%$, mediana de $21.66\%$, média de $30.87\%$ e máximo de $98.73\%$).
+   - Alimenta diretamente o Árbitro Matemático para determinar a urgência e o retorno financeiro (ROI) de qualquer proposta de retenção.
+
+---
+
+### 4.3. Cérebro 3: Efeito Manada e Segmentação de Personas (`gold_personas_builder.py`)
 
 O **Cérebro 3** utiliza aprendizado de máquina não-supervisionado (**K-Means**, via `scikit-learn`) para descobrir padrões naturais de comportamento de viagem na malha da Azul e quantificar o **Efeito Manada** (o impacto coletivo de grupos familiares ou corporativos compartilhando o mesmo código localizador `PNR`).
 
@@ -267,7 +314,15 @@ Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do p
 | `valor_monetario_expandido` | `float64` | Não | Valor monetário base acrescido das receitas anuais projetadas do Clube e Cartão Co-branded (`R$`). |
 | `clv_previsto` | `float64` | Não | Valor econômico futuro estimado do cliente para os próximos 12 meses via RFM Preditivo (`R$`). |
 
-### 5.5. Schema de `personas_clientes.parquet` (Camada Gold — Cérebro 3 — 5.000 registros)
+### 5.5. Schema de `evasao_clientes.parquet` (Camada Gold — Cérebro 2 — 5.000 registros)
+
+| Coluna | Tipo Físico (Parquet / Pandas) | Nulável | Regra de Domínio / Descrição Técnica |
+| :--- | :--- | :---: | :--- |
+| `id_cliente` | `string` (FK $\rightarrow$ `clientes_silver`) | Não | Identificador único persistente do cliente no CRM / TudoAzul. |
+| `score_atrito_acumulado` | `float64` | Não | Pontuação contínua de dor operacional acumulada pelo passageiro, calibrada por NLP e amortecida por decaimento temporal exponencial. |
+| `risco_evasao` | `float64` | Não | Probabilidade contínua estimada de evasão / churn ($0.0$ a $1.0$) calculada via `XGBClassifier`. |
+
+### 5.6. Schema de `personas_clientes.parquet` (Camada Gold — Cérebro 3 — 5.000 registros)
 
 | Coluna | Tipo Físico (Parquet / Pandas) | Nulável | Regra de Domínio / Descrição Técnica |
 | :--- | :--- | :---: | :--- |
@@ -295,6 +350,9 @@ Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do p
 # 4. Construção da Camada Gold — Cérebro 1 (Modelo de CLV e RFM Preditivo)
 .venv/bin/python -u back/gold_clv_builder.py
 
-# 5. Construção da Camada Gold — Cérebro 3 (Segmentação de Personas e Efeito Manada via K-Means)
+# 5. Construção da Camada Gold — Cérebro 2 (Risco de Evasão e Limite de Dor via XGBoost + NLP)
+.venv/bin/python -u back/gold_evasion_builder.py
+
+# 6. Construção da Camada Gold — Cérebro 3 (Segmentação de Personas e Efeito Manada via K-Means)
 .venv/bin/python -u back/gold_personas_builder.py
 ```
