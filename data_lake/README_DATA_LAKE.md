@@ -10,7 +10,7 @@ O repositório de dados adota estritamente o padrão **Medallion Architecture** 
 
 - **Camada Bronze (Raw / Imutável)**: Armazena os dados públicos extraídos da ANAC em seu estado **100% bruto e original** (sem filtros de negócio, sem descarte de registros e sem mutação de tipos) e os dados brutos de avaliações de clientes (Reclame Aqui / Lojas de Aplicativos) antes do processamento de linguagem natural.
 - **Camada Silver (Filtered, Normalized, Enriched & Relational CRM)**: Responsável pelo isolamento de domínio da companhia (`ICAO == 'AZU'`), normalização sintática e semântica, enriquecimento monetário por rota a partir dos microdados tarifários da ANAC, escoragem determinística de sentimento via NLP e modelagem relacional longitudinal de 12 meses.
-- **Camada Gold (Analytics & AI Feature Store)**: Tabelas analíticas agregadas (visão 360º do cliente, RFM, LTV e escoragem de risco de Churn/Atrito) prontas para consumo por modelos de Machine Learning e pela API FastAPI.
+- **Camada Gold (Analytics & AI Feature Store)**: Hospeda os três motores analíticos ("Cérebros") da solução (CLV/RFM Preditivo, Risco de Evasão/Atrito e Segmentação de Personas) e tabelas consolidadas para consumo de baixíssima latência pelo Árbitro Matemático e pela API FastAPI.
 
 ```text
 azul/data_lake/
@@ -23,7 +23,8 @@ azul/data_lake/
 │   ├── viagens_silver.parquet        # Histórico longitudinal (199.160 viagens x PNR x Atritos x Tarifa)
 │   └── avaliacoes_silver.parquet     # Avaliações enriquecidas com NLP (score_sentimento em [-1.0, 1.0])
 └── gold/
-    └── ...                           # Tabelas analíticas e Feature Store para modelos de IA e API
+    ├── clv_clientes.parquet          # Cérebro 1: RFM Preditivo e CLV projetado para 12 meses
+    └── ...                           # Cérebros 2 e 3 (Limite de Dor / Efeito Manada) e Feature Store
 ```
 
 ---
@@ -119,11 +120,64 @@ As funções `_compute_text_sentiment_score` e `process_silver_reviews` transfor
 
 ---
 
-## 4. Contrato de Dados (Data Contract — Camada Silver)
+## 4. Camada Gold (Modelos e Inteligência Analítica — Os 3 Cérebros)
 
-Para substituir os dados gerados pelo `silver_builder.py` por extrações produtivas do **Snowflake** da Azul sem alterar nenhuma linha do pipeline Gold/ML/API, os três arquivos Parquet abaixo devem respeitar rigorosamente os schemas a seguir em `azul/data_lake/silver/`:
+Responsável pelo Cérebro 1: [`azul/back/gold_clv_builder.py`](../back/gold_clv_builder.py)
 
-### 4.1. Schema de `clientes_silver.parquet` (5.000 registros)
+A camada **Gold** é o ápice analítico do Data Lake, projetada como uma **Feature Store Analítica** que hospeda os três motores matemáticos essenciais da solução de retenção:
+- **Cérebro 1 (Valor do Cliente):** Modelo de CLV com RFM Preditivo e Receitas Auxiliares. Define o teto econômico para qualquer investimento em retenção.
+- **Cérebro 2 (Limite de Dor):** Classificador Supervisionado (XGBoost + SHAP) que prevê a probabilidade de evasão ($0\%$ a $100\%$) a partir do atrito operacional ponderado por NLP.
+- **Cérebro 3 (Efeito Manada):** Clusterizador Não-Supervisionado (K-Means) que agrupa os clientes em personas comportamentais considerando o perfil de grupo e PNRs.
+
+### 4.1. Cérebro 1: Modelo de CLV e RFM Preditivo (`gold_clv_builder.py`)
+
+O **Cérebro 1** resolve um dos principais desafios de engenharia analítica em companhias aéreas: projetar o valor futuro do cliente (**CLV — Customer Lifetime Value**) para a janela móvel de **12 meses**, combinando histórico de voos com fluxos de receita recorrente não-aérea.
+
+#### 4.1.1. Extração dos Recortes RFM Tradicionais
+A partir do cruzamento de [`clientes_silver.parquet`](../data_lake/silver/clientes_silver.parquet) e [`viagens_silver.parquet`](../data_lake/silver/viagens_silver.parquet):
+- **Recência ($R$)**: Quantidade de dias corridos entre a data da última viagem efetivamente realizada (`partida_real`) e a data máxima de corte do Data Lake:
+  $$\text{recencia\_dias} = \text{round}\left(\frac{\max(\text{partida\_real}) - \text{partida\_real}_{\text{última}}}{86400}\right)$$
+  *(Para passageiros sem voos realizados no período, adota-se o valor conservador de 365 dias).*
+- **Frequência ($F$)**: Contagem estrita de voos operados pela Azul com `situacao_voo != 'CANCELADO'`. Voos cancelados representam atrito operacional, não frequência comercial ativa.
+- **Valor Monetário Base ($M_{\text{base}}$)**: Somatório direto do valor pago em tarifas aéreas nos voos realizados pelo cliente:
+  $$M_{\text{base}} = \sum \text{valor\_pago\_tarifa}$$
+
+#### 4.1.2. Premissas Financeiras de Receitas Auxiliares (Rigor Analítico)
+No modelo de negócio da Azul, passageiros de alta fidelidade geram margem financeira significativa além da compra do assento (Ancillary Revenues). Para refletir esse impacto sem dados proprietários de extrato bancário, o pipeline injeta duas constantes financeiras consolidadas:
+
+> [!IMPORTANT]
+> **Premissas Financeiras de Receita Auxiliar Anual:**
+> 1. `RECEITA_ANUAL_CLUBE = R$ 478.80`: Estimativa correspondente a 12 mensalidades do plano de entrada do **Clube TudoAzul** ($12 \times \text{R\$} 39,90$). Injetada quando `assinante_clube == True`.
+> 2. `RECEITA_ANUAL_COBRANDED = R$ 350.00`: Estimativa anualizada da margem líquida de intercâmbio transacional e anuidade auferida pela Azul no cartão de crédito co-branded **Azul Itaú**. Injetada quando `cartao_cobranded == True`.
+
+O **Valor Monetário Expandido ($M_{\text{expandido}}$)** é calculado por:
+$$M_{\text{expandido}} = M_{\text{base}} + (\mathbb{I}_{\text{clube}} \times 478.80) + (\mathbb{I}_{\text{cobranded}} \times 350.00)$$
+
+#### 4.1.3. Heurística Matemática do RFM Preditivo (Projeção para 12 Meses)
+Em vez de utilizar bibliotecas de caixa preta como `lifetimes` (BG/NBD) — que introduzem instabilidades numéricas e premissas gaussianas inadequadas para bases sintéticas calibradas —, implementamos uma heurística preditiva robusta e determinística baseada na teoria microeconômica de fidelidade aérea.
+
+O modelo evita o erro ingênuo de somar métricas passadas ou assumir continuidade perpétua. Ele calibra o valor histórico através de dois moduladores comportamentais:
+
+1. **Decaimento Exponencial de Recência ($f_R$)**:
+   $$f_R = \exp\left(-\frac{\text{recencia\_dias}}{365}\right)$$
+   - Modela a taxa de retenção espontânea do cliente. Clientes que voaram muito recentemente ($\text{recencia\_dias} \to 0$) mantêm $f_R \approx 1.00$ ($100\%$ do potencial econômico ativo).
+   - À medida que o cliente se torna inativo, a probabilidade de reengajamento decai exponencialmente ao longo de um horizonte de 12 meses.
+2. **Elasticidade Logarítmica de Frequência ($f_F$)**:
+   $$f_F = 1.0 + 0.15 \times \frac{\ln(1 + \text{frequencia})}{\ln(1 + \text{mediana}(\text{frequencia}))}$$
+   - Incorpora a **inércia de viagem e hábito**, premiando passageiros frequentes com um fator de expansão sobre o comportamento futuro.
+   - A função logarítmica $\ln(1 + F)$ impõe o princípio econômico de **retornos marginais decrescentes**, evitando que passageiros corporativos ultra-frequentes recebam projeções financeiramente distorcidas ou infinitas.
+3. **Cálculo Consolidado do `clv_previsto`**:
+   $$\text{clv\_previsto} = \text{round}\left(M_{\text{expandido}} \times f_R \times f_F, 2\right)$$
+
+Essa formulação garante à banca avaliadora que o Árbitro de Retenção tomará decisões baseadas no **valor residual e esperado** do passageiro, protegendo a companhia de conceder benefícios caros a passageiros que já entraram em dormência/churn natural.
+
+---
+
+## 5. Contrato de Dados (Data Contracts — Camadas Silver e Gold)
+
+Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do pipeline analítico, os arquivos Parquet devem seguir rigorosamente as especificações abaixo:
+
+### 5.1. Schema de `clientes_silver.parquet` (5.000 registros)
 
 | Coluna | Tipo Físico (Parquet / Pandas) | Nulável | Regra de Domínio / Descrição Técnica |
 | :--- | :--- | :---: | :--- |
@@ -136,7 +190,7 @@ Para substituir os dados gerados pelo `silver_builder.py` por extrações produt
 | `consentimento_marketing` | `bool` | Não | Opt-in válido de comunicação proativa/promocional conforme LGPD. |
 | `peso_viagem` | `float64` | Não | Fator de recorrência anual associado ao tier (`1.0`, `5.0`, `10.0`, `20.0`). |
 
-### 4.2. Schema de `viagens_silver.parquet` (199.160 registros)
+### 5.2. Schema de `viagens_silver.parquet` (199.160 registros)
 
 | Coluna | Tipo Físico (Parquet / Pandas) | Nulável | Regra de Domínio / Descrição Técnica |
 | :--- | :--- | :---: | :--- |
@@ -153,7 +207,7 @@ Para substituir os dados gerados pelo `silver_builder.py` por extrações produt
 | `falha_app_checkin` | `bool` | Não | `True` se houve falha de telemetria reportada no app durante o check-in. |
 | `valor_pago_tarifa` | `float64` | Não | Valor monetário em Reais (`R$`) obtido da tarifa média ANAC para a rota `(origem, destino)`, com fallback para a média global (`R$ 927,45`). |
 
-### 4.3. Schema de `avaliacoes_silver.parquet` (500 registros)
+### 5.3. Schema de `avaliacoes_silver.parquet` (500 registros)
 
 | Coluna | Tipo Físico (Parquet / Pandas) | Nulável | Regra de Domínio / Descrição Técnica |
 | :--- | :--- | :---: | :--- |
@@ -163,17 +217,31 @@ Para substituir os dados gerados pelo `silver_builder.py` por extrações produt
 | `nota_cliente` | `int64` | Não | Nota discreta atribuída pelo passageiro no canal de origem (`1` a `5`). |
 | `score_sentimento` | `float64` | Não | Polaridade contínua calculada via NLP no intervalo `[-1.0, 1.0]` (`-1.0` = extremamente negativo, `+1.0` = extremamente positivo). |
 
+### 5.4. Schema de `clv_clientes.parquet` (Camada Gold — 5.000 registros)
+
+| Coluna | Tipo Físico (Parquet / Pandas) | Nulável | Regra de Domínio / Descrição Técnica |
+| :--- | :--- | :---: | :--- |
+| `id_cliente` | `string` (FK $\rightarrow$ `clientes_silver`) | Não | Identificador único persistente do cliente no CRM / TudoAzul. |
+| `recencia_dias` | `int64` | Não | Dias decorridos desde o último voo realizado até a data de referência da base. |
+| `frequencia` | `int64` | Não | Total acumulado de voos realizados pelo cliente (exclui voos cancelados). |
+| `valor_monetario_base` | `float64` | Não | Somatório do valor pago em tarifas aéreas ANAC nos voos realizados (`R$`). |
+| `valor_monetario_expandido` | `float64` | Não | Valor monetário base acrescido das receitas anuais projetadas do Clube e Cartão Co-branded (`R$`). |
+| `clv_previsto` | `float64` | Não | Valor econômico futuro estimado do cliente para os próximos 12 meses via RFM Preditivo (`R$`). |
+
 ---
 
-## 5. Ordem de Execução do Pipeline (Bronze $\rightarrow$ Silver)
+## 6. Ordem de Execução do Pipeline (Bronze $\rightarrow$ Silver $\rightarrow$ Gold)
 
 ```bash
-# 1. Ingestão de dados públicos brutos da ANAC (VRA e Tarifas) na Bronze
+# 1. Ingestão de dados públicos brutos da ANAC (VRA e Tarifas) na Camada Bronze
 .venv/bin/python -u back/ingestion.py
 
-# 2. Geração determinística de avaliações brutas de passageiros na Bronze
+# 2. Geração determinística de avaliações brutas de passageiros na Camada Bronze
 .venv/bin/python -u back/generate_reviews_bronze.py
 
 # 3. Construção da Camada Silver (Filtro AZU, Normalização, Clientes, Viagens+Tarifas e NLP de Avaliações)
 .venv/bin/python -u back/silver_builder.py
+
+# 4. Construção da Camada Gold — Cérebro 1 (Modelo de CLV e RFM Preditivo)
+.venv/bin/python -u back/gold_clv_builder.py
 ```
