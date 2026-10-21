@@ -5,6 +5,9 @@ from fastapi import Depends
 from back.app.config import Settings, get_settings
 from back.app.infrastructure.analytics.duckdb_client import DuckDBClient, get_duckdb_client
 from back.app.infrastructure.integrations.decision_executor import DecisionExecutorAdapter
+from back.app.infrastructure.persistence.audit_store import AuditStore
+from back.app.modules.audit.repository import AuditRepository
+from back.app.modules.audit.service import AuditService
 from back.app.modules.dashboard.repository import DashboardRepository
 from back.app.modules.dashboard.service import DashboardService
 from back.app.modules.moments.repository import MomentsRepository
@@ -54,13 +57,39 @@ def get_executor_adapter(settings: Settings = Depends(get_settings)) -> Decision
 ExecutorAdapterDep = Annotated[DecisionExecutorAdapter, Depends(get_executor_adapter)]
 
 
+def get_audit_store(settings: Settings = Depends(get_settings)) -> AuditStore:
+    return AuditStore(settings=settings)
+
+
+AuditStoreDep = Annotated[AuditStore, Depends(get_audit_store)]
+
+
+def get_audit_repository(
+    audit_store: AuditStore = Depends(get_audit_store),
+    duckdb_client: DuckDBClient = Depends(get_duckdb),
+) -> AuditRepository:
+    return AuditRepository(audit_store=audit_store, duckdb_client=duckdb_client)
+
+
+AuditRepoDep = Annotated[AuditRepository, Depends(get_audit_repository)]
+
+
+def get_audit_service(repository: AuditRepository = Depends(get_audit_repository)) -> AuditService:
+    return AuditService(repository=repository)
+
+
+AuditServiceDep = Annotated[AuditService, Depends(get_audit_service)]
+
+
 def get_simulation_service(
     moments_service: MomentsService = Depends(get_moments_service),
     executor_adapter: DecisionExecutorAdapter = Depends(get_executor_adapter),
+    audit_repository: AuditRepository = Depends(get_audit_repository),
 ) -> SimulationService:
     return SimulationService(
         moments_service=moments_service,
         executor_adapter=executor_adapter,
+        audit_repository=audit_repository,
     )
 
 
