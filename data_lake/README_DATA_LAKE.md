@@ -24,7 +24,8 @@ azul/data_lake/
 │   └── avaliacoes_silver.parquet     # Avaliações enriquecidas com NLP (score_sentimento em [-1.0, 1.0])
 └── gold/
     ├── clv_clientes.parquet          # Cérebro 1: RFM Preditivo e CLV projetado para 12 meses
-    └── ...                           # Cérebros 2 e 3 (Limite de Dor / Efeito Manada) e Feature Store
+    ├── personas_clientes.parquet     # Cérebro 3: Efeito Manada e Segmentação de Personas (K-Means)
+    └── ...                           # Cérebro 2 (Limite de Dor / XGBoost + SHAP) e Feature Store
 ```
 
 ---
@@ -122,7 +123,8 @@ As funções `_compute_text_sentiment_score` e `process_silver_reviews` transfor
 
 ## 4. Camada Gold (Modelos e Inteligência Analítica — Os 3 Cérebros)
 
-Responsável pelo Cérebro 1: [`azul/back/gold_clv_builder.py`](../back/gold_clv_builder.py)
+- Responsável pelo Cérebro 1 (CLV / RFM Preditivo): [`azul/back/gold_clv_builder.py`](../back/gold_clv_builder.py)
+- Responsável pelo Cérebro 3 (Efeito Manada / Personas): [`azul/back/gold_personas_builder.py`](../back/gold_personas_builder.py)
 
 A camada **Gold** é o ápice analítico do Data Lake, projetada como uma **Feature Store Analítica** que hospeda os três motores matemáticos essenciais da solução de retenção:
 - **Cérebro 1 (Valor do Cliente):** Modelo de CLV com RFM Preditivo e Receitas Auxiliares. Define o teto econômico para qualquer investimento em retenção.
@@ -173,6 +175,43 @@ Essa formulação garante à banca avaliadora que o Árbitro de Retenção tomar
 
 ---
 
+### 4.2. Cérebro 3: Efeito Manada e Segmentação de Personas (`gold_personas_builder.py`)
+
+O **Cérebro 3** utiliza aprendizado de máquina não-supervisionado (**K-Means**, via `scikit-learn`) para descobrir padrões naturais de comportamento de viagem na malha da Azul e quantificar o **Efeito Manada** (o impacto coletivo de grupos familiares ou corporativos compartilhando o mesmo código localizador `PNR`).
+
+#### 4.2.1. Explicabilidade das Features Comportamentais e Decisão de Negócio
+A partir do cruzamento de [`clientes_silver.parquet`](../data_lake/silver/clientes_silver.parquet) e [`viagens_silver.parquet`](../data_lake/silver/viagens_silver.parquet), são extraídas **4 features estritamente comportamentais** por `id_cliente`:
+
+1. **`frequencia_total` (`int64`)**: Volume total de passagens vinculadas ao cliente no histórico longitudinal.
+2. **`tamanho_medio_pnr` (`float64` — *Efeito Manada*)**: Quantidade média de passageiros distintos que viajaram sob o mesmo localizador (`pnr`) do cliente. Captura diretamente a dinâmica de grupo: se um passageiro com `tamanho_medio_pnr` elevado sofre uma disrupção severa e abandona a companhia, a Azul perde toda a reserva familiar/grupo simultaneamente.
+3. **`percentual_voos_fds` (`float64`)**: Percentual (`0.0%` a `100.0%`) de voos do passageiro cuja `partida_real` ocorreu no sábado ou no domingo (`dayofweek in [5, 6]`), diferenciando o tráfego de lazer/turismo do tráfego corporativo de dias úteis.
+4. **`antecedencia_media_compra` (`float64`)**: Janela média em dias entre a emissão do bilhete e o embarque (com *fallback* determinístico `seed=42` calibrado no intervalo de `5.0` a `60.0` dias quando a telemetria de emissão não está presente na fonte).
+
+> [!IMPORTANT]
+> **Decisão Arquitetural de Negócio (Exclusão de Variáveis Monetárias e CLV no K-Means):**
+> Nenhuma métrica financeira (`valor_pago_tarifa`, `valor_monetario_expandido` ou `clv_previsto`) é incluída no vetor de entrada do K-Means. Incluir variáveis monetárias na clusterização comportamental colapsaria os eixos de distância euclidiana em uma divisão trivial entre **"ricos e pobres"** (que já é o papel do Cérebro 1). Ao isolar apenas variáveis de hábito de voo, calendário, antecedência e tamanho de grupo (`PNR`), o K-Means descobre **arquétipos reais de jornada**, permitindo personalizar o *tom* e a *natureza* da oferta do Agente LLM independentemente do bolso do passageiro.
+
+#### 4.2.2. Padronização, Clusterização e Heurística dos Centroides
+1. **Padronização Z-Score (`StandardScaler`)**: Todas as 4 features são normalizadas ($\mu = 0, \sigma = 1$) para impedir que a magnitude absoluta de `frequencia_total` ou `percentual_voos_fds` domine a distância relativa de `tamanho_medio_pnr`.
+2. **Treinamento Determinístico (`KMeans(n_clusters=4, random_state=42, n_init=10)`)**: Particiona a base em 4 grupos ortogonais de comportamento.
+3. **Heurística Determinística de Nomeação pelos Centroides (`_assign_persona_names`)**:
+   - Em vez de rotular clusters manualmente com índices arbitrários (`Cluster 0`, `Cluster 1`), o algoritmo inspeciona a matriz de centroides padronizados sem reposição para atribuir bijetivamente os 4 arquétipos de negócio:
+     1. **`'Executivo Frequente'`**: Cluster com o maior centroide em `frequencia_total` (alta recorrência anual na malha).
+     2. **`'Família/Lazer'`**: Dentre os clusters remanescentes, aquele com a maior pontuação composta de Efeito Manada e lazer ($\text{centroide}(\text{tamanho\_medio\_pnr}) + \text{centroide}(\text{percentual\_voos\_fds})$).
+     3. **`'Caçador de Pontos'`**: Dentre os remanescentes, o cluster com o maior centroide em `antecedencia_media_compra` (planejamento antecipado característico de emissões estratégicas e acúmulo de milhas).
+     4. **`'Viajante Regional'`**: Cluster remanescente que consolida o passageiro pendular/regional de média antecedência e frequência moderada.
+
+#### 4.2.3. Distribuição e Volumetria dos Clusters Gerados (`seed=42`)
+
+| Persona Identificada | Volume de Clientes | Participação (`%`) | Média `frequencia_total` | Média `antecedencia_media_compra` | Média `tamanho_medio_pnr` | Média `percentual_voos_fds` |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **`Viajante Regional`** | `1.729` | `34,58%` | `26,85` voos | `18,88` dias | `2,56` pax/PNR | `36,60%` |
+| **`Família/Lazer`** | `1.594` | `31,88%` | `26,88` voos | `46,35` dias | `2,67` pax/PNR | `36,97%` |
+| **`Caçador de Pontos`** | `1.203` | `24,06%` | `17,93` voos | `32,68` dias | `2,79` pax/PNR | `30,78%` |
+| **`Executivo Frequente`** | `474` | `9,48%` | `186,31` voos | `32,58` dias | `2,63` pax/PNR | `35,05%` |
+
+---
+
 ## 5. Contrato de Dados (Data Contracts — Camadas Silver e Gold)
 
 Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do pipeline analítico, os arquivos Parquet devem seguir rigorosamente as especificações abaixo:
@@ -217,7 +256,7 @@ Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do p
 | `nota_cliente` | `int64` | Não | Nota discreta atribuída pelo passageiro no canal de origem (`1` a `5`). |
 | `score_sentimento` | `float64` | Não | Polaridade contínua calculada via NLP no intervalo `[-1.0, 1.0]` (`-1.0` = extremamente negativo, `+1.0` = extremamente positivo). |
 
-### 5.4. Schema de `clv_clientes.parquet` (Camada Gold — 5.000 registros)
+### 5.4. Schema de `clv_clientes.parquet` (Camada Gold — Cérebro 1 — 5.000 registros)
 
 | Coluna | Tipo Físico (Parquet / Pandas) | Nulável | Regra de Domínio / Descrição Técnica |
 | :--- | :--- | :---: | :--- |
@@ -227,6 +266,17 @@ Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do p
 | `valor_monetario_base` | `float64` | Não | Somatório do valor pago em tarifas aéreas ANAC nos voos realizados (`R$`). |
 | `valor_monetario_expandido` | `float64` | Não | Valor monetário base acrescido das receitas anuais projetadas do Clube e Cartão Co-branded (`R$`). |
 | `clv_previsto` | `float64` | Não | Valor econômico futuro estimado do cliente para os próximos 12 meses via RFM Preditivo (`R$`). |
+
+### 5.5. Schema de `personas_clientes.parquet` (Camada Gold — Cérebro 3 — 5.000 registros)
+
+| Coluna | Tipo Físico (Parquet / Pandas) | Nulável | Regra de Domínio / Descrição Técnica |
+| :--- | :--- | :---: | :--- |
+| `id_cliente` | `string` (FK $\rightarrow$ `clientes_silver`) | Não | Identificador único persistente do cliente no CRM / TudoAzul. |
+| `frequencia_total` | `int64` | Não | Contagem total de voos do passageiro na malha histórica. |
+| `antecedencia_media_compra` | `float64` | Não | Antecedência média estimada de compra em dias (`5.0` a `60.0` dias). |
+| `tamanho_medio_pnr` | `float64` | Não | Média de passageiros únicos compartilhando o mesmo `pnr` do cliente (*Efeito Manada*). |
+| `percentual_voos_fds` | `float64` | Não | Percentual (`0.0` a `100.0`) de voos realizados aos sábados e domingos. |
+| `persona` | `string` | Não | Arquétipo atribuído via K-Means: `'Executivo Frequente'`, `'Família/Lazer'`, `'Caçador de Pontos'`, `'Viajante Regional'`. |
 
 ---
 
@@ -244,4 +294,7 @@ Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do p
 
 # 4. Construção da Camada Gold — Cérebro 1 (Modelo de CLV e RFM Preditivo)
 .venv/bin/python -u back/gold_clv_builder.py
+
+# 5. Construção da Camada Gold — Cérebro 3 (Segmentação de Personas e Efeito Manada via K-Means)
+.venv/bin/python -u back/gold_personas_builder.py
 ```
