@@ -42,7 +42,9 @@ export interface Momento {
 }
 
 export interface SimularPayload {
-  momento_id: string;
+  momento_id?: string;
+  id_cliente?: string;
+  cliente_id?: string;
 }
 
 export interface RankingAcao {
@@ -55,12 +57,24 @@ export interface DecisaoFinal {
   acao_vencedora: string;
   mensagem_llm: string;
   regra_rag_consultada: string;
+  notificacao_interna?: string;
+  mensagem_crm?: string;
 }
 
 export interface SimularResponse {
   uplift_status: string;
   ranking_acoes: RankingAcao[];
   decisao_final: DecisaoFinal;
+  dados_cliente?: {
+    id_cliente: string;
+    tier_fidelidade: string;
+    persona: string;
+    clv_previsto: number;
+    risco_evasao: number;
+    score_atrito_acumulado?: number;
+  };
+  notificacao_interna?: string;
+  mensagem_crm?: string;
 }
 
 // ==========================================

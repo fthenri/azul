@@ -95,11 +95,17 @@ class DecisionExecutorAdapter:
             avaliacoes_uplift = decisao_arbitro["avaliacoes_uplift"]
 
             contexto_rag = self.get_contexto_rag()
-            mensagem_llm = gerar_mensagem_llm(
+            resultado_llm = gerar_mensagem_llm(
                 perfil_cliente=perfil,
                 acao_vencedora=acao_vencedora,
                 contexto_rag=contexto_rag,
             )
+            if isinstance(resultado_llm, dict):
+                notificacao_interna = resultado_llm.get("notificacao_interna", "")
+                mensagem_crm = resultado_llm.get("mensagem_crm", "")
+            else:
+                notificacao_interna = ""
+                mensagem_crm = str(resultado_llm)
         except Exception as exc:
             logger.exception("Falha durante o cálculo de arbitragem ou LLM: %s", exc)
             raise SimulationExecutionError(f"Erro na execução da simulação: {exc}") from exc
@@ -123,12 +129,26 @@ class DecisionExecutorAdapter:
         regra_consultada = REGRAS_RAG.get(acao_vencedora, "Diretriz padrão do programa Azul Fidelidade.")
         uplift_status = "Persuadível" if (acao_vencedora != "NAO_FAZER_NADA" and decisao_arbitro["retorno_liquido"] > 0) else "Não Persuadível"
 
+        dados_cliente = {
+            "id_cliente": perfil.get("id_cliente"),
+            "tier_fidelidade": perfil.get("tier_fidelidade"),
+            "persona": perfil.get("persona"),
+            "clv_previsto": perfil.get("clv_previsto"),
+            "risco_evasao": perfil.get("risco_evasao"),
+            "score_atrito_acumulado": perfil.get("score_atrito_acumulado"),
+        }
+
         return SimularResponse(
             uplift_status=uplift_status,
             ranking_acoes=ranking_acoes,
             decisao_final=DecisaoFinal(
                 acao_vencedora=rotulo_vencedora,
-                mensagem_llm=mensagem_llm,
+                mensagem_llm=mensagem_crm,
                 regra_rag_consultada=regra_consultada,
+                notificacao_interna=notificacao_interna,
+                mensagem_crm=mensagem_crm,
             ),
+            dados_cliente=dados_cliente,
+            notificacao_interna=notificacao_interna,
+            mensagem_crm=mensagem_crm,
         )

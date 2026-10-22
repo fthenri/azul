@@ -67,8 +67,8 @@ class MomentsRepository:
         if row_cli and row_cli.get("id_cliente"):
             return str(row_cli["id_cliente"])
 
-        # 3. Fallback especial para cenários de demo previstos em contract.md (ex: 'mom_789')
-        if clean_id in ("mom_789", "mom_790", "mom_791"):
+        # 3. Fallback especial para cenários de demo previstos em contract.md (ex: 'mom_789', 'cli_123')
+        if clean_id in ("mom_789", "mom_790", "mom_791", "cli_123", "cli_456", "cli_789"):
             sql_demo = """
             SELECT c.id_cliente 
             FROM gold_clv c

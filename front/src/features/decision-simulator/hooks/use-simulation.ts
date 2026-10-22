@@ -12,7 +12,7 @@ export function useSimulation() {
   const [selectedMomento, setSelectedMomento] = useState<Momento | null>(null);
   const [simulationResult, setSimulationResult] = useState<SimularResponse | null>(null);
 
-  // Consulta fila de momentos detectados
+  // Conexão de estado: chamada à API para consulta da fila de momentos reais
   const momentosQuery = useQuery<Momento[], Error>({
     queryKey: ["momentos", isDemoMode],
     queryFn: async () => {
@@ -21,7 +21,7 @@ export function useSimulation() {
     },
   });
 
-  // Mutação para disparar simulação no backend
+  // Conexão de estado: chamada à API para execução da simulação do motor
   const simularMutation = useMutation<SimularResponse, ApiError, string>({
     mutationFn: async (momentoId: string) => {
       if (isDemoMode) {

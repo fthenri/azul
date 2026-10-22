@@ -20,7 +20,6 @@ DEFAULT_SEED: int = 42
 TOTAL_CLIENTS: int = 5000
 MAX_CHRONOLOGICAL_FLIGHTS: int = 8000
 
-# Movido da Bronze para a Silver: Código OACI alvo e candidatos de coluna para isolamento da malha da Azul.
 TARGET_AIRLINE_CODE: str = "AZU"
 AIRLINE_COLUMN_CANDIDATES: tuple[str, ...] = (
     "ICAO Empresa Aérea",
@@ -56,11 +55,18 @@ POINTS_RANGE_BY_TIER: dict[str, tuple[int, int]] = {
     "Diamante": (50_000, 200_000),
 }
 
-TRIP_WEIGHT_BY_TIER: dict[str, float] = {
-    "Basico": 1.0,
-    "Topazio": 5.0,
-    "Safira": 10.0,
-    "Diamante": 20.0,
+TRIP_LOGNORMAL_PARAMS_BY_TIER: dict[str, tuple[float, float]] = {
+    "Basico": (0.45, 0.55),
+    "Topazio": (1.45, 0.45),
+    "Safira": (2.30, 0.40),
+    "Diamante": (3.05, 0.35),
+}
+
+DISRUPTION_SENSITIVITY_BY_TIER: dict[str, float] = {
+    "Basico": 0.85,
+    "Topazio": 1.05,
+    "Safira": 1.25,
+    "Diamante": 1.45,
 }
 
 HIGH_IMAGE_RISK_PROB: float = 0.02
@@ -69,7 +75,6 @@ BAGGAGE_LOSS_BASE_PROB: float = 0.01
 BAGGAGE_LOSS_DISRUPTION_PROB: float = 0.03
 APP_CHECKIN_FAILURE_PROB: float = 0.02
 
-# Adicionado: Valor padrão de tarifa e léxico determinístico em português para cálculo de `score_sentimento` [-1.0, 1.0].
 DEFAULT_FALLBACK_FARE: float = 650.0
 SENTIMENT_POSITIVE_LEXICON: dict[str, float] = {
     "impecável": 0.45,
@@ -141,7 +146,6 @@ def _find_column(df: pd.DataFrame, candidates: tuple[str, ...]) -> str:
     raise KeyError(f"Nenhuma das colunas esperadas {candidates} encontrada em {list(df.columns)}")
 
 
-# Movido da Bronze para a Silver: Detecta dinamicamente a coluna de companhia aérea nos dados brutos.
 def _detect_airline_column(df: pd.DataFrame, airline_code: str = TARGET_AIRLINE_CODE) -> str:
     normalized_map = {col.strip().lower(): col for col in df.columns}
     for candidate in AIRLINE_COLUMN_CANDIDATES:
@@ -170,13 +174,11 @@ def _detect_airline_column(df: pd.DataFrame, airline_code: str = TARGET_AIRLINE_
     )
 
 
-# Adicionado na Silver: Filtra os registros brutos mantendo exclusivamente os voos da Azul (ICAO == 'AZU').
 def filter_azul_flights(
     df_raw_flights: pd.DataFrame,
     airline_code: str = TARGET_AIRLINE_CODE,
 ) -> pd.DataFrame:
     df_checked = df_raw_flights.copy()
-    # Normaliza nomes de colunas brutos (remove BOM e espaços) antes da detecção da coluna ICAO.
     df_checked.columns = [str(col).strip().lstrip("\ufeff").strip('"') for col in df_checked.columns]
     airline_col = _detect_airline_column(df_checked, airline_code=airline_code)
     mask_azul = df_checked[airline_col].astype(str).str.strip().str.upper() == airline_code.upper()
@@ -191,7 +193,6 @@ def filter_azul_flights(
     return df_azul
 
 
-# Adicionado na Silver: Etapa explícita de normalização de dados (tratamento de nulos e padronização de strings).
 def normalize_silver_flights(df_azul_flights: pd.DataFrame) -> pd.DataFrame:
     df = df_azul_flights.copy()
 
@@ -202,17 +203,14 @@ def normalize_silver_flights(df_azul_flights: pd.DataFrame) -> pd.DataFrame:
     col_real = _find_column(df, ("Partida Real", "Partida Realizada", "partida_real", "partida_realizada"))
     col_situacao = _find_column(df, ("Situação Voo", "Situacao Voo", "situacao_voo"))
 
-    # Padronização de strings: remoção de espaços excedentes, tratamento de nulos e caixa alta em códigos/status.
     df[col_voo] = df[col_voo].fillna("0000").astype(str).str.strip().str.upper()
     df[col_origem] = df[col_origem].fillna("XXXX").astype(str).str.strip().str.upper()
     df[col_destino] = df[col_destino].fillna("XXXX").astype(str).str.strip().str.upper()
     df[col_situacao] = df[col_situacao].fillna("REALIZADO").astype(str).str.strip().str.upper()
 
-    # Tratamento de nulos em strings de data/hora antes do parsing temporal.
     df[col_prevista] = df[col_prevista].replace({"": np.nan, "nan": np.nan, "None": np.nan})
     df[col_real] = df[col_real].replace({"": np.nan, "nan": np.nan, "None": np.nan})
 
-    # Remove apenas registros sem Partida Prevista válida, preservando integralmente voos CANCELADOS.
     dt_prevista = pd.to_datetime(df[col_prevista], errors="coerce")
     df["_dt_prevista_sort"] = dt_prevista
     df = df[df["_dt_prevista_sort"].notna()].copy()
@@ -220,7 +218,6 @@ def normalize_silver_flights(df_azul_flights: pd.DataFrame) -> pd.DataFrame:
     dt_prevista_valid = pd.to_datetime(df[col_prevista], errors="coerce")
     dt_real_valid = pd.to_datetime(df[col_real], errors="coerce")
 
-    # Padroniza a representação textual ISO ('YYYY-MM-DD HH:MM:SS') para escrita consistente na Silver.
     df[col_prevista] = dt_prevista_valid.dt.strftime("%Y-%m-%d %H:%M:%S")
     df[col_real] = dt_real_valid.dt.strftime("%Y-%m-%d %H:%M:%S").fillna("")
 
@@ -258,15 +255,23 @@ def generate_silver_clients(
     cartao_cobranded = np_rng.random(num_clients) < cobranded_probs
 
     pontos_saldo = np.empty(num_clients, dtype=np.int64)
+    peso_viagem = np.empty(num_clients, dtype=np.float64)
+
     for tier_name, (low_pts, high_pts) in POINTS_RANGE_BY_TIER.items():
         mask = tiers == tier_name
         count_tier = int(mask.sum())
         if count_tier > 0:
             pontos_saldo[mask] = np_rng.integers(low_pts, high_pts + 1, size=count_tier)
+            # Injeção de variância log-normal individual no peso de propensão a viagens (maioria 1-3 voos, cauda longa realista sem clones).
+            mu_log, sigma_log = TRIP_LOGNORMAL_PARAMS_BY_TIER[tier_name]
+            peso_viagem[mask] = np.clip(
+                np_rng.lognormal(mean=mu_log, sigma=sigma_log, size=count_tier),
+                0.5,
+                45.0,
+            ).round(4)
 
     perfil_alto_risco_imagem = np_rng.random(num_clients) < HIGH_IMAGE_RISK_PROB
     consentimento_marketing = np_rng.random(num_clients) < MARKETING_CONSENT_PROB
-    peso_viagem = np.array([TRIP_WEIGHT_BY_TIER[t] for t in tiers], dtype=np.float64)
 
     df_clients = pd.DataFrame(
         {
@@ -303,7 +308,6 @@ def load_and_prepare_bronze_flights(
     df_raw_flights = pd.read_parquet(bronze_parquet_path)
     logger.info("Total de voos brutos na Bronze: %d", len(df_raw_flights))
 
-    # Alterado: Aplica o filtro de isolamento da Azul (ICAO == 'AZU') e a normalização na entrada da Silver.
     df_azul_flights = filter_azul_flights(df_raw_flights, airline_code=TARGET_AIRLINE_CODE)
     df_normalized = normalize_silver_flights(df_azul_flights)
 
@@ -328,7 +332,7 @@ def load_and_prepare_bronze_flights(
 def generate_silver_trips(
     df_flights: pd.DataFrame,
     df_clients: pd.DataFrame,
-    pnrs_per_flight_range: tuple[int, int] = (5, 15),
+    pnrs_per_flight_range: tuple[int, int] = (1, 3),
     seed: int = DEFAULT_SEED,
 ) -> pd.DataFrame:
     np_rng = np.random.default_rng(seed=seed)
@@ -350,13 +354,22 @@ def generate_silver_trips(
     col_situacao = _find_column(df_flights, ("Situação Voo", "Situacao Voo", "situacao_voo"))
 
     client_ids_array = df_clients["id_cliente"].to_numpy()
-    weights = df_clients["peso_viagem"].to_numpy(dtype=np.float64)
-    prob_weights = weights / weights.sum()
-    num_total_clients = len(client_ids_array)
+    tiers_array = df_clients["tier_fidelidade"].to_numpy()
+    base_weights = df_clients["peso_viagem"].to_numpy(dtype=np.float64)
+    tier_disruption_mult = np.array(
+        [DISRUPTION_SENSITIVITY_BY_TIER.get(str(t), 1.0) for t in tiers_array],
+        dtype=np.float64,
+    )
 
+    prob_weights_normal = base_weights / base_weights.sum()
+    # Ponderação não-linear de exposição a voos com atraso/cancelamento condicionada ao tier_fidelidade e à frequência log-normal.
+    disruption_weights = base_weights * tier_disruption_mult
+    prob_weights_disrupted = disruption_weights / disruption_weights.sum()
+
+    num_total_clients = len(client_ids_array)
     num_flights = len(df_flights)
     logger.info(
-        "Iniciando sorteio longitudinal ponderado (RFM) para %d voos...",
+        "Iniciando sorteio longitudinal log-normal para %d voos...",
         num_flights,
     )
 
@@ -366,7 +379,8 @@ def generate_silver_trips(
         size=num_flights,
     )
     total_pnrs = int(pnrs_per_flight.sum())
-    group_sizes_all = np_rng.integers(1, 5, size=total_pnrs)
+    # Amostragem não-uniforme do tamanho do grupo PNR (concentração em 1-2 passageiros para viajantes solo/executivos e cauda 3-4 para famílias).
+    group_sizes_all = np_rng.choice([1, 2, 3, 4], size=total_pnrs, p=[0.48, 0.27, 0.15, 0.10])
 
     pnr_chars = np_rng.choice(PNR_ALPHABET, size=(total_pnrs + 5000, 6))
     unique_pnrs = pd.unique(np.array(["".join(row) for row in pnr_chars]))
@@ -380,6 +394,7 @@ def generate_silver_trips(
     flight_records = df_flights.to_dict(orient="records")
 
     all_client_ids: list[np.ndarray] = []
+    all_client_tiers: list[np.ndarray] = []
     all_pnrs: list[np.ndarray] = []
     all_voos: list[str] = []
     all_origens: list[str] = []
@@ -400,14 +415,19 @@ def generate_silver_trips(
         total_pax_in_flight = int(flight_group_sizes.sum())
         effective_pax = min(total_pax_in_flight, num_total_clients)
 
-        # Sorteio longitudinal sem reposição no mesmo voo ponderado por `peso_viagem` (RFM).
+        atraso_voo = float(f_dict["atraso_enfrentado_minutos"])
+        situacao_voo = str(f_dict[col_situacao])
+        is_disrupted_flight = (atraso_voo > 15.0) or (atraso_voo < 0.0) or (situacao_voo == "CANCELADO")
+        active_probs = prob_weights_disrupted if is_disrupted_flight else prob_weights_normal
+
         chosen_indices = np_rng.choice(
             num_total_clients,
             size=effective_pax,
             replace=False,
-            p=prob_weights,
+            p=active_probs,
         )
         all_client_ids.append(client_ids_array[chosen_indices])
+        all_client_tiers.append(tiers_array[chosen_indices])
         all_pnrs.append(np.repeat(flight_pnr_codes, flight_group_sizes)[:effective_pax])
 
         flight_pax_counts.append(effective_pax)
@@ -416,23 +436,67 @@ def generate_silver_trips(
         all_destinos.append(str(f_dict[col_destino]))
         all_previstas.append(str(f_dict[col_prevista]))
         all_reais.append(str(f_dict[col_real]))
-        all_situacoes.append(str(f_dict[col_situacao]))
-        all_atrasos.append(float(f_dict["atraso_enfrentado_minutos"]))
+        all_situacoes.append(situacao_voo)
+        all_atrasos.append(atraso_voo)
+
+    # Garantia de cobertura mínima (1 a 2 voos) para clientes da cauda longa que não foram sorteados na malha inicial.
+    assigned_clients = set(np.concatenate(all_client_ids).tolist())
+    missing_mask = ~np.isin(client_ids_array, list(assigned_clients))
+    missing_indices = np.where(missing_mask)[0]
+    if len(missing_indices) > 0:
+        extra_flight_Basic = np_rng.integers(0, num_flights, size=len(missing_indices))
+        extra_pnr_chars = np_rng.choice(PNR_ALPHABET, size=(len(missing_indices) * 2, 6))
+        extra_pnrs = pd.unique(np.array(["".join(row) for row in extra_pnr_chars]))[: len(missing_indices)]
+        for idx_pos, client_idx in enumerate(missing_indices):
+            f_dict = flight_records[int(extra_flight_Basic[idx_pos])]
+            all_client_ids.append(np.array([client_ids_array[client_idx]]))
+            all_client_tiers.append(np.array([tiers_array[client_idx]]))
+            all_pnrs.append(np.array([extra_pnrs[idx_pos]]))
+            flight_pax_counts.append(1)
+            all_voos.append(str(f_dict[col_voo]))
+            all_origens.append(str(f_dict[col_origem]))
+            all_destinos.append(str(f_dict[col_destino]))
+            all_previstas.append(str(f_dict[col_prevista]))
+            all_reais.append(str(f_dict[col_real]))
+            all_situacoes.append(str(f_dict[col_situacao]))
+            all_atrasos.append(float(f_dict["atraso_enfrentado_minutos"]))
 
     repeats = np.array(flight_pax_counts, dtype=np.int64)
     total_trips = int(repeats.sum())
 
     atraso_series = np.repeat(np.array(all_atrasos, dtype=np.float64), repeats)
     situacao_series = np.repeat(np.array(all_situacoes, dtype=object), repeats)
+    trip_tiers = np.concatenate(all_client_tiers)
 
+    # Injeção de ruído gaussiano nos minutos de atraso positivo (conexões/desembarque) para eliminar clones de score de atrito.
+    positive_delay_mask = atraso_series > 0.0
+    delay_gaussian_noise = np.clip(
+        np_rng.normal(loc=1.0, scale=0.18, size=total_trips),
+        0.65,
+        1.45,
+    )
+    atraso_series = np.where(
+        positive_delay_mask,
+        np.round(atraso_series * delay_gaussian_noise, 1),
+        atraso_series,
+    )
+
+    tier_pain_factor = np.array(
+        [DISRUPTION_SENSITIVITY_BY_TIER.get(str(t), 1.0) for t in trip_tiers],
+        dtype=np.float64,
+    )
     sofreu_disrupcao = (atraso_series > 0.0) | (atraso_series < 0.0) | (situacao_series == "CANCELADO")
     baggage_probs = np.where(
         sofreu_disrupcao,
-        BAGGAGE_LOSS_DISRUPTION_PROB,
-        BAGGAGE_LOSS_BASE_PROB,
+        BAGGAGE_LOSS_DISRUPTION_PROB * tier_pain_factor,
+        BAGGAGE_LOSS_BASE_PROB * tier_pain_factor,
     )
-    teve_bagagem_extraviada = np_rng.random(total_trips) < baggage_probs
-    falha_app_checkin = np_rng.random(total_trips) < APP_CHECKIN_FAILURE_PROB
+    teve_bagagem_extraviada = np_rng.random(total_trips) < np.clip(baggage_probs, 0.005, 0.12)
+    falha_app_checkin = np_rng.random(total_trips) < np.clip(
+        APP_CHECKIN_FAILURE_PROB * tier_pain_factor,
+        0.005,
+        0.08,
+    )
 
     df_trips = pd.DataFrame(
         {
@@ -453,18 +517,20 @@ def generate_silver_trips(
     logger.info(
         "Histórico de viagens gerado: %d passagens em %d PNRs para %d clientes distintos.",
         len(df_trips),
-        total_pnrs,
+        df_trips["pnr"].nunique(),
         df_trips["id_cliente"].nunique(),
     )
     return df_trips
 
 
-# Adicionado: Lê `tarifas_azul.parquet`, calcula a tarifa média por par (origem, destino) e faz merge em `viagens_silver`.
 def enrich_trips_with_fares(
     df_trips: pd.DataFrame,
     bronze_tarifas_path: Path,
     airline_code: str = TARGET_AIRLINE_CODE,
+    seed: int = DEFAULT_SEED,
 ) -> pd.DataFrame:
+    np_rng = np.random.default_rng(seed=seed)
+
     if not bronze_tarifas_path.exists():
         logger.warning(
             "Arquivo %s não encontrado; preenchendo valor_pago_tarifa com valor padrão %.2f.",
@@ -472,7 +538,9 @@ def enrich_trips_with_fares(
             DEFAULT_FALLBACK_FARE,
         )
         df_out = df_trips.copy()
-        df_out["valor_pago_tarifa"] = DEFAULT_FALLBACK_FARE
+        # Injeção de ruído gaussiano truncado [0.8, 1.2] sobre o fallback tarifário para evitar CLVs idênticos.
+        noise = np.clip(np_rng.normal(loc=1.0, scale=0.10, size=len(df_out)), 0.80, 1.20)
+        df_out["valor_pago_tarifa"] = np.round(DEFAULT_FALLBACK_FARE * noise, 2)
         return df_out
 
     logger.info("Carregando tarifas da Camada Bronze: %s", bronze_tarifas_path)
@@ -481,7 +549,6 @@ def enrich_trips_with_fares(
         str(col).strip().lstrip("\ufeff").strip('"') for col in df_tarifas_raw.columns
     ]
 
-    # Filtra registros tarifários da Azul (caso a Bronze contenha múltiplas companhias) e converte valores monetários.
     airline_col = _detect_airline_column(df_tarifas_raw, airline_code=airline_code)
     df_tarifas = df_tarifas_raw[
         df_tarifas_raw[airline_col].astype(str).str.strip().str.upper() == airline_code.upper()
@@ -499,7 +566,6 @@ def enrich_trips_with_fares(
     )
     df_tarifas = df_tarifas[df_tarifas["_tarifa_num"].notna() & (df_tarifas["_tarifa_num"] > 0.0)]
 
-    # Calcula a tarifa média agregada por rota (par de aeródromos Origem e Destino).
     df_route_fares = (
         df_tarifas.groupby(["_origem_clean", "_destino_clean"], as_index=False)["_tarifa_num"]
         .mean()
@@ -519,11 +585,16 @@ def enrich_trips_with_fares(
         else DEFAULT_FALLBACK_FARE
     )
 
-    # Faz LEFT MERGE da tarifa média por par (origem, destino) e preenche rotas sem cobertura com a média geral.
     df_enriched = df_trips.merge(df_route_fares, on=["origem", "destino"], how="left")
-    df_enriched["valor_pago_tarifa"] = (
-        df_enriched["valor_pago_tarifa"].fillna(global_mean_fare).astype(np.float64)
+    base_fares = df_enriched["valor_pago_tarifa"].fillna(global_mean_fare).to_numpy(dtype=np.float64)
+
+    # Aplicação de ruído gaussiano truncado [0.80, 1.20] nas tarifas para simular dispersão real de classes tarifárias e eliminar CLVs clonados.
+    fare_gaussian_noise = np.clip(
+        np_rng.normal(loc=1.0, scale=0.10, size=len(df_enriched)),
+        0.80,
+        1.20,
     )
+    df_enriched["valor_pago_tarifa"] = np.round(base_fares * fare_gaussian_noise, 2).astype(np.float64)
 
     logger.info(
         "Enriquecimento tarifário concluído: %d rotas mapeadas (tarifa média global de fallback: R$ %.2f).",
@@ -533,7 +604,6 @@ def enrich_trips_with_fares(
     return df_enriched
 
 
-# Adicionado: Calcula o score de sentimento determinístico [-1.0, 1.0] combinando léxico NLP em PT-BR e polaridade textual.
 def _compute_text_sentiment_score(text: str) -> float:
     text_lower = str(text).lower()
     raw_score = 0.0
@@ -558,7 +628,6 @@ def _compute_text_sentiment_score(text: str) -> float:
     return round(float(np.clip(raw_score, -1.0, 1.0)), 4)
 
 
-# Adicionado: Lê `avaliacoes_bronze.parquet`, aplica análise de sentimento (`score_sentimento`) e salva `avaliacoes_silver.parquet`.
 def process_silver_reviews(
     bronze_reviews_path: Path,
     silver_reviews_output_path: Path,
@@ -572,7 +641,6 @@ def process_silver_reviews(
     logger.info("Carregando avaliações da Camada Bronze: %s", bronze_reviews_path)
     df_reviews = pd.read_parquet(bronze_reviews_path).copy()
 
-    # Aplica análise de sentimento NLP determinística gerando `score_sentimento` no intervalo [-1.0, 1.0].
     df_reviews["score_sentimento"] = (
         df_reviews["texto_avaliacao"].map(_compute_text_sentiment_score).astype(np.float64)
     )
@@ -596,7 +664,6 @@ def process_silver_reviews(
 def run_silver_pipeline() -> dict[str, Path]:
     data_lake_dir = resolve_data_lake_dir()
     bronze_parquet_path = data_lake_dir / "bronze" / "voos_historico_azul.parquet"
-    # Adicionado: Caminhos de entrada da Bronze para tarifas e avaliações e saída `avaliacoes_silver.parquet`.
     bronze_tarifas_path = data_lake_dir / "bronze" / "tarifas_azul.parquet"
     bronze_reviews_path = data_lake_dir / "bronze" / "avaliacoes_bronze.parquet"
     silver_dir = data_lake_dir / "silver"
@@ -616,11 +683,11 @@ def run_silver_pipeline() -> dict[str, Path]:
         df_clients=df_clients_full,
         seed=DEFAULT_SEED,
     )
-    # Adicionado: Enriquecimento monetário das viagens com `valor_pago_tarifa` antes do salvamento em Parquet.
     df_trips = enrich_trips_with_fares(
         df_trips=df_trips,
         bronze_tarifas_path=bronze_tarifas_path,
         airline_code=TARGET_AIRLINE_CODE,
+        seed=DEFAULT_SEED,
     )
 
     client_cols = [
@@ -659,7 +726,6 @@ def run_silver_pipeline() -> dict[str, Path]:
     )
     logger.info("Salvo com sucesso: %s", viagens_output_path)
 
-    # Adicionado: Executa o processamento de NLP das avaliações gerando `avaliacoes_silver.parquet`.
     process_silver_reviews(
         bronze_reviews_path=bronze_reviews_path,
         silver_reviews_output_path=avaliacoes_output_path,

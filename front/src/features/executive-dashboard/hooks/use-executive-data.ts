@@ -9,6 +9,7 @@ import { DashboardKPIs, PersonaData, ParetoData } from "@/types/api";
 export function useExecutiveData() {
   const { isDemoMode } = useDemoMode();
 
+  // Conexão de estado: chamada à API para KPIs consolidados
   const kpisQuery = useQuery<DashboardKPIs, Error>({
     queryKey: ["dashboard-kpis", isDemoMode],
     queryFn: async () => {
@@ -17,6 +18,7 @@ export function useExecutiveData() {
     },
   });
 
+  // Conexão de estado: chamada à API para matriz e mapa de personas
   const personasQuery = useQuery<PersonaData[], Error>({
     queryKey: ["dashboard-personas", isDemoMode],
     queryFn: async () => {
@@ -25,6 +27,7 @@ export function useExecutiveData() {
     },
   });
 
+  // Conexão de estado: chamada à API para curva de concentração de Pareto
   const paretoQuery = useQuery<ParetoData[], Error>({
     queryKey: ["dashboard-pareto", isDemoMode],
     queryFn: async () => {

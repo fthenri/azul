@@ -11,7 +11,7 @@ export function useAuditLogs() {
   const { isDemoMode } = useDemoMode();
   const [selectedDecisao, setSelectedDecisao] = useState<DecisaoAuditoria | null>(null);
 
-  // Lista de decisões de auditoria
+  // Conexão de estado: chamada à API para histórico de decisões de auditoria
   const auditQuery = useQuery<DecisaoAuditoria[], Error>({
     queryKey: ["auditoria-decisoes", isDemoMode],
     queryFn: async () => {
@@ -20,7 +20,7 @@ export function useAuditLogs() {
     },
   });
 
-  // Fatores SHAP da decisão selecionada
+  // Conexão de estado: chamada à API para explicabilidade SHAP da decisão selecionada
   const shapQuery = useQuery<ShapResponse, Error>({
     queryKey: ["auditoria-shap", selectedDecisao?.decisao_id, isDemoMode],
     queryFn: async () => {

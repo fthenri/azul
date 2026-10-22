@@ -27,10 +27,22 @@ class SimulationService:
         self.executor_adapter = executor_adapter
         self.audit_repository = audit_repository
 
-    def simulate(self, momento_id: str) -> SimularResponse:
+    def simulate(
+        self,
+        momento_id: Optional[str] = None,
+        id_cliente: Optional[str] = None,
+    ) -> SimularResponse:
         """Resolve o momento, executa a arbitragem de Uplift, gera mensagem LLM e registra auditoria."""
-        cliente_id = self.moments_service.resolve_client_id(momento_id)
-        logger.info("Executando simulação para momento '%s' (Cliente: %s)...", momento_id, cliente_id)
+        if id_cliente:
+            cliente_id = self.moments_service.resolve_client_id(id_cliente)
+            origem_id = id_cliente
+        elif momento_id:
+            cliente_id = self.moments_service.resolve_client_id(momento_id)
+            origem_id = momento_id
+        else:
+            raise ValueError("ID de cliente ou momento não fornecido.")
+
+        logger.info("Executando simulação para '%s' (Cliente: %s)...", origem_id, cliente_id)
         response = self.executor_adapter.simulate_for_client(id_cliente=cliente_id)
 
         # Registro persistente de auditoria
@@ -47,7 +59,7 @@ class SimulationService:
                 decisao_id=decisao_id,
                 cliente_id=cliente_id,
                 data_decisao=datetime.now(timezone.utc).isoformat(),
-                tipo_simulacao="Reativa" if "mom_" in momento_id else "Proativa",
+                tipo_simulacao="Reativa" if ("mom_" in origem_id) else "Proativa",
                 acao_executada=response.decisao_final.acao_vencedora,
                 motivo_bloqueio="Trava matemática de Uplift (ROI <= 0)" if is_bloqueada else None,
                 custo_realizado=custo_realizado,

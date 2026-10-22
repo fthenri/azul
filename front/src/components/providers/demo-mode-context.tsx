@@ -15,15 +15,20 @@ const DemoModeContext = createContext<DemoModeContextType>({
 });
 
 export function DemoModeProvider({ children }: { children: React.ReactNode }) {
+  // Conexão de estado: controle do modo de demonstração desativado por padrão
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
 
   useEffect(() => {
-    // Carrega do localStorage se houver preferência prévia
+    // Conexão de estado: validação da flag de ambiente ou armazenamento local
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === "false") {
+      setIsDemoMode(false);
+      return;
+    }
     const stored = localStorage.getItem("azul_demo_mode");
     if (stored !== null) {
       setIsDemoMode(stored === "true");
-    } else if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
-      setIsDemoMode(true);
+    } else {
+      setIsDemoMode(process.env.NEXT_PUBLIC_DEMO_MODE === "true");
     }
   }, []);
 

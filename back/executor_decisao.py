@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
 
@@ -139,20 +142,24 @@ def arbitrar_melhor_acao(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def gerar_mensagem_llm(
+def _obter_mock_padronizado(
     perfil_cliente: dict[str, Any],
     acao_vencedora: str,
-    contexto_rag: str,
-) -> str:
+) -> dict[str, str]:
+    tier = str(perfil_cliente.get("tier_fidelidade", "Básico"))
+    persona = str(perfil_cliente.get("persona", "Cliente"))
+    id_curto = str(perfil_cliente.get("id_cliente", "CLIENTE"))[:8].upper()
+    clv = float(perfil_cliente.get("clv_previsto", 0.0))
+    risco = float(perfil_cliente.get("risco_evasao", 0.0))
+
     if acao_vencedora == "NAO_FAZER_NADA":
-        return "Decisão interna: Sem ação por falta de ROI. Nenhuma mensagem enviada ao cliente."
-
-    if "Primeira Classe" in contexto_rag:
-        _ = True
-
-    tier = str(perfil_cliente["tier_fidelidade"])
-    persona = str(perfil_cliente["persona"])
-    id_curto = str(perfil_cliente["id_cliente"])[:8].upper()
+        return {
+            "notificacao_interna": (
+                f"Decisão interna: Sem ação por falta de ROI para cliente #{id_curto} "
+                f"({persona}, {tier}). CLV R$ {clv:,.2f}, risco de evasão {risco * 100:.1f}%."
+            ),
+            "mensagem_crm": "Nenhuma mensagem enviada ao cliente conforme diretriz de eficiência financeira (ROI negativo).",
+        }
 
     aberturas_por_persona = {
         "Executivo Frequente": (
@@ -205,9 +212,110 @@ def gerar_mensagem_llm(
             "nosso pedido formal de desculpas e reforçamos nosso compromisso com sua satisfação."
         ),
     }
-    corpo_beneficio = beneficios_rag.get(acao_vencedora, "")
+    corpo_beneficio = beneficios_rag.get(
+        acao_vencedora,
+        "Agradecemos por sua fidelidade e preferência em voar Azul.",
+    )
 
-    return f"{abertura} {corpo_beneficio}"
+    return {
+        "notificacao_interna": (
+            f"Alerta Retenção: Cliente #{id_curto} ({persona}, {tier}) com risco de evasão {risco * 100:.1f}% "
+            f"e CLV R$ {clv:,.2f}. Motor arbitrou ação '{acao_vencedora}' com ROI líquido projetado positivo."
+        ),
+        "mensagem_crm": f"{abertura} {corpo_beneficio}",
+    }
+
+
+def gerar_mensagem_llm(
+    perfil_cliente: dict[str, Any],
+    acao_vencedora: str,
+    contexto_rag: str,
+) -> dict[str, str]:
+    if acao_vencedora == "NAO_FAZER_NADA":
+        return _obter_mock_padronizado(perfil_cliente, acao_vencedora)
+
+    # Bloco de chamada à API de LLM (Gemini / OpenAI) com resiliência e fallback
+    try:
+        load_dotenv(resolve_project_root() / ".env")
+        load_dotenv(resolve_project_root() / "back" / ".env")
+
+        gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+
+        if not gemini_key and not openai_key:
+            return _obter_mock_padronizado(perfil_cliente, acao_vencedora)
+
+        prompt = f"""Você é o Agente de Decisão e Retenção do Azul Fidelidade.
+Sua missão é analisar o perfil do cliente, a ação de intervenção recomendada pelo Árbitro Matemático de Uplift e as diretrizes oficiais da Azul, gerando uma notificação gerencial interna e a mensagem humanizada de CRM para o cliente.
+
+### DIRETRIZES E REGRAS DE NEGÓCIO (Azul Fidelidade):
+{contexto_rag}
+
+### PERFIL DO CLIENTE ANALISADO:
+- ID do Cliente: {perfil_cliente.get('id_cliente')}
+- Categoria / Tier Fidelidade: {perfil_cliente.get('tier_fidelidade')}
+- Persona Identificada: {perfil_cliente.get('persona')}
+- CLV Previsto: R$ {float(perfil_cliente.get('clv_previsto', 0.0)):,.2f}
+- Risco de Evasão (Churn): {float(perfil_cliente.get('risco_evasao', 0.0)) * 100.0:.1f}%
+- Score de Atrito Acumulado: {float(perfil_cliente.get('score_atrito_acumulado', 0.0)):.2f}
+
+### DECISÃO DO MOTOR DE UPLIFT:
+- Ação Vencedora Arbitrada: {acao_vencedora}
+
+### INSTRUÇÕES MANDATÓRIAS:
+Responda ESTRITAMENTE em formato JSON (sem nenhum texto ou formatação fora do objeto JSON) com as seguintes duas chaves:
+1. "notificacao_interna": Resumo gerencial curto alertando a equipe sobre a decisão do motor e o ROI esperado.
+2. "mensagem_crm": Draft do texto (e-mail/WhatsApp) humanizado e empático para o cliente focado na retenção, respeitando estritamente o catálogo de ações e a ação concedida (sem alucinar benefícios não concedidos).
+"""
+        conteudo_raw = ""
+
+        if gemini_key:
+            import google.generativeai as genai
+            genai.configure(api_key=gemini_key)
+            model = genai.GenerativeModel(
+                model_name="gemini-1.5-flash",
+                generation_config={"response_mime_type": "application/json"},
+            )
+            response = model.generate_content(prompt)
+            conteudo_raw = response.text.strip()
+        elif openai_key:
+            from openai import OpenAI
+            client = OpenAI(api_key=openai_key)
+            completion = client.chat.completions.create(
+                model="gpt-4o-mini",
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": "Você é um agente da Azul Linhas Aéreas. Responda estritamente em formato JSON."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,
+            )
+            conteudo_raw = completion.choices[0].message.content or ""
+
+        if conteudo_raw.startswith("```"):
+            linhas = conteudo_raw.splitlines()
+            if linhas[0].startswith("```"):
+                linhas = linhas[1:]
+            if linhas and linhas[-1].startswith("```"):
+                linhas = linhas[:-1]
+            conteudo_raw = "\n".join(linhas).strip()
+
+        dados_json = json.loads(conteudo_raw)
+        if (
+            isinstance(dados_json, dict)
+            and "notificacao_interna" in dados_json
+            and "mensagem_crm" in dados_json
+        ):
+            return {
+                "notificacao_interna": str(dados_json["notificacao_interna"]).strip(),
+                "mensagem_crm": str(dados_json["mensagem_crm"]).strip(),
+            }
+
+        return _obter_mock_padronizado(perfil_cliente, acao_vencedora)
+
+    except Exception as exc:
+        logger.warning("Falha na chamada ao LLM externo: %s. Utilizando fallback resiliente.", exc)
+        return _obter_mock_padronizado(perfil_cliente, acao_vencedora)
 
 
 def selecionar_clientes_teste_gold(
@@ -245,7 +353,7 @@ def executar_simulacao_local() -> None:
     for rotulo_faixa, id_cliente in clientes_teste:
         perfil = carregar_perfil_cliente_gold(id_cliente)
         decisao = arbitrar_melhor_acao(perfil)
-        mensagem = gerar_mensagem_llm(
+        resultado_llm = gerar_mensagem_llm(
             perfil_cliente=perfil,
             acao_vencedora=decisao["acao_vencedora"],
             contexto_rag=contexto_rag,
@@ -257,7 +365,9 @@ def executar_simulacao_local() -> None:
         print(f"  • Risco de Evasão  : {perfil['risco_evasao'] * 100.0:.2f}% (Atrito: {perfil['score_atrito_acumulado']:.2f})")
         print(f"  • Ação Vencedora   : {decisao['acao_vencedora']} (Custo: R$ {decisao['custo_acao']:,.2f})")
         print(f"  • ROI Líquido Est. : R$ {decisao['retorno_liquido']:,.2f}")
-        print(f"  • Mensagem Agente  : \"{mensagem}\"")
+        print(f"  • Notificação Interna: \"{resultado_llm['notificacao_interna']}\"")
+        print(f"  • Mensagem CRM       : \"{resultado_llm['mensagem_crm']}\"")
+        print("-" * 88)
         print("-" * 88)
 
 

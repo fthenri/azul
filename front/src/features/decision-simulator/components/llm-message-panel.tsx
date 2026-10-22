@@ -16,9 +16,12 @@ export function LlmMessagePanel({ decisaoFinal }: LlmMessagePanelProps) {
 
   if (!decisaoFinal) return null;
 
+  const mensagemCliente = decisaoFinal.mensagem_crm || decisaoFinal.mensagem_llm;
+  const notificacaoInterna = decisaoFinal.notificacao_interna;
+
   const handleCopy = () => {
-    if (decisaoFinal.mensagem_llm) {
-      navigator.clipboard.writeText(decisaoFinal.mensagem_llm);
+    if (mensagemCliente) {
+      navigator.clipboard.writeText(mensagemCliente);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -46,12 +49,22 @@ export function LlmMessagePanel({ decisaoFinal }: LlmMessagePanelProps) {
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col justify-between space-y-4">
+          {notificacaoInterna && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-950/20 p-3 text-xs leading-relaxed text-amber-950 dark:text-amber-200">
+              <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-300 mb-1">
+                <Bot className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Notificação Interna (Equipe / ROI)</span>
+              </div>
+              <p>{notificacaoInterna}</p>
+            </div>
+          )}
+
           <div className="rounded-xl bg-[#002855] text-white p-4 font-sans text-xs sm:text-sm leading-relaxed border border-[#003B7A] dark:border-border shadow-inner">
             <div className="flex items-center gap-2 mb-2 text-[#EAF4FC]/70 text-xs font-mono border-b border-white/10 pb-2">
               <MessageSquare className="h-3.5 w-3.5 text-[#38BDF8]" />
-              <span>Canal Push / E-mail / WhatsApp</span>
+              <span>Mensagem CRM (Push / E-mail / WhatsApp)</span>
             </div>
-            <p className="whitespace-pre-wrap">{decisaoFinal.mensagem_llm}</p>
+            <p className="whitespace-pre-wrap">{mensagemCliente}</p>
           </div>
 
           <div className="flex justify-end pt-2">
