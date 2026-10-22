@@ -427,3 +427,30 @@ Para executar a simulação determinística (`seed=42`) do Braço Executor avali
 ```bash
 .venv/bin/python -u back/executor_decisao.py
 ```
+
+---
+
+## 8. Execução "Plug and Play" e Script de Auditoria Técnica
+
+### 8.1. Subida Rápida via Docker Compose (Solução Pronta)
+O ecossistema foi projetado para inicialização imediata (*Plug and Play*), consumindo os arquivos colunares `.parquet` já persistidos no Data Lake, sem processar a esteira analítica no momento da subida dos containers:
+
+```bash
+docker compose up -d
+```
+- **Backend (FastAPI + DuckDB)**: `http://localhost:8000` (Swagger UI: `http://localhost:8000/docs`)
+- **Frontend (Next.js)**: `http://localhost:3000`
+
+### 8.2. Script de Auditoria Técnica (`./regenerar_dados.sh`)
+Para fins de auditoria técnica da banca avaliadora, a esteira completa da Arquitetura Medallion pode ser reexecutada a qualquer momento de forma determinística através do script raiz:
+
+```bash
+./regenerar_dados.sh
+```
+
+A sequência orquestrada reprocessa:
+1. **Bronze**: Validação das avaliações e dados públicos ANAC.
+2. **Silver**: Normalização, saneamento e modelagem relacional de clientes e viagens com injeção de variância log-normal.
+3. **Gold (Cérebro 1)**: Modelo RFM e projeção de CLV com classificação da Curva de Pareto.
+4. **Gold (Cérebro 3)**: Clusterização K-Means de Personas com mapeamento de comportamento.
+5. **Gold (Cérebro 2)**: Classificador XGBoost de Churn e cálculo da explicabilidade matemática local SHAP (`shap_clientes.parquet`).

@@ -3,7 +3,7 @@ FROM python:3.12-slim
 # Evita criação de bytecode e garante flush do buffer de logs
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app:/app/back
 
 WORKDIR /app
 
