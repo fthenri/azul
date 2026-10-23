@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppQueryProvider } from "@/components/providers/query-provider";
 import { DemoModeProvider } from "@/components/providers/demo-mode-context";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AuthProvider } from "@/lib/auth-context";
 import { DashboardLayout } from "@/components/shared/dashboard-layout";
 
 const inter = Inter({
@@ -46,9 +47,11 @@ export default function RootLayout({
           disableTransitionOnChange={false}
         >
           <AppQueryProvider>
-            <DemoModeProvider>
+            <AuthProvider>
+              <DemoModeProvider>
               <DashboardLayout>{children}</DashboardLayout>
-            </DemoModeProvider>
+              </DemoModeProvider>
+            </AuthProvider>
           </AppQueryProvider>
         </ThemeProvider>
       </body>

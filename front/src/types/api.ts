@@ -74,14 +74,14 @@ export interface SimularResponse {
     persona: string;
     clv_previsto: number;
     risco_evasao: number;
-    score_atrito_acumulado?: number;
+    score_atrito_acumulado: number;
   };
   notificacao_interna?: string;
   mensagem_crm?: string;
 }
 
 // ==========================================
-// Tela 3: Logs e Explicabilidade (Auditoria)
+// Tela 3: Auditoria e Explicabilidade
 // ==========================================
 
 export interface VersaoModelos {
@@ -96,24 +96,37 @@ export interface DecisaoAuditoria {
   data_decisao: string;
   tipo_simulacao: string;
   acao_executada: string;
-  motivo_bloqueio: string | null;
+  motivo_bloqueio?: string | null;
   custo_realizado: number;
   versao_modelos: VersaoModelos;
 }
 
-export interface FatorShap {
-  variavel: string;
-  impacto: number;
-  direcao: "positivo" | "negativo";
+export interface FatorRiscoShap {
+  fator: string;
+  peso: number;
 }
 
 export interface ShapResponse {
-  risco_base: number;
-  fatores: FatorShap[];
+  decisao_id: string;
+  cliente_id: string;
+  fatores_risco: FatorRiscoShap[];
 }
 
 // ==========================================
-// Tela 4: Visão da Tripulação (Mapa de Assentos de Bordo)
+// Parâmetros de Simulação do Frontend
+// ==========================================
+
+export interface ParametrosSimulacao {
+  clv_previsto: number;
+  risco_evasao: number;
+  categoria: "Basico" | "Topazio" | "Safira" | "Diamante";
+  horas_atraso_acumuladas: number;
+  cancelamentos_recentes: number;
+  consentimento_marketing: boolean;
+}
+
+// ==========================================
+// Tela 4: Visão da Tripulação (Bordo)
 // ==========================================
 
 export interface AssentoCliente {
@@ -165,4 +178,31 @@ export interface ApiErrorResponse {
   detail?: string | Array<{ msg: string; loc?: string[] }>;
   message?: string;
   status?: number;
+}
+
+// ==========================================
+// Módulo de Autenticação e RBAC
+// ==========================================
+
+export type UserRole = "manager" | "commissioner";
+
+export interface UserOut {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  is_active: boolean;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  role: UserRole;
+  user: UserOut;
 }
