@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   Plane,
   AlertTriangle,
@@ -11,6 +12,7 @@ import {
   Compass,
   Sparkles,
   ShieldAlert,
+  Smartphone,
 } from "lucide-react";
 import { useCrewFlight, SeatFilter } from "../hooks/use-crew-flight";
 import { CrewSeatMap } from "./crew-seat-map";
@@ -89,7 +91,17 @@ export function CrewView() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start lg:self-auto">
+        <div className="flex items-center gap-2.5 self-start lg:self-auto flex-wrap">
+          <Link href="/crew-mobile">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/20 bg-[#38BDF8]/20 hover:bg-[#38BDF8]/30 text-white text-xs gap-1.5 h-9 font-semibold"
+            >
+              <Smartphone className="h-3.5 w-3.5 text-[#38BDF8]" />
+              <span>Modo Tablet Comissária</span>
+            </Button>
+          </Link>
           <Button
             variant="outline"
             size="sm"

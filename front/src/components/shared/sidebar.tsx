@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Database,
   Plane,
+  Tablet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +56,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       icon: Plane,
       badge: "Ao Vivo",
       active: pathname === "/crew-view",
+    },
+    {
+      href: "/crew-mobile",
+      label: "CrewApp (Tablet)",
+      sublabel: "Missões de IA para Comissária",
+      icon: Tablet,
+      badge: "PWA",
+      active: pathname === "/crew-mobile",
     },
   ];
 

@@ -1,11 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Rota independente PWA / Tablet de Bordo: renderiza tela cheia mobile-first sem layout desktop
+  if (pathname?.startsWith("/crew-mobile")) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-150">
