@@ -599,8 +599,9 @@ def enrich_trips_with_fares(
     df_tarifas = df_tarifas[df_tarifas["_tarifa_num"].notna() & (df_tarifas["_tarifa_num"] > 0.0)]
 
     df_route_fares = (
-        df_tarifas.groupby(["_origem_clean", "_destino_clean"], as_index=False)["_tarifa_num"]
+        df_tarifas.groupby(["_origem_clean", "_destino_clean"])["_tarifa_num"]
         .mean()
+        .reset_index()
         .rename(
             columns={
                 "_origem_clean": "origem",
