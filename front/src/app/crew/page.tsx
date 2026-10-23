@@ -26,122 +26,31 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-// ============================================================================
-// Tipos & Interface de Missões de Bordo da IA
-// ============================================================================
-export interface CrewMission {
-  id: string;
-  assento: string;
-  clienteNome: string;
-  persona: string;
-  tier: "Diamante" | "Safira" | "Topázio";
-  tipo: "atrito" | "vip";
-  statusBadge: "Alerta de Atrito" | "Fidelização VIP";
-  gatilho: string;
-  instrucaoIA: string;
-  acaoSugerida: string;
-  concluida: boolean;
-  concluidaEm?: string;
-}
-
-// ============================================================================
-// Dados das Missões Táticas de Bordo (Simulação LLM + RAG + Árbitro)
-// ============================================================================
-const INITIAL_MISSIONS: CrewMission[] = [
-  {
-    id: "mis_01",
-    assento: "1A",
-    clienteNome: "Carlos Eduardo Mendes",
-    persona: "Gestor Corporativo",
-    tier: "Diamante",
-    tipo: "atrito",
-    statusBadge: "Alerta de Atrito",
-    gatilho: "Extravio de bagagem despachada no trecho anterior (VCP)",
-    instrucaoIA:
-      "O cliente sofreu um extravio de bagagem recente no voo anterior. Agradeça a paciência, chame-o de Sr. Carlos, ofereça um snack premium da classe executiva e confirme que a bagagem prioritária já foi direcionada para a esteira 04 de Recife.",
-    acaoSugerida: "Snack Premium + Prioridade de Bagagem",
-    concluida: false,
-  },
-  {
-    id: "mis_02",
-    assento: "2C",
-    clienteNome: "Dra. Fernanda Lima",
-    persona: "Viajante Solo Premium",
-    tier: "Safira",
-    tipo: "atrito",
-    statusBadge: "Alerta de Atrito",
-    gatilho: "Conexão apertada com atraso de 85 min em Campinas",
-    instrucaoIA:
-      "A passageira enfrentou conexão apertada com atraso crítico em Viracopos. Valide seu bem-estar, ofereça café espresso ou espumante de cortesia e informe que pousaremos 10 minutos antes do previsto.",
-    acaoSugerida: "Café Espresso / Espumante de Cortesia",
-    concluida: false,
-  },
-  {
-    id: "mis_03",
-    assento: "4D",
-    clienteNome: "Marcelo & Família",
-    persona: "Líder Familiar",
-    tier: "Safira",
-    tipo: "vip",
-    statusBadge: "Fidelização VIP",
-    gatilho: "Família com 5 passageiros no mesmo PNR (Férias de Julho)",
-    instrucaoIA:
-      "Cliente viaja com a família completa (5 pessoas). Parabenize pelo voo com a Azul, entregue o kit de entretenimento infantil para as crianças e disponibilize fones de ouvido extras sem custo.",
-    acaoSugerida: "Kit Kids + Fones Extras Cortesia",
-    concluida: false,
-  },
-  {
-    id: "mis_04",
-    assento: "12B",
-    clienteNome: "Bruno Silveira",
-    persona: "Gestor Corporativo",
-    tier: "Diamante",
-    tipo: "vip",
-    statusBadge: "Fidelização VIP",
-    gatilho: "Comemoração da marca de 100.000 pontos Azul Fidelidade",
-    instrucaoIA:
-      "O passageiro atingiu a marca histórica de 100k pontos no Azul Fidelidade. Reconheça a lealdade do passageiro, agradeça por voar Azul e ofereça uma taça de boas-vindas com brinde institucional.",
-    acaoSugerida: "Brinde Institucional + Taça de Boas-Vindas",
-    concluida: false,
-  },
-];
+import { useFlightMissions, FlightMission } from "@/lib/missions-storage";
 
 export default function CrewPage() {
-  const [missions, setMissions] = useState<CrewMission[]>(INITIAL_MISSIONS);
+  // Consome reativamente as missões sincronizadas com o Gestor via localStorage ('flight_missions')
+  const {
+    missions,
+    pendingCount,
+    completedCount,
+    completeMission,
+    reopenMission,
+  } = useFlightMissions();
+
   const [filterMode, setFilterMode] = useState<"todas" | "pendentes" | "concluidas">("todas");
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Alterna o status de conclusão da missão
-  const toggleMission = (id: string) => {
-    setMissions((prev) =>
-      prev.map((m) => {
-        if (m.id === id) {
-          const novoStatus = !m.concluida;
-          return {
-            ...m,
-            concluida: novoStatus,
-            concluidaEm: novoStatus
-              ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-              : undefined,
-          };
-        }
-        return m;
-      })
-    );
-  };
-
-  // Contadores dinâmicos de estado
-  const pendingCount = missions.filter((m) => !m.concluida).length;
-  const completedCount = missions.filter((m) => m.concluida).length;
   const vipCount = 12; // 12 passageiros VIPs mapeados no voo
+
+  // Helper para verificar status de conclusão
+  const isMissionDone = (m: FlightMission) => m.status === "concluida" || m.concluida;
 
   // Filtra as missões a serem exibidas no grid responsivo
   const filteredMissions = useMemo(() => {
     return missions.filter((m) => {
       // Filtro de status
-      if (filterMode === "pendentes" && m.concluida) return false;
-      if (filterMode === "concluidas" && !m.concluida) return false;
+      if (filterMode === "pendentes" && isMissionDone(m)) return false;
+      if (filterMode === "concluidas" && !isMissionDone(m)) return false;
 
       // Filtro de busca textual (assento ou nome)
       if (searchTerm.trim()) {
@@ -376,12 +285,13 @@ export default function CrewPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredMissions.map((missao) => {
               const isAtrito = missao.tipo === "atrito";
+              const isDone = isMissionDone(missao);
               return (
                 <Card
                   key={missao.id}
                   className={cn(
                     "flex flex-col justify-between transition-all duration-300 shadow-xs border",
-                    missao.concluida
+                    isDone
                       ? "bg-emerald-500/10 border-emerald-500/30 text-muted-foreground"
                       : isAtrito
                       ? "bg-card border-red-500/30 hover:border-red-500/50 hover:shadow-md"
@@ -399,7 +309,7 @@ export default function CrewPage() {
                           <h3
                             className={cn(
                               "text-sm font-bold leading-tight",
-                              missao.concluida ? "line-through text-muted-foreground" : "text-foreground"
+                              isDone ? "line-through text-muted-foreground" : "text-foreground"
                             )}
                           >
                             {missao.clienteNome}
@@ -415,7 +325,7 @@ export default function CrewPage() {
 
                       {/* Badge de Status */}
                       <div className="shrink-0">
-                        {missao.concluida ? (
+                        {isDone ? (
                           <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-bold">
                             Concluído ✓
                           </Badge>
@@ -447,7 +357,7 @@ export default function CrewPage() {
                     <div
                       className={cn(
                         "rounded-xl p-3 text-xs leading-relaxed border transition-colors flex-1",
-                        missao.concluida
+                        isDone
                           ? "bg-muted/40 border-border text-muted-foreground/80"
                           : "bg-[#EAF4FC] dark:bg-[#003B7A]/20 border-[#0077C8]/25 text-foreground"
                       )}
@@ -466,7 +376,7 @@ export default function CrewPage() {
                       <span className="font-semibold text-azul-navy dark:text-slate-200">
                         Ação: <strong>{missao.acaoSugerida}</strong>
                       </span>
-                      {missao.concluida && missao.concluidaEm && (
+                      {isDone && missao.concluidaEm && (
                         <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px] font-semibold">
                           Concluído às {missao.concluidaEm}
                         </span>
@@ -475,7 +385,7 @@ export default function CrewPage() {
 
                     {/* Botão de Ação Primária */}
                     <div className="pt-2">
-                      {missao.concluida ? (
+                      {isDone ? (
                         <div className="flex items-center gap-2">
                           <Button
                             size="sm"
@@ -489,7 +399,7 @@ export default function CrewPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => toggleMission(missao.id)}
+                            onClick={() => reopenMission(missao.id)}
                             className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
                             title="Reabrir Missão"
                           >
@@ -499,7 +409,7 @@ export default function CrewPage() {
                       ) : (
                         <Button
                           size="sm"
-                          onClick={() => toggleMission(missao.id)}
+                          onClick={() => completeMission(missao.id)}
                           className={cn(
                             "w-full h-9 text-xs font-bold gap-1.5 transition-all shadow-xs",
                             isAtrito
