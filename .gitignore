@@ -11,3 +11,18 @@ __pycache__/
 *.sqlite3
 *.db-journal
 *.db-wal
+
+# Frontend & Node
+node_modules/
+.next/
+out/
+build/
+.env
+.env.local
+.env.*.local
+
+# Data Lake Parquet (Preservar dados estáticos para deploy no Render)
+!data_lake/bronze/*.parquet
+!data_lake/silver/*.parquet
+!data_lake/gold/*.parquet
+
