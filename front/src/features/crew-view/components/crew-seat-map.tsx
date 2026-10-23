@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AssentoVoo, MetadataAeronave } from "@/types/api";
 import { SeatFilter } from "../hooks/use-crew-flight";
+import { Mission } from "@/lib/flight-state";
 import { cn } from "@/lib/utils";
 
 interface CrewSeatMapProps {
@@ -21,6 +22,10 @@ interface CrewSeatMapProps {
   onSelectSeat: (seat: AssentoVoo) => void;
   filter: SeatFilter;
   attendedSeats: Set<string>;
+  // Propriedades para a Visão Direcional Restrita da Tripulação
+  isDirectionalOnly?: boolean;
+  missionSeatMap?: Map<string, Mission>;
+  onSelectMissionSeat?: (mission: Mission, seat: AssentoVoo) => void;
 }
 
 export function CrewSeatMap({
@@ -30,6 +35,9 @@ export function CrewSeatMap({
   onSelectSeat,
   filter,
   attendedSeats,
+  isDirectionalOnly = false,
+  missionSeatMap,
+  onSelectMissionSeat,
 }: CrewSeatMapProps) {
   // Indexa assentos por código (ex: "1A", "34D") para acesso O(1)
   const seatMap = useMemo(() => {
@@ -81,6 +89,125 @@ export function CrewSeatMap({
     const isAttended = attendedSeats.has(seat.assento);
     const highlighted = isSeatHighlighted(seat);
     const isEspacoAzul = metadata?.codigo === "ATR 72-600" ? row <= 2 : row <= 4;
+
+    // =========================================================================
+    // VISÃO DIRECIONAL RESTRITA DA TRIPULAÇÃO (B2B Cabin Crew Mode)
+    // Regra de Negócio Crucial: O mapa da tripulação é estritamente de leitura direcional.
+    // Assentos sem missões pendentes ou concluídas devem estar desabilitados (cinza/opacos)
+    // e sem eventos de clique. Assentos com missão devem estar destacados.
+    // Ao clicar em um assento destacado, o sistema deve exibir os detalhes da missão para execução.
+    // =========================================================================
+    if (isDirectionalOnly) {
+      const mission = missionSeatMap?.get(seatCode);
+
+      // Assento SEM missão vinculada: Desabilitado (cinza/opaco) e sem evento de clique
+      if (!mission) {
+        return (
+          <div
+            key={seatCode}
+            aria-disabled="true"
+            className="relative flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border border-slate-200/50 dark:border-slate-800/40 bg-slate-100/30 dark:bg-slate-900/30 text-slate-400 dark:text-slate-600 opacity-20 cursor-not-allowed select-none"
+            title={`${seatCode}: Sem missão operacional ativa`}
+          >
+            <div className="flex items-center justify-between w-full">
+              <span className="font-mono text-[11px] font-bold text-slate-400 dark:text-slate-600">
+                {seatCode}
+              </span>
+            </div>
+            <span className="text-[9px] text-muted-foreground/50 font-medium truncate max-w-full">
+              {seat.dados_cliente?.nome ? seat.dados_cliente.nome.split(" ")[0] : "Livre"}
+            </span>
+            <span className="text-[8px] opacity-30 font-mono">
+              {seat.dados_cliente?.tier_fidelidade ? seat.dados_cliente.tier_fidelidade.slice(0, 3) : "STD"}
+            </span>
+          </div>
+        );
+      }
+
+      // Assento COM missão: Destacado visualmente com pulso/alerta ou check de concluído
+      const isDone = mission.status === "concluida" || mission.concluida;
+      const isAtrito = mission.tipo === "atrito";
+
+      return (
+        <button
+          key={seatCode}
+          type="button"
+          onClick={() => {
+            if (onSelectMissionSeat) {
+              onSelectMissionSeat(mission, seat);
+            } else {
+              onSelectSeat(seat);
+            }
+          }}
+          className={cn(
+            "relative group flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border text-left transition-all duration-200 cursor-pointer shadow-md",
+            isDone
+              ? "bg-emerald-50 text-emerald-950 border-emerald-400 dark:bg-emerald-950/70 dark:text-emerald-100 dark:border-emerald-500 ring-2 ring-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/70"
+              : isAtrito
+              ? "bg-rose-50 text-rose-950 border-rose-400 dark:bg-rose-950/70 dark:text-rose-100 dark:border-rose-500 ring-2 ring-rose-500 ring-offset-2 hover:bg-rose-100 dark:hover:bg-rose-900/70 animate-pulse"
+              : "bg-amber-50 text-amber-950 border-amber-400 dark:bg-amber-950/70 dark:text-amber-100 dark:border-amber-400 ring-2 ring-amber-400 ring-offset-2 hover:bg-amber-100 dark:hover:bg-amber-900/70 animate-pulse",
+            isSelected && "scale-105 ring-4 z-20 shadow-lg"
+          )}
+          title={`Missão IA: ${seatCode} - ${mission.passageiro || seat.dados_cliente.nome} (${isDone ? "Concluída" : "Pendente"})`}
+        >
+          {/* Header do Assento com Missão */}
+          <div className="flex items-center justify-between w-full">
+            <span className="font-mono text-[11px] sm:text-xs font-black tracking-tight">
+              {seatCode}
+            </span>
+            {isDone ? (
+              <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            ) : isAtrito ? (
+              <AlertTriangle className="h-3 w-3 text-rose-600 dark:text-rose-400 shrink-0" />
+            ) : (
+              <Sparkles className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
+            )}
+          </div>
+
+          {/* Nome do Passageiro da Missão */}
+          <div className="w-full truncate text-[9px] sm:text-[10px] font-bold leading-tight">
+            {(mission.passageiro || seat.dados_cliente.nome).split(" ")[0]}
+          </div>
+
+          {/* Rodapé: Tier e Badge de IA */}
+          <div className="flex items-center justify-between w-full text-[8px] font-black uppercase">
+            <span className="truncate">
+              {mission.tier?.slice(0, 3) || seat.dados_cliente.tier_fidelidade.slice(0, 3)}
+            </span>
+            <span
+              className={cn(
+                "rounded px-1 text-[7px] font-bold",
+                isDone
+                  ? "bg-emerald-600 text-white"
+                  : isAtrito
+                  ? "bg-rose-600 text-white"
+                  : "bg-amber-600 text-white"
+              )}
+            >
+              {isDone ? "OK" : "MISSÃO"}
+            </span>
+          </div>
+
+          {/* Marcador Ping se Pendente */}
+          {!isDone && (
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+              <span
+                className={cn(
+                  "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                  isAtrito ? "bg-rose-400" : "bg-amber-400"
+                )}
+              />
+              <span
+                className={cn(
+                  "relative inline-flex rounded-full h-2.5 w-2.5",
+                  isAtrito ? "bg-rose-500" : "bg-amber-500"
+                )}
+              />
+            </span>
+          )}
+        </button>
+      );
+    }
 
     let statusStyles = "";
     let indicatorIcon = null;

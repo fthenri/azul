@@ -49,10 +49,13 @@ export function useCrewFlight() {
 
       // Ponte de Comunicação: Despacha a missão gerada pela IA para a comissária (/crew) via localStorage
       const activeSeat = selectedSeat?.assento === variables.assento ? selectedSeat : null;
+      const passengerName = activeSeat?.dados_cliente?.nome || `Passageiro Assento ${variables.assento}`;
       addOrUpdateMission({
-        id: `mis_${variables.assento}`,
+        id: `mis_${variables.assento}_AD4231`,
+        id_voo: "AD4231",
         assento: variables.assento,
-        clienteNome: activeSeat?.dados_cliente?.nome || `Passageiro Assento ${variables.assento}`,
+        passageiro: passengerName,
+        clienteNome: passengerName,
         persona: activeSeat?.dados_cliente?.persona || "Cliente Especial",
         tier: activeSeat?.dados_cliente?.tier_fidelidade || "Diamante",
         tipo: activeSeat?.status === "critico" ? "atrito" : "vip",
@@ -60,8 +63,10 @@ export function useCrewFlight() {
         gatilho: activeSeat?.status === "critico"
           ? `Score de atrito elevado (${activeSeat.dados_cliente.score_atrito_acumulado}) • Risco ${Math.round(activeSeat.dados_cliente.risco_evasao * 100)}%`
           : `Cliente de Alto Valor • Faixa Pareto ${activeSeat?.dados_cliente.faixa_pareto || "Top 10%"}`,
+        instrucao_ia: data.instrucao_comissario,
         instrucaoIA: data.instrucao_comissario,
         acaoSugerida: data.acao_sugerida,
+        status: "pendente",
       });
     },
   });
