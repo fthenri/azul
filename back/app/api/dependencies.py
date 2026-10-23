@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 from fastapi import Depends
 from back.app.config import Settings, get_settings
 from back.app.infrastructure.analytics.duckdb_client import DuckDBClient, get_duckdb_client
@@ -94,3 +94,14 @@ def get_simulation_service(
 
 
 SimulationServiceDep = Annotated[SimulationService, Depends(get_simulation_service)]
+
+
+def get_crew_service(
+    duckdb_client: DuckDBClient = Depends(get_duckdb),
+    settings: Settings = Depends(get_settings),
+) -> CrewService:
+    from back.app.modules.simulation.crew_service import CrewService
+    return CrewService(duckdb_client=duckdb_client, settings=settings)
+
+
+CrewServiceDep = Annotated[Any, Depends(get_crew_service)]

@@ -54,3 +54,51 @@ class SimularResponse(BaseModel):
     dados_cliente: Optional[dict[str, Any]] = Field(None, description="Dados do perfil do cliente na camada Gold")
     notificacao_interna: Optional[str] = Field(None, description="Resumo gerencial gerado pelo LLM")
     mensagem_crm: Optional[str] = Field(None, description="Mensagem CRM gerada pelo LLM")
+
+
+class AssentoCliente(BaseModel):
+    """Dados resumidos do passageiro alocado no assento."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id_cliente: str
+    nome: str
+    tier_fidelidade: str
+    persona: str
+    clv_previsto: float
+    faixa_pareto: str
+    risco_evasao: float
+    score_atrito_acumulado: float
+
+
+class AssentoVoo(BaseModel):
+    """Estrutura do assento no mapa de cabine do voo simulado."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    assento: str = Field(..., description="Código do assento (ex: '1A', '3B')")
+    status: str = Field(..., description="Status de CRM de bordo: 'critico' | 'vip' | 'normal'")
+    dados_cliente: AssentoCliente = Field(..., description="Perfil analítico do passageiro")
+
+
+class SimularBordoPayload(BaseModel):
+    """Payload para acionar o motor de bordo para um assento."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id_cliente: str = Field(..., description="ID do passageiro na Camada Gold", min_length=1)
+    assento: str = Field(..., description="Código do assento no voo (ex: '3B')", min_length=1)
+
+
+class SimularBordoResponse(BaseModel):
+    """Resposta do motor de decisão para a tripulação de cabine."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    assento: str
+    id_cliente: str
+    acao_sugerida: str
+    custo_acao: float
+    retorno_liquido: float
+    instrucao_comissario: str
+    dados_cliente: dict[str, Any]

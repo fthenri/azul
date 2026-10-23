@@ -273,6 +273,9 @@ def generate_silver_clients(
     perfil_alto_risco_imagem = np_rng.random(num_clients) < HIGH_IMAGE_RISK_PROB
     consentimento_marketing = np_rng.random(num_clients) < MARKETING_CONSENT_PROB
 
+    # Atribuição interna do perfil_experiencia: 85% Satisfeitos e 15% Atritados para desacoplar frequência de atritos severos
+    perfil_experiencia = np_rng.choice(["Satisfeito", "Atritado"], size=num_clients, p=[0.85, 0.15])
+
     df_clients = pd.DataFrame(
         {
             "id_cliente": pd.Series(client_ids, dtype="string"),
@@ -283,6 +286,7 @@ def generate_silver_clients(
             "perfil_alto_risco_imagem": perfil_alto_risco_imagem.astype(bool),
             "consentimento_marketing": consentimento_marketing.astype(bool),
             "peso_viagem": peso_viagem,
+            "perfil_experiencia": pd.Series(perfil_experiencia, dtype="string"),
         }
     )
 
@@ -356,6 +360,8 @@ def generate_silver_trips(
     client_ids_array = df_clients["id_cliente"].to_numpy()
     tiers_array = df_clients["tier_fidelidade"].to_numpy()
     base_weights = df_clients["peso_viagem"].to_numpy(dtype=np.float64)
+    # Mapeamento do perfil_experiencia do cliente proprietário da viagem
+    perfil_array = df_clients["perfil_experiencia"].to_numpy()
     tier_disruption_mult = np.array(
         [DISRUPTION_SENSITIVITY_BY_TIER.get(str(t), 1.0) for t in tiers_array],
         dtype=np.float64,
@@ -395,6 +401,7 @@ def generate_silver_trips(
 
     all_client_ids: list[np.ndarray] = []
     all_client_tiers: list[np.ndarray] = []
+    all_client_perfil: list[np.ndarray] = []
     all_pnrs: list[np.ndarray] = []
     all_voos: list[str] = []
     all_origens: list[str] = []
@@ -428,6 +435,7 @@ def generate_silver_trips(
         )
         all_client_ids.append(client_ids_array[chosen_indices])
         all_client_tiers.append(tiers_array[chosen_indices])
+        all_client_perfil.append(perfil_array[chosen_indices])
         all_pnrs.append(np.repeat(flight_pnr_codes, flight_group_sizes)[:effective_pax])
 
         flight_pax_counts.append(effective_pax)
@@ -451,6 +459,7 @@ def generate_silver_trips(
             f_dict = flight_records[int(extra_flight_Basic[idx_pos])]
             all_client_ids.append(np.array([client_ids_array[client_idx]]))
             all_client_tiers.append(np.array([tiers_array[client_idx]]))
+            all_client_perfil.append(np.array([perfil_array[client_idx]]))
             all_pnrs.append(np.array([extra_pnrs[idx_pos]]))
             flight_pax_counts.append(1)
             all_voos.append(str(f_dict[col_voo]))
@@ -466,7 +475,10 @@ def generate_silver_trips(
 
     atraso_series = np.repeat(np.array(all_atrasos, dtype=np.float64), repeats)
     situacao_series = np.repeat(np.array(all_situacoes, dtype=object), repeats)
+    partida_prevista_series = np.repeat(np.array(all_previstas, dtype=object), repeats)
+    partida_real_series = np.repeat(np.array(all_reais, dtype=object), repeats)
     trip_tiers = np.concatenate(all_client_tiers)
+    trip_perfil = np.concatenate(all_client_perfil)
 
     # Injeção de ruído gaussiano nos minutos de atraso positivo (conexões/desembarque) para eliminar clones de score de atrito.
     positive_delay_mask = atraso_series > 0.0
@@ -498,6 +510,26 @@ def generate_silver_trips(
         0.08,
     )
 
+    # Aplicação de máscara nos atritos condicionada ao perfil_experiencia: blindagem para 'Satisfeito' e concentração em 'Atritado'
+    is_satisfeito = trip_perfil == "Satisfeito"
+    situacao_series = np.where(is_satisfeito, "REALIZADO", situacao_series)
+    partida_real_series = np.where(
+        is_satisfeito & (partida_real_series == ""),
+        partida_prevista_series,
+        partida_real_series,
+    )
+    teve_bagagem_extraviada = np.where(is_satisfeito, False, teve_bagagem_extraviada)
+    falha_app_checkin = np.where(is_satisfeito, False, falha_app_checkin)
+
+    n_trips_sat = int(is_satisfeito.sum())
+    mild_delay_prob = np_rng.random(n_trips_sat) < 0.03
+    sat_delay_noise = np.where(
+        mild_delay_prob,
+        np.round(np_rng.uniform(3.0, 12.0, size=n_trips_sat), 1),
+        0.0,
+    )
+    atraso_series[is_satisfeito] = sat_delay_noise
+
     df_trips = pd.DataFrame(
         {
             "id_cliente": pd.Series(np.concatenate(all_client_ids), dtype="string"),
@@ -505,8 +537,8 @@ def generate_silver_trips(
             "numero_voo": pd.Series(np.repeat(all_voos, repeats), dtype="string"),
             "origem": pd.Series(np.repeat(all_origens, repeats), dtype="string"),
             "destino": pd.Series(np.repeat(all_destinos, repeats), dtype="string"),
-            "partida_prevista": pd.Series(np.repeat(all_previstas, repeats), dtype="string"),
-            "partida_real": pd.Series(np.repeat(all_reais, repeats), dtype="string"),
+            "partida_prevista": pd.Series(partida_prevista_series, dtype="string"),
+            "partida_real": pd.Series(partida_real_series, dtype="string"),
             "situacao_voo": pd.Series(situacao_series, dtype="string"),
             "atraso_enfrentado_minutos": atraso_series,
             "teve_bagagem_extraviada": teve_bagagem_extraviada.astype(bool),

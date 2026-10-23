@@ -13,6 +13,7 @@ import {
   ToggleRight,
   ChevronRight,
   Database,
+  Plane,
 } from "lucide-react";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       icon: FileText,
       badge: "Audit",
       active: pathname === "/audit-logs",
+    },
+    {
+      href: "/crew-view",
+      label: "Tripulação (Voo ao Vivo)",
+      sublabel: "Mapa de Assentos & CRM de Bordo",
+      icon: Plane,
+      badge: "Ao Vivo",
+      active: pathname === "/crew-view",
     },
   ];
 

@@ -12,6 +12,8 @@ import {
   SimularResponse,
   DecisaoAuditoria,
   ShapResponse,
+  AssentoVoo,
+  SimularBordoResponse,
 } from "@/types/api";
 
 export const DEMO_KPIS: DashboardKPIs = {
@@ -208,3 +210,95 @@ export const DEMO_SHAP: ShapResponse = {
     },
   ],
 };
+
+const DEMO_NAMES = [
+  "Lucas Silveira", "Beatriz Mendes", "Gabriel Rocha", "Mariana Oliveira", "Carlos Eduardo",
+  "Fernanda Lima", "Rodrigo Alves", "Juliana Costa", "Rafael Martins", "Camila Souza",
+  "Thiago Ribeiro", "Larissa Santos", "Bruno Carvalho", "Aline Pereira", "Felipe Ferreira",
+  "Amanda Barbosa", "Diego Castro", "Priscila Ramos", "Marcelo Dias", "Renata Gomes",
+];
+
+export const DEMO_VOO_SIMULADO: AssentoVoo[] = (() => {
+  const assentos: AssentoVoo[] = [];
+  const colunas = ["A", "B", "C", "D", "E", "F"];
+  let idx = 0;
+
+  for (let fileira = 1; fileira <= 15; fileira++) {
+    for (const col of colunas) {
+      const code = `${fileira}${col}`;
+      idx++;
+      const nome = DEMO_NAMES[idx % DEMO_NAMES.length];
+
+      // Define status com base em assentos pré-definidos para parecer um voo real
+      let status: "critico" | "vip" | "normal" = "normal";
+      let tier = "Básico";
+      let clv = 2400.0;
+      let risco = 0.25;
+      let atrito = 0.5;
+      let pareto = "Cauda Longa";
+      let persona = "Sensível a Preço";
+
+      if ([ "1A", "1C", "2D", "3A", "4F", "7C", "11B", "14D" ].includes(code)) {
+        status = "critico";
+        tier = fileira <= 4 ? "Diamante" : "Safira";
+        clv = fileira <= 4 ? 14800.0 : 6200.0;
+        risco = 0.78 + (idx % 15) * 0.01;
+        atrito = 4.2;
+        pareto = fileira <= 4 ? "Top 10% Receita" : "Top 50% Receita";
+        persona = fileira <= 4 ? "Executivo Frequente" : "Corporativo Ocasional";
+      } else if ([ "1B", "1D", "1F", "2A", "2F", "3C", "3D", "4A", "4C", "5B", "8A", "10F" ].includes(code)) {
+        status = "vip";
+        tier = "Diamante";
+        clv = 16500.0 - (fileira * 400);
+        risco = 0.32;
+        atrito = 1.0;
+        pareto = "Top 10% Receita";
+        persona = "Executivo Frequente";
+      }
+
+      assentos.push({
+        assento: code,
+        status,
+        dados_cliente: {
+          id_cliente: `cli_demo_${1000 + idx}`,
+          nome,
+          tier_fidelidade: tier,
+          persona,
+          clv_previsto: clv,
+          faixa_pareto: pareto,
+          risco_evasao: risco,
+          score_atrito_acumulado: atrito,
+        },
+      });
+    }
+  }
+  return assentos;
+})();
+
+export function getDemoSimularBordo(assento: string, id_cliente: string): SimularBordoResponse {
+  const item = DEMO_VOO_SIMULADO.find((a) => a.assento === assento);
+  const cliente = item ? item.dados_cliente : {
+    id_cliente,
+    nome: "Passageiro Especial",
+    tier_fidelidade: "Diamante",
+    persona: "Executivo Frequente",
+    clv_previsto: 12500,
+    faixa_pareto: "Top 10% Receita",
+    risco_evasao: 0.75,
+    score_atrito_acumulado: 3.8,
+  };
+
+  const isCritico = cliente.risco_evasao > 0.6;
+
+  return {
+    assento,
+    id_cliente,
+    acao_sugerida: isCritico ? "BEBIDA_CORTESIA" : "ABORDAGEM_CHEFE_CABINE",
+    custo_acao: isCritico ? 15.0 : 0.0,
+    retorno_liquido: isCritico ? 1850.0 : 2400.0,
+    instrucao_comissario: isCritico
+      ? `Atenção Tripulação: O passageiro ${cliente.nome} (${cliente.tier_fidelidade}) no assento ${assento} teve um atrito recente em conexão. Por gentileza, ofereça uma bebida cortesia do carrinho especial, pergunte sobre a experiência de hoje e transmita a atenção dedicada da Azul.`
+      : `Passageiro ${cliente.nome} no assento ${assento} é nosso cliente ${cliente.tier_fidelidade} (${cliente.faixa_pareto}). Aborde discretamente agradecendo pela preferência constante na rota e deseje um excelente voo em nome do Comandante e da Azul.`,
+    dados_cliente: cliente as unknown as Record<string, unknown>,
+  };
+}

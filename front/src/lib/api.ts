@@ -7,6 +7,9 @@ import {
   SimularResponse,
   DecisaoAuditoria,
   ShapResponse,
+  AssentoVoo,
+  SimularBordoPayload,
+  SimularBordoResponse,
 } from "@/types/api";
 
 const API_BASE_URL =
@@ -86,4 +89,14 @@ export const api = {
 
   getDecisaoShap: (decisaoId: string): Promise<ShapResponse> =>
     request<ShapResponse>(`/auditoria/decisoes/${encodeURIComponent(decisaoId)}/shap`),
+
+  // Tela 4: Visão da Tripulação (Mapa de Assentos)
+  getVooSimulado: (): Promise<AssentoVoo[]> =>
+    request<AssentoVoo[]>("/voo-simulado"),
+
+  simularBordo: (payload: SimularBordoPayload): Promise<SimularBordoResponse> =>
+    request<SimularBordoResponse>("/motor/simular-bordo", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };

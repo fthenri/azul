@@ -109,6 +109,42 @@ export interface ShapResponse {
   fatores: FatorShap[];
 }
 
+// ==========================================
+// Tela 4: Visão da Tripulação (Mapa de Assentos de Bordo)
+// ==========================================
+
+export interface AssentoCliente {
+  id_cliente: string;
+  nome: string;
+  tier_fidelidade: string;
+  persona: string;
+  clv_previsto: number;
+  faixa_pareto: string;
+  risco_evasao: number;
+  score_atrito_acumulado: number;
+}
+
+export interface AssentoVoo {
+  assento: string;
+  status: "critico" | "vip" | "normal";
+  dados_cliente: AssentoCliente;
+}
+
+export interface SimularBordoPayload {
+  id_cliente: string;
+  assento: string;
+}
+
+export interface SimularBordoResponse {
+  assento: string;
+  id_cliente: string;
+  acao_sugerida: string;
+  custo_acao: number;
+  retorno_liquido: number;
+  instrucao_comissario: string;
+  dados_cliente: Record<string, unknown>;
+}
+
 export interface ApiErrorResponse {
   detail?: string | Array<{ msg: string; loc?: string[] }>;
   message?: string;

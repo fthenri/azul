@@ -31,6 +31,18 @@ CATALOGO_ACOES: dict[str, dict[str, float]] = {
     "NAO_FAZER_NADA": {"custo": 0.00, "eficacia": 0.00},
 }
 
+CATALOGO_ACOES_BORDO: dict[str, dict[str, float]] = {
+    "BEBIDA_CORTESIA": {"custo": 15.00, "eficacia": 0.70},
+    "SNACK_EXTRA": {"custo": 5.00, "eficacia": 0.50},
+    "ABORDAGEM_CHEFE_CABINE": {"custo": 0.00, "eficacia": 0.35},
+}
+
+ROTULOS_ACOES_BORDO: dict[str, str] = {
+    "BEBIDA_CORTESIA": "Bebida Cortesia (Vinho / Cerveja / Suco Especial)",
+    "SNACK_EXTRA": "Snack Premium Extra / Pacote Especial",
+    "ABORDAGEM_CHEFE_CABINE": "Abordagem Pessoal do Chefe de Cabine",
+}
+
 
 def resolve_project_root() -> Path:
     return Path(__file__).resolve().parent.parent
@@ -316,6 +328,163 @@ Responda ESTRITAMENTE em formato JSON (sem nenhum texto ou formatação fora do 
     except Exception as exc:
         logger.warning("Falha na chamada ao LLM externo: %s. Utilizando fallback resiliente.", exc)
         return _obter_mock_padronizado(perfil_cliente, acao_vencedora)
+
+
+def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
+    clv_previsto = float(perfil_cliente.get("clv_previsto", 0.0))
+    risco_evasao = float(perfil_cliente.get("risco_evasao", 0.0))
+    tier = str(perfil_cliente.get("tier_fidelidade", "Basico")).strip()
+    faixa_pareto = str(perfil_cliente.get("faixa_pareto", "Cauda Longa")).strip()
+
+    avaliacoes: dict[str, float] = {}
+    for nome_acao, dados in CATALOGO_ACOES_BORDO.items():
+        custo = dados["custo"]
+        eficacia = dados["eficacia"]
+        retorno = (clv_previsto * risco_evasao * eficacia) - custo
+        avaliacoes[nome_acao] = round(retorno, 2)
+
+    acoes_ordenadas = sorted(avaliacoes.items(), key=lambda x: x[1], reverse=True)
+
+    if (risco_evasao > 0.60 or "Top 10%" in faixa_pareto or tier == "Diamante") and "BEBIDA_CORTESIA" in avaliacoes:
+        melhor_acao = "BEBIDA_CORTESIA"
+        retorno_escolhido = avaliacoes["BEBIDA_CORTESIA"]
+        custo_escolhido = CATALOGO_ACOES_BORDO["BEBIDA_CORTESIA"]["custo"]
+    elif acoes_ordenadas and acoes_ordenadas[0][1] > 0:
+        melhor_acao = acoes_ordenadas[0][0]
+        retorno_escolhido = acoes_ordenadas[0][1]
+        custo_escolhido = CATALOGO_ACOES_BORDO[melhor_acao]["custo"]
+    else:
+        melhor_acao = "ABORDAGEM_CHEFE_CABINE"
+        retorno_escolhido = avaliacoes.get("ABORDAGEM_CHEFE_CABINE", 0.0)
+        custo_escolhido = 0.0
+
+    return {
+        "acao_vencedora": melhor_acao,
+        "retorno_liquido": round(retorno_escolhido, 2),
+        "custo_acao": round(custo_escolhido, 2),
+        "avaliacoes": avaliacoes,
+    }
+
+
+def _obter_mock_bordo_padronizado(
+    perfil_cliente: dict[str, Any],
+    assento: str,
+    acao_vencedora: str,
+) -> dict[str, str]:
+    tier = str(perfil_cliente.get("tier_fidelidade", "Basico"))
+    risco = float(perfil_cliente.get("risco_evasao", 0.0))
+    id_curto = str(perfil_cliente.get("id_cliente", ""))[:8].upper()
+
+    if acao_vencedora == "BEBIDA_CORTESIA":
+        msg = (
+            f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) enfrentou atrito operacional em voo recente "
+            f"(risco de evasão {risco * 100:.1f}%). Ao iniciar o serviço de bordo, ofereça uma bebida cortesia "
+            "(suco premium, cerveja especial ou refrigerante), peça desculpas em nome da Azul pelos imprevistos passados "
+            "e agradeça calorosamente por sua fidelidade."
+        )
+    elif acao_vencedora == "SNACK_EXTRA":
+        msg = (
+            f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) demonstrou atrito recente com a malha. "
+            "Durante a passagem da tripulação, ofereça um snack premium extra como cortesia personalizada, "
+            "demonstrando atenção aos detalhes e reforçando a hospitalidade Azul."
+        )
+    else:
+        msg = (
+            f"Passageiro(a) no assento {assento} (#{id_curto}, categoria {tier}) é cliente prioritário no Azul Fidelidade. "
+            "O Chefe de Cabine deve realizar uma saudação nominal cordial durante o voo, "
+            "agradecer sua fidelidade e colocar toda a equipe à disposição para garantir uma viagem perfeita."
+        )
+
+    return {"instrucao_comissario": msg}
+
+
+def gerar_instrucao_bordo_llm(
+    perfil_cliente: dict[str, Any],
+    assento: str,
+    acao_vencedora: str,
+    contexto_rag: str,
+) -> dict[str, str]:
+    # Bloco de chamada à API de LLM para instruções de bordo da tripulação
+    try:
+        load_dotenv(resolve_project_root() / ".env")
+        load_dotenv(resolve_project_root() / "back" / ".env")
+
+        gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+
+        if not gemini_key and not openai_key:
+            return _obter_mock_bordo_padronizado(perfil_cliente, assento, acao_vencedora)
+
+        tier = perfil_cliente.get("tier_fidelidade", "Basico")
+        persona = perfil_cliente.get("persona", "Viajante")
+        clv = float(perfil_cliente.get("clv_previsto", 0.0))
+        risco = float(perfil_cliente.get("risco_evasao", 0.0))
+        atrito = float(perfil_cliente.get("score_atrito_acumulado", 0.0))
+
+        prompt = f"""Você é o Assistente Digital da Tripulação de Cabine da Azul Linhas Aéreas (Guest Service Tool).
+Sua missão é instruir diretamente os comissários de voo e o chefe de cabine sobre como agir presencialmente com o passageiro no assento {assento}.
+
+### DIRETRIZES DA COMPANHIA:
+{contexto_rag}
+
+### PERFIL DO PASSAGEIRO A BORDO:
+- Assento: {assento}
+- Categoria TudoAzul / Tier: {tier}
+- Persona Identificada: {persona}
+- CLV Previsto: R$ {clv:,.2f}
+- Risco de Evasão (Churn): {risco * 100:.1f}%
+- Histórico de Atrito: {atrito:.2f}
+
+### AÇÃO DE BORDO ARBITRADA:
+- Ação: {acao_vencedora}
+
+### INSTRUÇÕES OBRIGATÓRIAS:
+Responda EXCLUSIVAMENTE em formato JSON (sem formatações markdown adicionais) com a seguinte chave:
+{{
+  "instrucao_comissario": "Instrução curta, prática e empática para o comissário abordar o passageiro no assento {assento} (ex: 'Cliente {assento} sofreu atraso no voo anterior. Ofereça a bebida cortesia durante o serviço, peça desculpas em nome da Azul e agradeça a fidelidade {tier}.')."
+}}
+"""
+        conteudo_raw = ""
+        if gemini_key:
+            import google.generativeai as genai
+            genai.configure(api_key=gemini_key)
+            model = genai.GenerativeModel(
+                model_name="gemini-1.5-flash",
+                generation_config={"response_mime_type": "application/json"},
+            )
+            response = model.generate_content(prompt)
+            conteudo_raw = response.text.strip()
+        elif openai_key:
+            from openai import OpenAI
+            client = OpenAI(api_key=openai_key)
+            completion = client.chat.completions.create(
+                model="gpt-4o-mini",
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": "Você é um assistente de bordo da Azul. Responda estritamente em JSON."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,
+            )
+            conteudo_raw = completion.choices[0].message.content or ""
+
+        if conteudo_raw.startswith("```"):
+            linhas = conteudo_raw.splitlines()
+            if linhas[0].startswith("```"):
+                linhas = linhas[1:]
+            if linhas and linhas[-1].startswith("```"):
+                linhas = linhas[:-1]
+            conteudo_raw = "\n".join(linhas).strip()
+
+        dados_json = json.loads(conteudo_raw)
+        if isinstance(dados_json, dict) and "instrucao_comissario" in dados_json:
+            return {"instrucao_comissario": str(dados_json["instrucao_comissario"]).strip()}
+
+        return _obter_mock_bordo_padronizado(perfil_cliente, assento, acao_vencedora)
+
+    except Exception as exc:
+        logger.warning("Falha na chamada LLM de bordo: %s. Usando mock.", exc)
+        return _obter_mock_bordo_padronizado(perfil_cliente, assento, acao_vencedora)
 
 
 def selecionar_clientes_teste_gold(
