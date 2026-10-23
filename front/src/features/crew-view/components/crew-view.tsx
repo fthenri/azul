@@ -40,7 +40,6 @@ export function CrewView() {
     setFilter,
     attendedSeats,
     markSeatAsAttended,
-    isDemoMode,
   } = useCrewFlight();
 
   // Contagens para os cards de resumo
@@ -69,11 +68,6 @@ export function CrewView() {
               {metadata && (
                 <Badge className="bg-white/15 text-white border-white/25 text-[10px] font-mono">
                   {metadata.codigo}
-                </Badge>
-              )}
-              {isDemoMode && (
-                <Badge className="bg-amber-400/20 text-amber-200 border-amber-300/30 text-[10px]">
-                  Modo Demo
                 </Badge>
               )}
             </div>

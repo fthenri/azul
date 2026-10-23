@@ -21,7 +21,6 @@ export function AuditView() {
     isLoadingShap,
     isErrorShap,
     shapError,
-    isDemoMode,
   } = useAuditLogs();
 
   return (
@@ -57,7 +56,7 @@ export function AuditView() {
       </div>
 
       {/* Alerta de erro da API real */}
-      {isErrorDecisoes && !isDemoMode && (
+      {isErrorDecisoes && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Falha ao carregar registros de auditoria</AlertTitle>

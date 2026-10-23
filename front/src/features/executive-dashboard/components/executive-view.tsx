@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function ExecutiveView() {
-  const { kpis, personas, pareto, isLoading, isError, error, refetchAll, isDemoMode } =
+  const { kpis, personas, pareto, isLoading, isError, error, refetchAll } =
     useExecutiveData();
 
   return (
@@ -47,7 +47,7 @@ export function ExecutiveView() {
       </div>
 
       {/* Tratamento de Erro Real da API */}
-      {isError && !isDemoMode && (
+      {isError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Falha na comunicação com a API</AlertTitle>

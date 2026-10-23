@@ -9,13 +9,10 @@ import {
   Cpu,
   FileText,
   ShieldCheck,
-  ToggleLeft,
-  ToggleRight,
   ChevronRight,
   Database,
   Plane,
 } from "lucide-react";
-import { useDemoMode } from "@/components/providers/demo-mode-context";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -25,7 +22,6 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { isDemoMode, toggleDemoMode } = useDemoMode();
 
   const navItems = [
     {
@@ -165,32 +161,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
         </div>
 
-        {/* Footer da Sidebar: Demo Mode & Status */}
+        {/* Footer da Sidebar: Status & Versão */}
         <div className="p-4 border-t border-white/10 bg-[#002855]/90 dark:bg-[#050e1b] space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-white/80 font-medium">Origem dos Dados:</span>
-            <button
-              onClick={toggleDemoMode}
-              type="button"
-              className={cn(
-                "flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-semibold transition-colors cursor-pointer",
-                isDemoMode
-                  ? "border-amber-400 bg-amber-500/20 text-amber-200"
-                  : "border-emerald-400 bg-emerald-500/20 text-emerald-200"
-              )}
-            >
-              {isDemoMode ? (
-                <>
-                  <ToggleRight className="h-3.5 w-3.5 text-amber-300" />
-                  <span>Demo (Mock)</span>
-                </>
-              ) : (
-                <>
-                  <ToggleLeft className="h-3.5 w-3.5 text-emerald-300" />
-                  <span>API Real</span>
-                </>
-              )}
-            </button>
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-emerald-400/40 bg-emerald-500/15 text-emerald-200 text-[10px] font-semibold">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              API Real
+            </span>
           </div>
 
           <div className="text-[9px] text-white/40 flex items-center justify-between">

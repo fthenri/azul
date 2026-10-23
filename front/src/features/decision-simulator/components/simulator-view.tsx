@@ -24,7 +24,6 @@ export function SimulatorView() {
     simulationResult,
     isSimulating,
     simulationError,
-    isDemoMode,
   } = useSimulation();
 
   return (
@@ -61,7 +60,7 @@ export function SimulatorView() {
       </div>
 
       {/* Alerta de erro da API real */}
-      {isErrorMomentos && !isDemoMode && (
+      {isErrorMomentos && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Falha ao carregar fila de momentos</AlertTitle>

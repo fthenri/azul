@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext } from "react";
 
 interface DemoModeContextType {
   isDemoMode: boolean;
@@ -15,35 +15,10 @@ const DemoModeContext = createContext<DemoModeContextType>({
 });
 
 export function DemoModeProvider({ children }: { children: React.ReactNode }) {
-  // Conexão de estado: controle do modo de demonstração desativado por padrão
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
-
-  useEffect(() => {
-    // Conexão de estado: validação da flag de ambiente ou armazenamento local
-    if (process.env.NEXT_PUBLIC_DEMO_MODE === "false") {
-      setIsDemoMode(false);
-      return;
-    }
-    const stored = localStorage.getItem("azul_demo_mode");
-    if (stored !== null) {
-      setIsDemoMode(stored === "true");
-    } else {
-      setIsDemoMode(process.env.NEXT_PUBLIC_DEMO_MODE === "true");
-    }
-  }, []);
-
-  const toggleDemoMode = () => {
-    setIsDemoMode((prev) => {
-      const next = !prev;
-      localStorage.setItem("azul_demo_mode", String(next));
-      return next;
-    });
-  };
-
-  const setDemoMode = (val: boolean) => {
-    setIsDemoMode(val);
-    localStorage.setItem("azul_demo_mode", String(val));
-  };
+  // Para o deploy final, a aplicação opera exclusivamente consumindo a API real
+  const isDemoMode = false;
+  const toggleDemoMode = () => {};
+  const setDemoMode = () => {};
 
   return (
     <DemoModeContext.Provider value={{ isDemoMode, toggleDemoMode, setDemoMode }}>
