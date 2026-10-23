@@ -7,6 +7,7 @@ import { MomentsQueue } from "./moments-queue";
 import { SimulationForm } from "./simulation-form";
 import { ArbitrationPanel } from "./arbitration-panel";
 import { LlmMessagePanel } from "./llm-message-panel";
+import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -39,8 +40,9 @@ export function SimulatorView() {
               Simulador em Tempo Real
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-[#5B6E84] mt-1">
-            Simulação de ações de retenção com Árbitro Matemático (Uplift) e geração de mensagens com LLM + RAG
+          <p className="text-xs sm:text-sm text-[#5B6E84] mt-1 flex items-center">
+            <span>Simulação de ações de retenção com Árbitro Matemático (Uplift) e geração de mensagens com LLM + RAG</span>
+            <InfoTooltip text="Cálculo de probabilidade de mudança de comportamento do cliente após receber o benefício." />
           </p>
         </div>
 

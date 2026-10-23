@@ -26,7 +26,23 @@ docker compose down
 
 ---
 
-## 🛠️ 2. Script de Auditoria Técnica da Esteira de Dados
+## 🤖 2. Ativando a Inteligência Artificial (Agente LLM)
+
+O sistema opera de forma autônoma e resiliente com fallbacks padronizados baseados em regras caso nenhuma chave externa seja informada. Para ativar chamadas reais ao modelo generativo do **Google Gemini** para geração personalizada de drafts de CRM e instruções da tripulação:
+
+1. **Criar chave gratuita no Google AI Studio**:
+   Acesse o [Google AI Studio](https://aistudio.google.com/) e gere uma chave de API gratuita.
+2. **Criar arquivo `.env` na raiz**:
+   Crie o arquivo `.env` na raiz do projeto (ou copie de `.env.example`).
+3. **Inserir a chave de API**:
+   ```env
+   GEMINI_API_KEY=sua_chave_aqui
+   ```
+   *(Nota: Opcionalmente, o sistema também oferece compatibilidade nativa com `OPENAI_API_KEY=sua_chave`).*
+
+---
+
+## 🛠️ 3. Script de Auditoria Técnica da Esteira de Dados
 
 Para auditar e reexecutar a esteira completa da **Arquitetura Medallion**, disponibilizamos o script executável na raiz do projeto:
 
@@ -43,7 +59,7 @@ Para auditar e reexecutar a esteira completa da **Arquitetura Medallion**, dispo
 
 ---
 
-## 🧪 3. Testes Automatizados da API e Regras de Negócio
+## 🧪 4. Testes Automatizados da API e Regras de Negócio
 
 Para validar a integridade de todos os contratos e regras de Uplift:
 
@@ -51,13 +67,13 @@ Para validar a integridade de todos os contratos e regras de Uplift:
 # Ativar o ambiente virtual:
 source .venv/bin/activate
 
-# Executar a suíte de testes (35 testes):
+# Executar a suíte de testes (40 testes):
 pytest back/tests/ -v
 ```
 
 ---
 
-## 📁 4. Estrutura do Repositório
+## 📁 5. Estrutura do Repositório
 
 ```text
 azul/

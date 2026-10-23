@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { ParetoData } from "@/types/api";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 
@@ -61,8 +62,9 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base font-bold text-foreground">
+            <CardTitle className="text-base font-bold text-foreground flex items-center">
               Curva de Concentração de Valor (Pareto 80/20)
+              <InfoTooltip text="Concentração de receita: identifica a pequena parcela de clientes que sustenta o faturamento." />
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
               Valor acumulado (R$) por decil e percentual acumulado sobre o total da carteira

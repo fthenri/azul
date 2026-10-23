@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { PersonaData } from "@/types/api";
 import { formatCurrency, formatPercent, formatNumber } from "@/lib/formatters";
 
@@ -66,8 +67,9 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base font-bold text-foreground">
+            <CardTitle className="text-base font-bold text-foreground flex items-center">
               Mapa de Personas (CLV Médio × Risco de Evasão)
+              <InfoTooltip text="CLV (Customer Lifetime Value): Previsão de lucro futuro gerado pelo cliente com base no histórico de engajamento e decaimento." />
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
               Eixo X: Risco de Churn | Eixo Y: CLV Médio (R$) | Tamanho da Bolha: Efeito Manada (Volume)

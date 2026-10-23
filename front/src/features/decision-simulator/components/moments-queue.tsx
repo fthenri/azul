@@ -5,6 +5,7 @@ import { Clock, ChevronRight, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { Momento } from "@/types/api";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 
@@ -100,7 +101,10 @@ export function MomentsQueue({
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
-                  <span>CLV:</span>
+                  <span className="flex items-center">
+                    CLV
+                    <InfoTooltip text="Previsão de lucro futuro gerado pelo cliente com base no histórico de engajamento e decaimento." />:
+                  </span>
                   <span className="font-bold text-azul-navy dark:text-[#38BDF8]">
                     {formatCurrency(m.clv_previsto)}
                   </span>

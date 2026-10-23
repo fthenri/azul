@@ -107,18 +107,22 @@ def build_gold_personas(
         rng.uniform(5.0, 60.0, size=len(df_gold)).round(2).astype(np.float64)
     )
 
-    # Seleção exclusiva de features comportamentais (sem variáveis monetárias ou CLV) para a clusterização K-Means.
+    # Seleção de features numéricas para a clusterização K-Means (frequência, antecedência, tamanho PNR e FDS).
     feature_cols = [
         "frequencia_total",
         "antecedencia_media_compra",
         "tamanho_medio_pnr",
         "percentual_voos_fds",
     ]
-    scaler = StandardScaler()
-    features_scaled = scaler.fit_transform(df_gold[feature_cols].to_numpy(dtype=np.float64))
 
+    # Normalização estatística via StandardScaler para eliminar o viés de escala
+    # (evita que variáveis com ordens de grandeza maiores engulam as demais dimensões)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(df_gold[feature_cols].to_numpy(dtype=np.float64))
+
+    # Treinamento do K-Means usando o array normalizado (X_scaled) para criar 4 grupos bem distribuídos
     kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=seed, n_init=10)
-    cluster_labels = kmeans.fit_predict(features_scaled)
+    cluster_labels = kmeans.fit_predict(X_scaled)
 
     # Mapeamento dos centroides do K-Means para os nomes de negócio das 4 personas.
     centroids_df = pd.DataFrame(kmeans.cluster_centers_, columns=feature_cols)

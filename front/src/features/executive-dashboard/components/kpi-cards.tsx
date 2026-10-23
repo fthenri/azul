@@ -3,6 +3,7 @@ import { ShieldCheck, TrendingUp, DollarSign, Award } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { DashboardKPIs } from "@/types/api";
 import { formatCurrency, formatRatio } from "@/lib/formatters";
 
@@ -40,6 +41,7 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
       color: "text-[#16805D]",
       bg: "bg-[#16805D]/10",
       border: "border-[#16805D]/20",
+      tooltip: "CLV (Customer Lifetime Value): Previsão de lucro futuro gerado pelo cliente com base no histórico de engajamento e decaimento.",
     },
     {
       title: "Valor Gerado",
@@ -82,8 +84,9 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
           >
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center">
                   {kpi.title}
+                  {kpi.tooltip && <InfoTooltip text={kpi.tooltip} side="bottom" />}
                 </span>
                 <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${kpi.bg} ${kpi.color}`}>
                   <Icon className="h-5 w-5" />

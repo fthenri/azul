@@ -4,6 +4,7 @@ import React from "react";
 import { Scale, Trophy, CheckCircle, AlertOctagon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { SimularResponse } from "@/types/api";
 import { formatCurrency } from "@/lib/formatters";
 
@@ -33,7 +34,10 @@ export function ArbitrationPanel({ result }: ArbitrationPanelProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-medium">Classificação Uplift:</span>
+            <span className="text-xs text-muted-foreground font-medium flex items-center">
+              Classificação Uplift:
+              <InfoTooltip text="Cálculo de probabilidade de mudança de comportamento do cliente após receber o benefício." />
+            </span>
             <Badge className="bg-primary text-primary-foreground text-xs font-bold">
               {uplift_status}
             </Badge>

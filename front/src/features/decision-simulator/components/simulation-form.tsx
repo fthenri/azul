@@ -7,6 +7,7 @@ import * as z from "zod";
 import { Play, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { Momento } from "@/types/api";
 
 const simularSchema = z.object({
@@ -59,8 +60,9 @@ export function SimulationForm({
             Parâmetros da Simulação
           </CardTitle>
         </div>
-        <CardDescription className="text-xs">
-          O motor aciona o Árbitro Matemático (Uplift) e o Agente LLM para arbitrar a melhor ação
+        <CardDescription className="text-xs flex items-center">
+          <span>O motor aciona o Árbitro Matemático (Uplift) e o Agente LLM para arbitrar a melhor ação</span>
+          <InfoTooltip text="Cálculo de probabilidade de mudança de comportamento do cliente após receber o benefício." />
         </CardDescription>
       </CardHeader>
       <CardContent>
