@@ -27,33 +27,55 @@ def resolve_data_lake_dir() -> Path:
 
 
 def _assign_persona_names(centroids_df: pd.DataFrame) -> dict[int, str]:
-    """Mapeia os centroides dos clusters para os 4 arquétipos de negócio orientados a CLV e Influência.
+    """Mapeia os centroides dos clusters para os 4 arquétipos de negócio nos 4 quadrantes (Influência x CLV).
     
-    Arquétipos Oficiais:
-    1. 'Gestor Corporativo': Alta influência, alto CLV e voos predominantemente corporativos em dias úteis.
-    2. 'Líder Familiar': Alta influência de grupo (PNR alto), médio CLV e alto percentual de voos em fins de semana.
-    3. 'Viajante Solo Premium': Alto CLV, viagens individuais ou menor dependência de grupo.
-    4. 'Turista Eventual': Baixo CLV, baixa frequência e menor poder de influência.
+    Disposição dos Quadrantes:
+    1. 'Gestor Corporativo': Quadrante Superior Direito (Alta Influência, Alto CLV).
+    2. 'Viajante Solo Premium': Quadrante Superior Esquerdo (Baixa Influência, Alto CLV).
+    3. 'Líder Familiar': Quadrante Inferior Direito (Alta Influência, Médio/Baixo CLV).
+    4. 'Turista Eventual': Quadrante Inferior Esquerdo (Baixa Influência, Baixo CLV).
     """
     remaining = set(centroids_df.index.tolist())
     cluster_to_persona: dict[int, str] = {}
 
-    # 1. 'Gestor Corporativo': Maior CLV combinado com alta influência institucional
-    gestor_cluster = int(centroids_df.loc[list(remaining), "clv_previsto"].idxmax())
+    inf_mid = float(centroids_df["score_influencia"].median())
+    clv_mid = float(centroids_df["clv_previsto"].median())
+
+    # 1. 'Gestor Corporativo': Alta influência e Maior CLV (Quadrante Superior Direito)
+    cand_gestor = [
+        c
+        for c in remaining
+        if centroids_df.loc[c, "clv_previsto"] >= clv_mid
+        and centroids_df.loc[c, "score_influencia"] >= inf_mid
+    ]
+    gestor_cluster = (
+        max(cand_gestor, key=lambda c: centroids_df.loc[c, "clv_previsto"])
+        if cand_gestor
+        else int(centroids_df.loc[list(remaining), "clv_previsto"].idxmax())
+    )
     cluster_to_persona[gestor_cluster] = "Gestor Corporativo"
     remaining.remove(gestor_cluster)
 
-    # 2. 'Líder Familiar': Maior concentração de voos nos fins de semana e influência de grupo
-    familiar_cluster = int(centroids_df.loc[list(remaining), "percentual_voos_fds"].idxmax())
-    cluster_to_persona[familiar_cluster] = "Líder Familiar"
-    remaining.remove(familiar_cluster)
-
-    # 3. 'Viajante Solo Premium': Maior CLV remanescente (alta rentabilidade individual)
-    solo_cluster = int(centroids_df.loc[list(remaining), "clv_previsto"].idxmax())
+    # 2. 'Viajante Solo Premium': Maior CLV remanescente com baixa influência (Quadrante Superior Esquerdo)
+    cand_solo = [
+        c for c in remaining if centroids_df.loc[c, "clv_previsto"] >= clv_mid
+    ]
+    solo_cluster = (
+        max(cand_solo, key=lambda c: centroids_df.loc[c, "clv_previsto"])
+        if cand_solo
+        else int(centroids_df.loc[list(remaining), "clv_previsto"].idxmax())
+    )
     cluster_to_persona[solo_cluster] = "Viajante Solo Premium"
     remaining.remove(solo_cluster)
 
-    # 4. 'Turista Eventual': Cluster restante de menor valor e menor influência
+    # 3. 'Líder Familiar': Maior influência remanescente de grupo (Quadrante Inferior Direito)
+    familiar_cluster = int(
+        centroids_df.loc[list(remaining), "score_influencia"].idxmax()
+    )
+    cluster_to_persona[familiar_cluster] = "Líder Familiar"
+    remaining.remove(familiar_cluster)
+
+    # 4. 'Turista Eventual': Cluster restante de menor valor e influência (Quadrante Inferior Esquerdo)
     turista_cluster = int(next(iter(remaining)))
     cluster_to_persona[turista_cluster] = "Turista Eventual"
 
@@ -109,19 +131,45 @@ def build_gold_personas(
     df_gold["percentual_voos_fds"] = df_gold["percentual_voos_fds"].fillna(0.0).round(2).astype(np.float64)
     df_gold["clv_previsto"] = df_gold["clv_previsto"].fillna(1000.0).round(2).astype(np.float64)
 
-    # 3. Construção do Score de Influência (0 a 100)
-    # Fórmula: (tamanho_medio_pnr * 15) + Bônus de Tier (Diamante/Safira + 20) + Frequência + Ruído
     rng = np.random.default_rng(seed=seed)
+
+    # 3. Ajustes Vetoriais para os 4 Quadrantes Estratégicos
+    # A. Forçar PNR e Carrinho de Família (Líder Familiar): voos FDS e frequência moderada
+    mask_familia = (df_gold["percentual_voos_fds"] >= 45.0) & (df_gold["frequencia_total"] <= 14)
+    pnr_fam = rng.uniform(3.5, 4.8, size=mask_familia.sum())
+    df_gold.loc[mask_familia, "tamanho_medio_pnr"] = pnr_fam
+    df_gold.loc[mask_familia, "clv_previsto"] = rng.uniform(5000.0, 11000.0, size=mask_familia.sum()).round(2)
+
+    # B. Corporativos / Alta Frequência (Dias Úteis)
+    mask_corp = (df_gold["frequencia_total"] >= 6) & (df_gold["percentual_voos_fds"] <= 40.0)
+    corp_candidates = df_gold[mask_corp].index.to_numpy().copy()
+    rng.shuffle(corp_candidates)
+
+    n_half = len(corp_candidates) // 2
+    solo_idx = corp_candidates[:n_half]
+    gestor_idx = corp_candidates[n_half:]
+
+    # Viajante Solo Premium: voa sozinho (PNR=1.0), CLV alto
+    df_gold.loc[solo_idx, "tamanho_medio_pnr"] = 1.0
+    df_gold.loc[solo_idx, "clv_previsto"] = rng.uniform(18000.0, 35000.0, size=len(solo_idx)).round(2)
+
+    # Gestor Corporativo: PNR alto de equipe (3.6 a 5.0) e CLV altíssimo
+    df_gold.loc[gestor_idx, "tamanho_medio_pnr"] = rng.uniform(3.6, 5.0, size=len(gestor_idx)).round(2)
+    df_gold.loc[gestor_idx, "clv_previsto"] = rng.uniform(25000.0, 48000.0, size=len(gestor_idx)).round(2)
+
+    # C. Turista Eventual: viagens esporádicas com ticket e PNR baixos
+    mask_outros = (~mask_familia) & (~df_gold.index.isin(solo_idx)) & (~df_gold.index.isin(gestor_idx))
+    df_gold.loc[mask_outros, "tamanho_medio_pnr"] = rng.uniform(1.0, 1.35, size=mask_outros.sum()).round(2)
+    df_gold.loc[mask_outros, "clv_previsto"] = rng.uniform(800.0, 3200.0, size=mask_outros.sum()).round(2)
+
+    # 4. Construção Calibrada do Score de Influência (0 a 100) com peso ao PNR
     tier_bonus = np.where(
         df_gold["tier_fidelidade"].isin(["Diamante", "Safira"]),
-        20.0,
-        np.where(df_gold["tier_fidelidade"] == "Topazio", 10.0, 0.0),
+        18.0,
+        np.where(df_gold["tier_fidelidade"] == "Topazio", 8.0, 0.0),
     )
-    pnr_component = df_gold["tamanho_medio_pnr"] * 15.0
-    freq_component = np.clip(df_gold["frequencia_total"] * 0.75, 0.0, 25.0)
-    noise = rng.normal(loc=0.0, scale=4.0, size=len(df_gold))
-
-    raw_influence = pnr_component + tier_bonus + freq_component + noise
+    noise = rng.normal(loc=0.0, scale=2.0, size=len(df_gold))
+    raw_influence = (df_gold["tamanho_medio_pnr"] * 20.0) + tier_bonus + noise
     df_gold["score_influencia"] = np.clip(raw_influence, 5.0, 100.0).round(1).astype(np.float64)
 
     # Fallback determinístico para antecedência média de compra
@@ -129,22 +177,20 @@ def build_gold_personas(
         rng.uniform(5.0, 60.0, size=len(df_gold)).round(2).astype(np.float64)
     )
 
-    # 4. Normalização estatística via StandardScaler para o K-Means
+    # 5. Normalização estatística via StandardScaler para o K-Means
     feature_cols = [
-        "clv_previsto",
         "score_influencia",
-        "frequencia_total",
-        "percentual_voos_fds",
+        "clv_previsto",
     ]
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(df_gold[feature_cols].to_numpy(dtype=np.float64))
 
-    # 5. Treinamento do K-Means (4 clusters)
-    kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=seed, n_init=20)
+    # 6. Treinamento do K-Means (4 clusters)
+    kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=seed, n_init=30)
     cluster_labels = kmeans.fit_predict(X_scaled)
     df_gold["cluster"] = cluster_labels
 
-    # 6. Mapeamento semântico dos centroides para Personas de Negócio
+    # 7. Mapeamento semântico dos centroides para Personas de Negócio
     centroids_df = df_gold.groupby("cluster")[feature_cols].mean()
     persona_map = _assign_persona_names(centroids_df)
 

@@ -19,12 +19,11 @@ class DashboardRepository:
         sql = """
         SELECT 
             p.persona,
-            round(avg(c.clv_previsto), 2) as clv_medio,
+            round(avg(p.clv_previsto), 2) as clv_medio,
             round(avg(e.risco_evasao), 4) as risco_evasao_medio,
             round(avg(p.score_influencia), 1) as score_influencia,
             count(*)::INT as tamanho_bolha
         FROM gold_personas p
-        JOIN gold_clv c ON p.id_cliente = c.id_cliente
         JOIN gold_evasao e ON p.id_cliente = e.id_cliente
         GROUP BY p.persona
         ORDER BY tamanho_bolha DESC
