@@ -11,7 +11,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   // Rotas independentes (Gateway na raiz '/' e Guest Service Tool em '/crew'):
   // Renderizam tela cheia dedicada, sem a barra lateral do gestor
-  const isBarePage = pathname === "/" || pathname?.startsWith("/crew");
+  const isBarePage =
+    pathname === "/" ||
+    pathname?.startsWith("/crew") ||
+    pathname?.startsWith("/login");
   if (isBarePage) {
     return <>{children}</>;
   }

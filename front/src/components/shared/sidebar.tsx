@@ -15,6 +15,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -23,6 +24,7 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   const navItems = [
     {
@@ -48,14 +50,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       icon: FileText,
       badge: "Audit",
       active: pathname === "/audit-logs",
-    },
-    {
-      href: "/flight-dispatch",
-      label: "Despacho de Voo (Mapa)",
-      sublabel: "Simulador de Assentos & Ações",
-      icon: Plane,
-      badge: "Ao Vivo",
-      active: pathname === "/flight-dispatch" || pathname === "/crew-view",
     },
   ];
 
@@ -172,6 +166,26 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </span>
           </div>
 
+          {/* Perfil Autenticado */}
+          {user && (
+            <div className="p-2.5 rounded-xl bg-black/25 border border-white/10 flex items-center justify-between">
+              <div className="flex flex-col truncate pr-2">
+                <span className="font-bold text-white truncate text-xs">{user.name}</span>
+                <span className="text-[10px] text-[#38BDF8] uppercase font-semibold tracking-wider">
+                  Perfil: {user.role === "manager" ? "Gestor CRM" : "Tripulação"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={logout}
+                title="Encerrar sessão"
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-red-500/20 text-white/70 hover:text-red-300 transition-colors"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
           <div className="text-[9px] text-white/40 flex items-center justify-between">
             <span>Azul B2B v1.2</span>
             <span>Zero Refactoring</span>
@@ -181,8 +195,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             href="/"
             className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-semibold transition-colors"
           >
-            <LogOut className="h-3.5 w-3.5" />
-            <span>Trocar de Perfil</span>
+            <span>Trocar de Portal</span>
           </Link>
         </div>
       </aside>

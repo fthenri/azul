@@ -9,13 +9,19 @@ import {
   ArrowRight,
   ShieldCheck,
   Sparkles,
-  Users,
-  Cpu,
   Lock,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/lib/auth-context";
 
 export default function GatewayPage() {
+  const { user } = useAuth();
+
+  // Se já estiver autenticado com o perfil correspondente, vai direto para a estação de trabalho;
+  // Caso contrário, direciona para o subpath de login daquele perfil específico.
+  const managerHref = user?.role === "manager" ? "/dashboard" : "/login/manager";
+  const commissionerHref = user?.role === "commissioner" ? "/crew" : "/login/commissioner";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#001733] via-[#002855] to-[#003B7A] text-white flex flex-col justify-between p-4 sm:p-8 relative overflow-hidden font-sans antialiased">
       {/* Elementos Decorativos de Fundo (Aviation Aesthetic) */}
@@ -65,7 +71,7 @@ export default function GatewayPage() {
             Bem-vindo ao Ecossistema Azul
           </h1>
           <p className="text-sm sm:text-base text-white/80 font-normal leading-relaxed">
-            Selecione a sua estação de trabalho para acessar as ferramentas analíticas de retencão ou a assistência em voo da comissária.
+            Selecione a sua estação de trabalho para acessar as ferramentas analíticas de retenção ou a assistência em voo da comissária.
           </p>
         </div>
 
@@ -73,7 +79,7 @@ export default function GatewayPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
           {/* Card 1: Portal do Gestor */}
           <Link
-            href="/dashboard"
+            href={managerHref}
             className="group relative flex flex-col justify-between rounded-3xl border border-white/15 bg-white/10 backdrop-blur-md p-6 sm:p-8 hover:bg-white/15 hover:border-[#38BDF8]/60 transition-all duration-300 shadow-xl hover:shadow-[#0077C8]/20 hover:-translate-y-1"
           >
             <div className="space-y-5">
@@ -125,7 +131,7 @@ export default function GatewayPage() {
 
           {/* Card 2: Guest Service Tool */}
           <Link
-            href="/crew"
+            href={commissionerHref}
             className="group relative flex flex-col justify-between rounded-3xl border border-white/15 bg-white/10 backdrop-blur-md p-6 sm:p-8 hover:bg-white/15 hover:border-emerald-400/60 transition-all duration-300 shadow-xl hover:shadow-emerald-500/20 hover:-translate-y-1"
           >
             <div className="space-y-5">

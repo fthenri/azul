@@ -31,6 +31,7 @@ import { getMissions, updateMissionStatus, SyncMission } from "@/lib/sync-storag
 import { useCrewFlight } from "@/features/crew-view/hooks/use-crew-flight";
 import { CrewSeatMap } from "@/features/crew-view/components/crew-seat-map";
 import { AssentoVoo } from "@/types/api";
+import { useAuth } from "@/lib/auth-context";
 
 /**
  * ============================================================================
@@ -42,6 +43,7 @@ import { AssentoVoo } from "@/types/api";
  * ============================================================================
  */
 export default function CrewPage() {
+  const { user, logout } = useAuth();
   // 1. Estado Reativo de Missões (Inicializado vazio, sem dados hardcoded)
   const [missions, setMissions] = useState<SyncMission[]>([]);
 
@@ -223,6 +225,17 @@ export default function CrewPage() {
                 <span>Trocar Perfil</span>
               </Button>
             </Link>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={logout}
+              className="border-slate-700 bg-slate-900 hover:bg-red-950/40 text-slate-200 hover:text-red-300 text-xs gap-1.5 h-8 cursor-pointer"
+              title="Encerrar sessão"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span>Sair</span>
+            </Button>
           </div>
         </div>
       </header>
