@@ -3,7 +3,12 @@ from __future__ import annotations
 from typing import List
 from fastapi import APIRouter, Depends
 
-from back.app.api.dependencies import get_crew_service, get_simulation_service
+from back.app.api.dependencies import (
+    RequireCommissionerOrManagerDep,
+    RequireManagerDep,
+    get_crew_service,
+    get_simulation_service,
+)
 from back.app.modules.simulation.crew_service import CrewService
 from back.app.modules.simulation.service import SimulationService
 from back.app.schemas.simulation import (
@@ -27,6 +32,7 @@ router = APIRouter(prefix="/motor", tags=["Central de Decisões"])
 )
 async def simular_motor(
     payload: SimularPayload,
+    _user: RequireManagerDep,
     service: SimulationService = Depends(get_simulation_service),
 ) -> SimularResponse:
     target_id = payload.id_cliente or payload.cliente_id
@@ -42,6 +48,7 @@ async def simular_motor(
 )
 async def simular_bordo(
     payload: SimularBordoPayload,
+    _user: RequireCommissionerOrManagerDep,
     crew_service: CrewService = Depends(get_crew_service),
 ) -> SimularBordoResponse:
     return crew_service.simulate_in_flight_action(
@@ -59,6 +66,7 @@ async def simular_bordo(
 )
 async def get_voo_simulado_motor(
     modelo: str | None = None,
+    _user: RequireCommissionerOrManagerDep = None,
     crew_service: CrewService = Depends(get_crew_service),
 ) -> VooSimuladoResponse:
     return crew_service.get_simulated_flight(modelo_aeronave=modelo)

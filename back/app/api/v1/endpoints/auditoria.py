@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from typing import List
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
-from back.app.api.dependencies import AuditServiceDep
+from back.app.api.dependencies import AuditServiceDep, RoleChecker
 from back.app.schemas.audit import DecisaoAuditoria, ShapResponse
 
-router = APIRouter(prefix="/auditoria", tags=["Auditoria e Explicabilidade"])
+router = APIRouter(
+    prefix="/auditoria",
+    tags=["Auditoria e Explicabilidade"],
+    dependencies=[Depends(RoleChecker(["manager"]))],
+)
 
 
 @router.get(

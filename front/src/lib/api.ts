@@ -11,6 +11,9 @@ import {
   VooSimuladoResponse,
   SimularBordoPayload,
   SimularBordoResponse,
+  LoginPayload,
+  TokenResponse,
+  UserOut,
 } from "@/types/api";
 
 const API_BASE_URL =
@@ -30,6 +33,10 @@ export class ApiError extends Error {
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}/api/v1${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 
+  // Injeção automática do Bearer token caso disponível no storage do navegador
+  const token = typeof window !== "undefined" ? localStorage.getItem("azul_access_token") : null;
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
   let response: Response;
   try {
     response = await fetch(url, {
@@ -37,6 +44,7 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        ...authHeaders,
         ...options?.headers,
       },
     });
@@ -59,6 +67,16 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
       (errorDetails as { detail?: string; message?: string })?.message ||
       `Erro na requisição HTTP: ${response.status} ${response.statusText}`;
 
+    // Em caso de 401 Unauthorized em rota privada, limpa o token
+    if (response.status === 401 && typeof window !== "undefined") {
+      if (!window.location.pathname.startsWith("/login")) {
+        localStorage.removeItem("azul_access_token");
+        localStorage.removeItem("azul_auth_user");
+        document.cookie = "azul_auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+        document.cookie = "azul_user_role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+      }
+    }
+
     throw new ApiError(response.status, message, errorDetails);
   }
 
@@ -66,7 +84,18 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  // Tela 1: Painel Executivo
+  // Autenticação & Perfil
+  login: (payload: LoginPayload): Promise<TokenResponse> =>
+    request<TokenResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  getMe: (): Promise<UserOut> => request<UserOut>("/auth/me"),
+
+  getDemoUsers: (): Promise<UserOut[]> => request<UserOut[]>("/auth/users"),
+
+  // Tela 1: Painel Executivo (Manager)
   getKPIs: (): Promise<DashboardKPIs> => request<DashboardKPIs>("/dashboard/kpis"),
   
   getPersonas: (): Promise<PersonaData[]> =>
@@ -75,7 +104,7 @@ export const api = {
   getPareto: (): Promise<ParetoData[]> =>
     request<ParetoData[]>("/dashboard/pareto"),
 
-  // Tela 2: Central de Decisões
+  // Tela 2: Central de Decisões (Manager)
   getMomentos: (): Promise<Momento[]> => request<Momento[]>("/momentos"),
   
   simularMotor: (payload: SimularPayload): Promise<SimularResponse> =>
@@ -84,14 +113,14 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  // Tela 3: Auditoria e Explicabilidade
+  // Tela 3: Auditoria e Explicabilidade (Manager)
   getAuditoriaDecisoes: (): Promise<DecisaoAuditoria[]> =>
     request<DecisaoAuditoria[]>("/auditoria/decisoes"),
 
   getDecisaoShap: (decisaoId: string): Promise<ShapResponse> =>
     request<ShapResponse>(`/auditoria/decisoes/${encodeURIComponent(decisaoId)}/shap`),
 
-  // Tela 4: Visão da Tripulação (Mapa de Assentos)
+  // Tela 4: Visão da Tripulação (Commissioner & Manager)
   getVooSimulado: (modelo?: string): Promise<VooSimuladoResponse> =>
     request<VooSimuladoResponse>(`/voo-simulado${modelo ? `?modelo=${encodeURIComponent(modelo)}` : ""}`),
 
