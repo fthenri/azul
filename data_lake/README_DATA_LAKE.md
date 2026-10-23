@@ -260,9 +260,11 @@ A partir do cruzamento de [`clientes_silver.parquet`](../data_lake/silver/client
 
 ---
 
-## 5. Contrato de Dados (Data Contracts — Camadas Silver e Gold)
+## 5. Contrato de Dados & Integração com Snowflake (Data Contracts)
 
-Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do pipeline analítico, os arquivos Parquet devem seguir rigorosamente as especificações abaixo:
+Para plugar o **Snowflake** da Azul em produção sem alterar nenhuma linha do pipeline analítico, o repositório disponibiliza o script turnkey [`data_lake/snowflake_integration.sql`](snowflake_integration.sql). Esse script provisiona os schemas Medallion (`BRONZE`, `SILVER`, `GOLD`), `EXTERNAL TABLES` com mapeamento colunar de alta performance, `SNOWPIPE` para ingestão em tempo real e views analíticas que comprovam o ROI de retenção do Top 20%.
+
+Os arquivos Parquet seguem rigorosamente as especificações abaixo:
 
 ### 5.1. Schema de `clientes_silver.parquet` (5.000 registros)
 

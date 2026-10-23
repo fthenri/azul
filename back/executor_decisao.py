@@ -94,6 +94,11 @@ def carregar_perfil_cliente_gold(
         if not df_silver_cli.empty
         else "Basico"
     )
+    consentimento = (
+        bool(df_silver_cli.iloc[0]["consentimento_marketing"])
+        if not df_silver_cli.empty and "consentimento_marketing" in df_silver_cli.columns
+        else True
+    )
 
     return {
         "id_cliente": str(id_cliente),
@@ -106,6 +111,7 @@ def carregar_perfil_cliente_gold(
         "score_atrito_acumulado": float(row_evasao["score_atrito_acumulado"]),
         "risco_evasao": float(row_evasao["risco_evasao"]),
         "faixa_pareto": str(row_clv["faixa_pareto"]) if "faixa_pareto" in row_clv else "Cauda Longa",
+        "consentimento_marketing": consentimento,
     }
 
 
@@ -113,6 +119,21 @@ def arbitrar_melhor_acao(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
     clv_previsto = float(perfil_cliente["clv_previsto"])
     risco_evasao = float(perfil_cliente["risco_evasao"])
     tier_fidelidade = str(perfil_cliente["tier_fidelidade"]).strip()
+    consentimento_mkt = bool(perfil_cliente.get("consentimento_marketing", True))
+
+    # SALVAGUARDA DE IA RESPONSÁVEL & LGPD (Art. 7º e 18 da Lei 13.709/2018)
+    # Se o titular revogou o consentimento para comunicações de marketing, aplica Hard-Block regulatório
+    if not consentimento_mkt:
+        return {
+            "acao_vencedora": "BLOQUEIO_LGPD_OPT_OUT",
+            "retorno_liquido": 0.0,
+            "custo_acao": 0.0,
+            "motivo_bloqueio": (
+                "Salvaguarda LGPD Ativada: O titular revogou o consentimento para comunicações "
+                "proativas de marketing (Art. 7º e 18 da Lei 13.709/2018). Nenhuma oferta comercial permitida."
+            ),
+            "avaliacoes_uplift": {},
+        }
 
     melhor_acao = "NAO_FAZER_NADA"
     maior_retorno_liquido = 0.0
@@ -164,6 +185,15 @@ def _obter_mock_padronizado(
     id_curto = str(perfil_cliente.get("id_cliente", "CLIENTE"))[:8].upper()
     clv = float(perfil_cliente.get("clv_previsto", 0.0))
     risco = float(perfil_cliente.get("risco_evasao", 0.0))
+
+    if acao_vencedora == "BLOQUEIO_LGPD_OPT_OUT":
+        return {
+            "notificacao_interna": (
+                f"Bloqueio de Salvaguarda LGPD: Titular #{id_curto} ({persona}, {tier}) possui opt-out registrado "
+                "(Art. 7º e 18 da LGPD). Ação promocional suspensa pelo motor para conformidade regulatória."
+            ),
+            "mensagem_crm": "Comunicação proativa suspensa em estrita conformidade com as diretrizes de privacidade e LGPD.",
+        }
 
     if acao_vencedora == "NAO_FAZER_NADA":
         return {
@@ -244,7 +274,7 @@ def gerar_mensagem_llm(
     acao_vencedora: str,
     contexto_rag: str,
 ) -> dict[str, str]:
-    if acao_vencedora == "NAO_FAZER_NADA":
+    if acao_vencedora in ("NAO_FAZER_NADA", "BLOQUEIO_LGPD_OPT_OUT"):
         return _obter_mock_padronizado(perfil_cliente, acao_vencedora)
 
     # Bloco de chamada à API de LLM (Gemini / OpenAI) com resiliência e fallback

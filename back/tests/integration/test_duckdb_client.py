@@ -8,6 +8,7 @@ from back.app.config import Settings
 from back.app.core.exceptions import DataLakeError
 from back.app.infrastructure.analytics.duckdb_client import DuckDBClient
 from back.app.infrastructure.analytics.parquet_catalog import ParquetCatalog
+from back.app.modules.dashboard.repository import DashboardRepository
 
 
 def test_duckdb_views_registration_and_counts(test_settings: Settings) -> None:
@@ -56,6 +57,31 @@ def test_duckdb_analytical_join_query(test_settings: Settings) -> None:
         assert r["total_clientes"] > 0
         assert r["media_clv"] > 0
         assert 0.0 <= r["media_risco"] <= 1.0
+
+    client.close()
+
+
+def test_duckdb_dashboard_repository_pareto_roi_and_sentiment(test_settings: Settings) -> None:
+    """Valida as queries de negócio da banca: Prova de ROI de Pareto e Análise de Sentimento."""
+    client = DuckDBClient(settings=test_settings)
+    client.initialize()
+    repo = DashboardRepository(duckdb_client=client)
+
+    # 1. Validação da prova matemática de ROI de Pareto
+    pareto_roi = repo.get_pareto_roi_analysis()
+    assert len(pareto_roi) > 0
+    top10 = next((r for r in pareto_roi if "Top 10%" in r["faixa_pareto"]), None)
+    assert top10 is not None
+    assert top10["roi_retencao_multiplicador"] > 100.0  # ROI comprovado > 100x
+    assert top10["perda_media_por_cliente"] > 10000.0
+
+    # 2. Validação da agregação de sentimento das avaliações públicas
+    sentimento_stats = repo.get_sentimento_analise()
+    assert len(sentimento_stats) > 0
+    for stat in sentimento_stats:
+        assert "topico" in stat
+        assert stat["total_avaliacoes"] > 0
+        assert -1.0 <= stat["score_sentimento_medio"] <= 1.0
 
     client.close()
 

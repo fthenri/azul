@@ -125,6 +125,14 @@ SENTIMENT_NEGATIVE_LEXICON: dict[str, float] = {
     "infinitamente": -0.25,
     "falha": -0.30,
     "falhou": -0.30,
+    "inadmissível": -0.45,
+    "prejuízo": -0.40,
+    "violada": -0.40,
+    "inoperante": -0.35,
+    "desrespeito": -0.40,
+    "fantástica": 0.45,
+    "acolhedores": 0.35,
+    "impecáveis": 0.45,
 }
 
 PNR_ALPHABET: np.ndarray = np.array(list("ABCDEFGHJKLMNPQRSTUVWXYZ23456789"))
@@ -677,6 +685,9 @@ def process_silver_reviews(
     df_reviews["score_sentimento"] = (
         df_reviews["texto_avaliacao"].map(_compute_text_sentiment_score).astype(np.float64)
     )
+    df_reviews["classificacao_sentimento"] = df_reviews["score_sentimento"].apply(
+        lambda s: "POSITIVO" if s > 0.10 else ("NEGATIVO" if s < -0.10 else "NEUTRO")
+    ).astype("string")
 
     silver_reviews_output_path.parent.mkdir(parents=True, exist_ok=True)
     df_reviews.to_parquet(

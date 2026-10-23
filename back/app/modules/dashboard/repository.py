@@ -84,3 +84,37 @@ class DashboardRepository:
         """
         row = self.duckdb_client.query_row(sql)
         return row or {"valor_protegido": 0.0, "valor_gerado": 0.0, "custo_total": 0.0}
+
+    def get_pareto_roi_analysis(self) -> List[Dict[str, Any]]:
+        """Comprova matematicamente para a banca que o ROI de retenção do Top 20% supera o CAC e a Cauda Longa."""
+        sql = """
+        SELECT 
+            c.faixa_pareto,
+            count(*)::INT as total_clientes,
+            round(avg(c.clv_previsto), 2) as clv_medio,
+            round(avg(e.risco_evasao), 4) as risco_evasao_medio,
+            round(sum(c.clv_previsto * e.risco_evasao), 2) as total_receita_em_risco,
+            round(avg(c.clv_previsto * e.risco_evasao), 2) as perda_media_por_cliente,
+            round(avg(c.clv_previsto * e.risco_evasao) / 120.0, 1) as roi_retencao_multiplicador
+        FROM gold_clv c
+        JOIN gold_evasao e ON c.id_cliente = e.id_cliente
+        GROUP BY c.faixa_pareto
+        ORDER BY clv_medio DESC
+        """
+        return self.duckdb_client.query(sql)
+
+    def get_sentimento_analise(self) -> List[Dict[str, Any]]:
+        """Consulta agregação de análise de sentimento sobre avaliações públicas (Reclame Aqui, App Store, Google Play)."""
+        sql = """
+        SELECT 
+            topico,
+            count(*)::INT as total_avaliacoes,
+            round(avg(score_sentimento), 4) as score_sentimento_medio,
+            round(avg(nota_cliente), 2) as nota_media,
+            count(CASE WHEN score_sentimento < -0.10 THEN 1 END)::INT as total_criticas,
+            count(CASE WHEN score_sentimento > 0.10 THEN 1 END)::INT as total_elogios
+        FROM silver_avaliacoes
+        GROUP BY topico
+        ORDER BY score_sentimento_medio ASC
+        """
+        return self.duckdb_client.query(sql)

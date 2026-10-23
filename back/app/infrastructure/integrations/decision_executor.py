@@ -25,9 +25,14 @@ ROTULOS_ACOES: Dict[str, str] = {
     "CORTESIA_ESPACO_AZUL": "Cortesia de Assento Espaço Azul",
     "MENSAGEM_EXECUTIVA_VIP": "Mensagem Executiva VIP da Diretoria",
     "NAO_FAZER_NADA": "Não Agir (Sem Retorno de Uplift)",
+    "BLOQUEIO_LGPD_OPT_OUT": "Bloqueio de Salvaguarda LGPD (Opt-Out)",
 }
 
 REGRAS_RAG: Dict[str, str] = {
+    "BLOQUEIO_LGPD_OPT_OUT": (
+        "Salvaguarda LGPD & IA Responsável (Art. 7º e 18 da Lei 13.709/2018): O titular revogou "
+        "o consentimento para comunicações comerciais proativas. Disparo de ofertas cancelado por conformidade legal."
+    ),
     "UPGRADE_EXECUTIVA": (
         "Diretrizes Azul Fidelidade: Upgrades de cabine são aplicáveis exclusivamente para a "
         "Classe Executiva em voos internacionais, priorizando clientes de altíssimo CLV."
