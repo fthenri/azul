@@ -40,6 +40,16 @@ class Settings(BaseSettings):
     silver_dir: Path | None = None
     gold_dir: Path | None = None
     audit_db_path: Path | None = None
+    auth_db_path: Path | None = None
+    jwt_secret_key: str = Field(
+        default="azul-retention-secret-key-change-in-production-2026",
+        description="Chave secreta para assinatura de tokens JWT",
+    )
+    jwt_algorithm: str = Field(default="HS256", description="Algoritmo de assinatura JWT")
+    access_token_expire_minutes: int = Field(
+        default=480,
+        description="Tempo de expiração do access token em minutos (8 horas)",
+    )
     rag_rules_path: Path | None = None
 
     # Configurações de CORS
@@ -56,6 +66,8 @@ class Settings(BaseSettings):
             self.gold_dir = self.data_lake_dir / "gold"
         if self.audit_db_path is None:
             self.audit_db_path = self.project_root / "back" / "audit.db"
+        if self.auth_db_path is None:
+            self.auth_db_path = self.project_root / "back" / "audit.db"
         if self.rag_rules_path is None:
             self.rag_rules_path = self.project_root / "regras_azul_fidelidade.md"
 

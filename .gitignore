@@ -20,6 +20,7 @@ build/
 .env
 .env.local
 .env.*.local
+powershell.cmd
 
 # Data Lake Parquet (Preservar dados estáticos para deploy no Render)
 !data_lake/bronze/*.parquet
