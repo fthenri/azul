@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from typing import List
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from back.app.api.dependencies import DashboardServiceDep
+from back.app.api.dependencies import DashboardServiceDep, RoleChecker
 from back.app.schemas.dashboard import DashboardKPIs, ParetoData, PersonaData
 
-router = APIRouter(prefix="/dashboard", tags=["Dashboard Executivo"])
+router = APIRouter(
+    prefix="/dashboard",
+    tags=["Dashboard Executivo"],
+    dependencies=[Depends(RoleChecker(["manager"]))],
+)
 
 
 @router.get(

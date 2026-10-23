@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from typing import List
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from back.app.api.dependencies import MomentsServiceDep
+from back.app.api.dependencies import MomentsServiceDep, RoleChecker
 from back.app.schemas.moments import Momento
 
-router = APIRouter(tags=["Central de Decisões"])
+router = APIRouter(
+    tags=["Central de Decisões"],
+    dependencies=[Depends(RoleChecker(["manager"]))],
+)
 
 
 @router.get(
