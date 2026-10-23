@@ -37,6 +37,9 @@ fi
 echo "Gerando avaliações sintéticas padronizadas (back/generate_reviews_bronze.py)..."
 $PYTHON_CMD back/generate_reviews_bronze.py
 
+echo "Ingerindo microdados de tarifas da ANAC (back/ingestao_anac_bronze.py)..."
+$PYTHON_CMD back/ingestao_anac_bronze.py
+
 # 2. Camada Silver: Limpeza, normalização e relacionamento clientes/viagens
 echo ""
 echo "--------------------------------------------------------------------------"

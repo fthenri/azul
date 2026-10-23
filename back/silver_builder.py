@@ -346,6 +346,7 @@ def generate_silver_trips(
     df_clients: pd.DataFrame,
     pnrs_per_flight_range: tuple[int, int] = (1, 3),
     seed: int = DEFAULT_SEED,
+    anac_tarifas_bronze_path: Path | None = None,
 ) -> pd.DataFrame:
     np_rng = np.random.default_rng(seed=seed)
 
@@ -554,6 +555,25 @@ def generate_silver_trips(
         }
     )
 
+    # Cruzamento com microdados de tarifas reais da ANAC (LEFT JOIN em origem e destino)
+    bronze_anac_path = anac_tarifas_bronze_path or (resolve_data_lake_dir() / "bronze" / "anac_tarifas_bronze.parquet")
+    if bronze_anac_path and bronze_anac_path.exists():
+        logger.info("Cruzando viagens com microdados de tarifas ANAC (LEFT JOIN): %s", bronze_anac_path)
+        df_anac = pd.read_parquet(bronze_anac_path)
+        df_anac["origem"] = df_anac["origem"].astype(str).str.strip().str.upper()
+        df_anac["destino"] = df_anac["destino"].astype(str).str.strip().str.upper()
+        df_anac = df_anac[["origem", "destino", "tarifa_media_anac"]].drop_duplicates(subset=["origem", "destino"])
+
+        df_trips = df_trips.merge(df_anac, on=["origem", "destino"], how="left")
+
+        # Flutuação diária de preço: np.random.uniform(0.9, 1.2)
+        fator_variacao = np_rng.uniform(0.90, 1.20, size=len(df_trips))
+        # Se rota constar na ANAC usa tarifa_media_anac; caso nulo/NaN, fallback para R$ 500.00
+        tarifa_base = df_trips["tarifa_media_anac"].fillna(500.0).to_numpy(dtype=np.float64)
+        df_trips["valor_pago_tarifa"] = np.round(tarifa_base * fator_variacao, 2).astype(np.float64)
+        # Remove a coluna temporária para evitar duplicatas e preservar o schema original
+        df_trips = df_trips.drop(columns=["tarifa_media_anac"])
+
     logger.info(
         "Histórico de viagens gerado: %d passagens em %d PNRs para %d clientes distintos.",
         len(df_trips),
@@ -569,22 +589,35 @@ def enrich_trips_with_fares(
     airline_code: str = TARGET_AIRLINE_CODE,
     seed: int = DEFAULT_SEED,
 ) -> pd.DataFrame:
+    # Se já enriquecido via anac_tarifas_bronze.parquet em generate_silver_trips, preserva e retorna
+    if "valor_pago_tarifa" in df_trips.columns:
+        logger.info("Tarifas já integradas via tabela ANAC (%d viagens). Mantendo coluna valor_pago_tarifa.", len(df_trips))
+        return df_trips
+
     np_rng = np.random.default_rng(seed=seed)
 
     if not bronze_tarifas_path.exists():
         logger.warning(
             "Arquivo %s não encontrado; preenchendo valor_pago_tarifa com valor padrão %.2f.",
             bronze_tarifas_path,
-            DEFAULT_FALLBACK_FARE,
+            500.0,
         )
         df_out = df_trips.copy()
-        # Injeção de ruído gaussiano truncado [0.8, 1.2] sobre o fallback tarifário para evitar CLVs idênticos.
-        noise = np.clip(np_rng.normal(loc=1.0, scale=0.10, size=len(df_out)), 0.80, 1.20)
-        df_out["valor_pago_tarifa"] = np.round(DEFAULT_FALLBACK_FARE * noise, 2)
+        noise = np_rng.uniform(0.90, 1.20, size=len(df_out))
+        df_out["valor_pago_tarifa"] = np.round(500.0 * noise, 2)
         return df_out
 
     logger.info("Carregando tarifas da Camada Bronze: %s", bronze_tarifas_path)
     df_tarifas_raw = pd.read_parquet(bronze_tarifas_path)
+
+    # Suporte direto ao formato de microdados anac_tarifas_bronze
+    if "tarifa_media_anac" in df_tarifas_raw.columns:
+        df_anac = df_tarifas_raw[["origem", "destino", "tarifa_media_anac"]].drop_duplicates(subset=["origem", "destino"])
+        df_enriched = df_trips.merge(df_anac, on=["origem", "destino"], how="left")
+        noise = np_rng.uniform(0.90, 1.20, size=len(df_enriched))
+        tarifa_base = df_enriched["tarifa_media_anac"].fillna(500.0).to_numpy(dtype=np.float64)
+        df_enriched["valor_pago_tarifa"] = np.round(tarifa_base * noise, 2).astype(np.float64)
+        return df_enriched.drop(columns=["tarifa_media_anac"])
     df_tarifas_raw.columns = [
         str(col).strip().lstrip("\ufeff").strip('"') for col in df_tarifas_raw.columns
     ]
@@ -708,7 +741,8 @@ def process_silver_reviews(
 def run_silver_pipeline() -> dict[str, Path]:
     data_lake_dir = resolve_data_lake_dir()
     bronze_parquet_path = data_lake_dir / "bronze" / "voos_historico_azul.parquet"
-    bronze_tarifas_path = data_lake_dir / "bronze" / "tarifas_azul.parquet"
+    bronze_anac_path = data_lake_dir / "bronze" / "anac_tarifas_bronze.parquet"
+    bronze_tarifas_path = bronze_anac_path if bronze_anac_path.exists() else (data_lake_dir / "bronze" / "tarifas_azul.parquet")
     bronze_reviews_path = data_lake_dir / "bronze" / "avaliacoes_bronze.parquet"
     silver_dir = data_lake_dir / "silver"
     silver_dir.mkdir(parents=True, exist_ok=True)
@@ -726,6 +760,7 @@ def run_silver_pipeline() -> dict[str, Path]:
         df_flights=df_flights,
         df_clients=df_clients_full,
         seed=DEFAULT_SEED,
+        anac_tarifas_bronze_path=bronze_tarifas_path,
     )
     df_trips = enrich_trips_with_fares(
         df_trips=df_trips,

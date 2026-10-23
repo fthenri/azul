@@ -17,6 +17,7 @@ azul/data_lake/
 ├── bronze/
 │   ├── voos_historico_azul.parquet   # VRA bruto da ANAC (88.064 voos de todas as cias, sem mutação)
 │   ├── tarifas_azul.parquet          # Microdados brutos de tarifas domésticas da ANAC
+│   ├── anac_tarifas_bronze.parquet   # Microdados de tarifas médias por rota ANAC (LEFT JOIN Silver)
 │   └── avaliacoes_bronze.parquet     # Base bruta de 500 avaliações de passageiros (Reclame Aqui/Apps)
 ├── silver/
 │   ├── clientes_silver.parquet       # Entidade persistente (5.000 clientes CRM/TudoAzul, seed=42)
