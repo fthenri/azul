@@ -45,6 +45,7 @@ class DashboardService:
                 clv_medio=float(r["clv_medio"]),
                 risco_evasao_medio=float(r["risco_evasao_medio"]),
                 tamanho_bolha=int(r["tamanho_bolha"]),
+                score_influencia=float(r.get("score_influencia", 50.0)),
             )
             for r in rows
         ]

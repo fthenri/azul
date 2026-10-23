@@ -16,9 +16,12 @@ export interface DashboardKPIs {
 
 export interface PersonaData {
   persona: string;
+  persona_nome?: string;
   clv_medio: number;
+  clv_previsto?: number;
   risco_evasao_medio: number;
   tamanho_bolha: number;
+  score_influencia?: number;
 }
 
 export interface ParetoData {

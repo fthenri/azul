@@ -27,28 +27,36 @@ export const DEMO_KPIS: DashboardKPIs = {
 
 export const DEMO_PERSONAS: PersonaData[] = [
   {
-    persona: "Executivo Frequente",
-    clv_medio: 8500.0,
-    risco_evasao_medio: 0.45,
-    tamanho_bolha: 1200,
-  },
-  {
-    persona: "Família/Lazer Premium",
-    clv_medio: 4200.0,
-    risco_evasao_medio: 0.25,
-    tamanho_bolha: 3500,
-  },
-  {
-    persona: "Sensível a Preço",
-    clv_medio: 1800.0,
-    risco_evasao_medio: 0.72,
-    tamanho_bolha: 2100,
-  },
-  {
-    persona: "Corporativo Ocasional",
-    clv_medio: 5600.0,
+    persona: "Gestor Corporativo",
+    clv_medio: 26800.0,
+    clv_previsto: 26800.0,
+    score_influencia: 76.5,
     risco_evasao_medio: 0.38,
-    tamanho_bolha: 1800,
+    tamanho_bolha: 310,
+  },
+  {
+    persona: "Viajante Solo Premium",
+    clv_medio: 5600.0,
+    clv_previsto: 5600.0,
+    score_influencia: 52.0,
+    risco_evasao_medio: 0.32,
+    tamanho_bolha: 2150,
+  },
+  {
+    persona: "Líder Familiar",
+    clv_medio: 1800.0,
+    clv_previsto: 1800.0,
+    score_influencia: 34.5,
+    risco_evasao_medio: 0.28,
+    tamanho_bolha: 1280,
+  },
+  {
+    persona: "Turista Eventual",
+    clv_medio: 1650.0,
+    clv_previsto: 1650.0,
+    score_influencia: 29.8,
+    risco_evasao_medio: 0.26,
+    tamanho_bolha: 1260,
   },
 ];
 

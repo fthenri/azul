@@ -27,32 +27,35 @@ def resolve_data_lake_dir() -> Path:
 
 
 def _assign_persona_names(centroids_df: pd.DataFrame) -> dict[int, str]:
-    # Heurística de nomeação das personas pelos centroides padronizados: atribui sem colisão os 4 arquétipos de negócio.
+    """Mapeia os centroides dos clusters para os 4 arquétipos de negócio orientados a CLV e Influência.
+    
+    Arquétipos Oficiais:
+    1. 'Gestor Corporativo': Alta influência, alto CLV e voos predominantemente corporativos em dias úteis.
+    2. 'Líder Familiar': Alta influência de grupo (PNR alto), médio CLV e alto percentual de voos em fins de semana.
+    3. 'Viajante Solo Premium': Alto CLV, viagens individuais ou menor dependência de grupo.
+    4. 'Turista Eventual': Baixo CLV, baixa frequência e menor poder de influência.
+    """
     remaining = set(centroids_df.index.tolist())
     cluster_to_persona: dict[int, str] = {}
 
-    exec_cluster = int(
-        centroids_df.loc[list(remaining), "frequencia_total"].idxmax()
-    )
-    cluster_to_persona[exec_cluster] = "Executivo Frequente"
-    remaining.remove(exec_cluster)
+    # 1. 'Gestor Corporativo': Maior CLV combinado com alta influência institucional
+    gestor_cluster = int(centroids_df.loc[list(remaining), "clv_previsto"].idxmax())
+    cluster_to_persona[gestor_cluster] = "Gestor Corporativo"
+    remaining.remove(gestor_cluster)
 
-    herd_score = (
-        centroids_df.loc[list(remaining), "tamanho_medio_pnr"]
-        + centroids_df.loc[list(remaining), "percentual_voos_fds"]
-    )
-    family_cluster = int(herd_score.idxmax())
-    cluster_to_persona[family_cluster] = "Família/Lazer"
-    remaining.remove(family_cluster)
+    # 2. 'Líder Familiar': Maior concentração de voos nos fins de semana e influência de grupo
+    familiar_cluster = int(centroids_df.loc[list(remaining), "percentual_voos_fds"].idxmax())
+    cluster_to_persona[familiar_cluster] = "Líder Familiar"
+    remaining.remove(familiar_cluster)
 
-    points_cluster = int(
-        centroids_df.loc[list(remaining), "antecedencia_media_compra"].idxmax()
-    )
-    cluster_to_persona[points_cluster] = "Caçador de Pontos"
-    remaining.remove(points_cluster)
+    # 3. 'Viajante Solo Premium': Maior CLV remanescente (alta rentabilidade individual)
+    solo_cluster = int(centroids_df.loc[list(remaining), "clv_previsto"].idxmax())
+    cluster_to_persona[solo_cluster] = "Viajante Solo Premium"
+    remaining.remove(solo_cluster)
 
-    regional_cluster = int(next(iter(remaining)))
-    cluster_to_persona[regional_cluster] = "Viajante Regional"
+    # 4. 'Turista Eventual': Cluster restante de menor valor e menor influência
+    turista_cluster = int(next(iter(remaining)))
+    cluster_to_persona[turista_cluster] = "Turista Eventual"
 
     return cluster_to_persona
 
@@ -60,19 +63,24 @@ def _assign_persona_names(centroids_df: pd.DataFrame) -> dict[int, str]:
 def build_gold_personas(
     clientes_silver_path: Path,
     viagens_silver_path: Path,
+    gold_clv_path: Path,
     gold_output_path: Path,
     seed: int = DEFAULT_SEED,
 ) -> pd.DataFrame:
+    """Executa a esteira analítica de segmentação de personas via K-Means normalizado."""
     if not clientes_silver_path.exists():
         raise FileNotFoundError(f"Arquivo não encontrado: {clientes_silver_path}")
     if not viagens_silver_path.exists():
         raise FileNotFoundError(f"Arquivo não encontrado: {viagens_silver_path}")
+    if not gold_clv_path.exists():
+        raise FileNotFoundError(f"Arquivo não encontrado: {gold_clv_path}")
 
-    logger.info("Lendo tabelas da Camada Silver...")
+    logger.info("Lendo tabelas das Camadas Silver e Gold (CLV)...")
     df_clients = pd.read_parquet(clientes_silver_path)
     df_trips = pd.read_parquet(viagens_silver_path)
+    df_clv = pd.read_parquet(gold_clv_path)
 
-    # Definição das features comportamentais por cliente: tamanho do PNR (Efeito Manada), voos em fim de semana, frequência total e antecedência média de compra.
+    # 1. Extração do comportamento de grupo (PNR / Efeito Manada) e dias de voo
     pnr_sizes = (
         df_trips.groupby("pnr", as_index=False)["id_cliente"]
         .nunique()
@@ -92,50 +100,68 @@ def build_gold_personas(
         )
     )
 
-    df_gold = df_clients[["id_cliente"]].merge(behavior_agg, on="id_cliente", how="left")
-    df_gold["frequencia_total"] = df_gold["frequencia_total"].fillna(0).astype(np.int64)
-    df_gold["tamanho_medio_pnr"] = (
-        df_gold["tamanho_medio_pnr"].fillna(1.0).round(2).astype(np.float64)
-    )
-    df_gold["percentual_voos_fds"] = (
-        df_gold["percentual_voos_fds"].fillna(0.0).round(2).astype(np.float64)
-    )
+    # 2. Consolidação com Clientes e CLV Previsto
+    df_gold = df_clients[["id_cliente", "tier_fidelidade"]].merge(behavior_agg, on="id_cliente", how="left")
+    df_gold = df_gold.merge(df_clv[["id_cliente", "clv_previsto"]], on="id_cliente", how="left")
 
-    # Fallback determinístico (seed=42) para antecedência média de compra entre 5 e 60 dias quando não há timestamp de emissão do bilhete.
+    df_gold["frequencia_total"] = df_gold["frequencia_total"].fillna(0).astype(np.int64)
+    df_gold["tamanho_medio_pnr"] = df_gold["tamanho_medio_pnr"].fillna(1.0).round(2).astype(np.float64)
+    df_gold["percentual_voos_fds"] = df_gold["percentual_voos_fds"].fillna(0.0).round(2).astype(np.float64)
+    df_gold["clv_previsto"] = df_gold["clv_previsto"].fillna(1000.0).round(2).astype(np.float64)
+
+    # 3. Construção do Score de Influência (0 a 100)
+    # Fórmula: (tamanho_medio_pnr * 15) + Bônus de Tier (Diamante/Safira + 20) + Frequência + Ruído
     rng = np.random.default_rng(seed=seed)
+    tier_bonus = np.where(
+        df_gold["tier_fidelidade"].isin(["Diamante", "Safira"]),
+        20.0,
+        np.where(df_gold["tier_fidelidade"] == "Topazio", 10.0, 0.0),
+    )
+    pnr_component = df_gold["tamanho_medio_pnr"] * 15.0
+    freq_component = np.clip(df_gold["frequencia_total"] * 0.75, 0.0, 25.0)
+    noise = rng.normal(loc=0.0, scale=4.0, size=len(df_gold))
+
+    raw_influence = pnr_component + tier_bonus + freq_component + noise
+    df_gold["score_influencia"] = np.clip(raw_influence, 5.0, 100.0).round(1).astype(np.float64)
+
+    # Fallback determinístico para antecedência média de compra
     df_gold["antecedencia_media_compra"] = (
         rng.uniform(5.0, 60.0, size=len(df_gold)).round(2).astype(np.float64)
     )
 
-    # Seleção de features numéricas para a clusterização K-Means (frequência, antecedência, tamanho PNR e FDS).
+    # 4. Normalização estatística via StandardScaler para o K-Means
     feature_cols = [
+        "clv_previsto",
+        "score_influencia",
         "frequencia_total",
-        "antecedencia_media_compra",
-        "tamanho_medio_pnr",
         "percentual_voos_fds",
     ]
-
-    # Normalização estatística via StandardScaler para eliminar o viés de escala
-    # (evita que variáveis com ordens de grandeza maiores engulam as demais dimensões)
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(df_gold[feature_cols].to_numpy(dtype=np.float64))
 
-    # Treinamento do K-Means usando o array normalizado (X_scaled) para criar 4 grupos bem distribuídos
-    kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=seed, n_init=10)
+    # 5. Treinamento do K-Means (4 clusters)
+    kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=seed, n_init=20)
     cluster_labels = kmeans.fit_predict(X_scaled)
+    df_gold["cluster"] = cluster_labels
 
-    # Mapeamento dos centroides do K-Means para os nomes de negócio das 4 personas.
-    centroids_df = pd.DataFrame(kmeans.cluster_centers_, columns=feature_cols)
+    # 6. Mapeamento semântico dos centroides para Personas de Negócio
+    centroids_df = df_gold.groupby("cluster")[feature_cols].mean()
     persona_map = _assign_persona_names(centroids_df)
-    df_gold["persona"] = pd.Series(cluster_labels).map(persona_map).astype("string")
+
+    persona_series = pd.Series(cluster_labels).map(persona_map).astype("string")
+    df_gold["persona"] = persona_series
+    df_gold["persona_nome"] = persona_series
 
     output_cols = [
         "id_cliente",
+        "persona",
+        "persona_nome",
+        "score_influencia",
+        "clv_previsto",
         "frequencia_total",
         "antecedencia_media_compra",
         "tamanho_medio_pnr",
         "percentual_voos_fds",
-        "persona",
     ]
     df_result = df_gold[output_cols]
 
@@ -149,7 +175,7 @@ def build_gold_personas(
     logger.info(
         "Cérebro 3 (Personas K-Means) salvo em %s | Distribuição: %s",
         gold_output_path,
-        df_result["persona"].value_counts().to_dict(),
+        df_result["persona_nome"].value_counts().to_dict(),
     )
     return df_result
 
@@ -158,11 +184,13 @@ def run_gold_personas_pipeline() -> Path:
     data_lake_dir = resolve_data_lake_dir()
     clientes_silver_path = data_lake_dir / "silver" / "clientes_silver.parquet"
     viagens_silver_path = data_lake_dir / "silver" / "viagens_silver.parquet"
+    gold_clv_path = data_lake_dir / "gold" / "clv_clientes.parquet"
     gold_output_path = data_lake_dir / "gold" / "personas_clientes.parquet"
 
     build_gold_personas(
         clientes_silver_path=clientes_silver_path,
         viagens_silver_path=viagens_silver_path,
+        gold_clv_path=gold_clv_path,
         gold_output_path=gold_output_path,
         seed=DEFAULT_SEED,
     )
@@ -171,4 +199,3 @@ def run_gold_personas_pipeline() -> Path:
 
 if __name__ == "__main__":
     run_gold_personas_pipeline()
-

@@ -23,6 +23,7 @@ class PersonaData(BaseModel):
     clv_medio: float = Field(..., description="CLV médio previsto para o cluster")
     risco_evasao_medio: float = Field(..., description="Risco médio de churn do cluster (0.0 a 1.0)")
     tamanho_bolha: int = Field(..., description="Quantidade total de clientes no cluster")
+    score_influencia: float = Field(default=50.0, description="Poder de influência médio do cluster (0 a 100)")
 
 
 class ParetoData(BaseModel):

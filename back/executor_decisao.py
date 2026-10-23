@@ -205,6 +205,22 @@ def _obter_mock_padronizado(
         }
 
     aberturas_por_persona = {
+        "Gestor Corporativo": (
+            f"Prezado(a) Gestor(a) {tier} (#{id_curto}), sabemos que sua agenda executiva e compromissos "
+            "corporativos exigem pontualidade e excelência, e lamentamos qualquer atrito em sua jornada recente."
+        ),
+        "Líder Familiar": (
+            f"Olá, Cliente {tier} (#{id_curto})! Reconhecemos o valor de cada momento especial em família "
+            "e sentimos muito por quaisquer contratempos que tenham impactado o seu grupo de viagem."
+        ),
+        "Viajante Solo Premium": (
+            f"Prezado(a) Cliente {tier} (#{id_curto}), valorizamos profundamente sua preferência individual "
+            "e fidelidade de alto padrão na Azul, e pedimos desculpas pelo imprevisto enfrentado."
+        ),
+        "Turista Eventual": (
+            f"Olá, Cliente {tier} (#{id_curto})! Agradecemos por escolher a Azul para seus momentos de descanso "
+            "e lazer, e lamentamos os contratempos operacionais recentes."
+        ),
         "Executivo Frequente": (
             f"Prezado(a) Cliente {tier} (#{id_curto}), sabemos que sua agenda corporativa "
             "exige pontualidade absoluta e lamentamos os imprevistos recentes em sua jornada."
