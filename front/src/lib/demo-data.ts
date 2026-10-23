@@ -13,6 +13,8 @@ import {
   DecisaoAuditoria,
   ShapResponse,
   AssentoVoo,
+  MetadataAeronave,
+  VooSimuladoResponse,
   SimularBordoResponse,
 } from "@/types/api";
 
@@ -218,40 +220,68 @@ const DEMO_NAMES = [
   "Amanda Barbosa", "Diego Castro", "Priscila Ramos", "Marcelo Dias", "Renata Gomes",
 ];
 
-export const DEMO_VOO_SIMULADO: AssentoVoo[] = (() => {
+export const DEMO_FROTA: Record<string, MetadataAeronave> = {
+  A320neo: {
+    modelo: "Airbus A320neo",
+    codigo: "A320neo",
+    fileiras: 29,
+    layout: ["A", "B", "C", "D", "E", "F"],
+    total_assentos: 174,
+  },
+  "E195-E2": {
+    modelo: "Embraer E195-E2",
+    codigo: "E195-E2",
+    fileiras: 34,
+    layout: ["A", "B", "C", "D"],
+    total_assentos: 136,
+  },
+  "ATR 72-600": {
+    modelo: "ATR 72-600",
+    codigo: "ATR 72-600",
+    fileiras: 18,
+    layout: ["A", "B", "C", "D"],
+    total_assentos: 72,
+  },
+};
+
+export function getDemoVooSimulado(modeloCodigo?: string): VooSimuladoResponse {
+  const chaves = Object.keys(DEMO_FROTA);
+  const escolhido = modeloCodigo && DEMO_FROTA[modeloCodigo]
+    ? modeloCodigo
+    : chaves[Math.floor(Math.random() * chaves.length)];
+
+  const meta = DEMO_FROTA[escolhido];
   const assentos: AssentoVoo[] = [];
-  const colunas = ["A", "B", "C", "D", "E", "F"];
   let idx = 0;
 
-  for (let fileira = 1; fileira <= 15; fileira++) {
-    for (const col of colunas) {
+  for (let fileira = 1; fileira <= meta.fileiras; fileira++) {
+    for (const col of meta.layout) {
       const code = `${fileira}${col}`;
       idx++;
       const nome = DEMO_NAMES[idx % DEMO_NAMES.length];
 
-      // Define status com base em assentos pré-definidos para parecer um voo real
       let status: "critico" | "vip" | "normal" = "normal";
       let tier = "Básico";
       let clv = 2400.0;
-      let risco = 0.25;
-      let atrito = 0.5;
+      let risco = 0.22;
+      let atrito = 0.4;
       let pareto = "Cauda Longa";
-      let persona = "Sensível a Preço";
+      let persona = "Viajante Regional";
 
-      if ([ "1A", "1C", "2D", "3A", "4F", "7C", "11B", "14D" ].includes(code)) {
+      if (idx % 8 === 3) {
         status = "critico";
         tier = fileira <= 4 ? "Diamante" : "Safira";
         clv = fileira <= 4 ? 14800.0 : 6200.0;
-        risco = 0.78 + (idx % 15) * 0.01;
+        risco = 0.72 + (idx % 20) * 0.01;
         atrito = 4.2;
         pareto = fileira <= 4 ? "Top 10% Receita" : "Top 50% Receita";
-        persona = fileira <= 4 ? "Executivo Frequente" : "Corporativo Ocasional";
-      } else if ([ "1B", "1D", "1F", "2A", "2F", "3C", "3D", "4A", "4C", "5B", "8A", "10F" ].includes(code)) {
+        persona = fileira <= 4 ? "Executivo Frequente" : "Caçador de Pontos";
+      } else if (fileira <= 4 || idx % 9 === 0) {
         status = "vip";
         tier = "Diamante";
-        clv = 16500.0 - (fileira * 400);
-        risco = 0.32;
-        atrito = 1.0;
+        clv = 16500.0 - (fileira * 300);
+        risco = 0.28;
+        atrito = 0.8;
         pareto = "Top 10% Receita";
         persona = "Executivo Frequente";
       }
@@ -272,11 +302,17 @@ export const DEMO_VOO_SIMULADO: AssentoVoo[] = (() => {
       });
     }
   }
-  return assentos;
-})();
+
+  return {
+    metadata_aeronave: meta,
+    assentos,
+  };
+}
+
+export const DEMO_VOO_SIMULADO: VooSimuladoResponse = getDemoVooSimulado("A320neo");
 
 export function getDemoSimularBordo(assento: string, id_cliente: string): SimularBordoResponse {
-  const item = DEMO_VOO_SIMULADO.find((a) => a.assento === assento);
+  const item = DEMO_VOO_SIMULADO.assentos.find((a) => a.assento === assento);
   const cliente = item ? item.dados_cliente : {
     id_cliente,
     nome: "Passageiro Especial",

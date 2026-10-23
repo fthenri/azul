@@ -8,12 +8,14 @@ import {
   User,
   ShieldAlert,
   Sparkles,
+  Plane,
 } from "lucide-react";
-import { AssentoVoo } from "@/types/api";
+import { AssentoVoo, MetadataAeronave } from "@/types/api";
 import { SeatFilter } from "../hooks/use-crew-flight";
 import { cn } from "@/lib/utils";
 
 interface CrewSeatMapProps {
+  metadata: MetadataAeronave | null;
   seats: AssentoVoo[];
   selectedSeat: AssentoVoo | null;
   onSelectSeat: (seat: AssentoVoo) => void;
@@ -22,26 +24,35 @@ interface CrewSeatMapProps {
 }
 
 export function CrewSeatMap({
+  metadata,
   seats,
   selectedSeat,
   onSelectSeat,
   filter,
   attendedSeats,
 }: CrewSeatMapProps) {
-  // Indexa assentos por código (ex: "1A", "15F") para acesso O(1)
+  // Indexa assentos por código (ex: "1A", "34D") para acesso O(1)
   const seatMap = useMemo(() => {
     const map = new Map<string, AssentoVoo>();
     seats.forEach((s) => map.set(s.assento, s));
     return map;
   }, [seats]);
 
+  const numFileiras = metadata?.fileiras || 29;
+  const layout = metadata?.layout || ["A", "B", "C", "D", "E", "F"];
+  const is6Seats = layout.length === 6;
+
+  // Divisão dinâmica das colunas: 3x3 para A320 ou 2x2 para E195 e ATR
+  const leftCols = is6Seats ? ["A", "B", "C"] : ["A", "B"];
+  const rightCols = is6Seats ? ["D", "E", "F"] : ["C", "D"];
+
   const rows = useMemo(() => {
     const list: number[] = [];
-    for (let r = 1; r <= 15; r++) {
+    for (let r = 1; r <= numFileiras; r++) {
       list.push(r);
     }
     return list;
-  }, []);
+  }, [numFileiras]);
 
   const isSeatHighlighted = (seat: AssentoVoo): boolean => {
     if (filter === "todos") return true;
@@ -59,7 +70,7 @@ export function CrewSeatMap({
       return (
         <div
           key={seatCode}
-          className="h-14 w-12 sm:w-14 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-center opacity-40 text-[10px] text-muted-foreground"
+          className="h-14 w-11 sm:w-13 md:w-14 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-center opacity-40 text-[10px] text-muted-foreground"
         >
           {seatCode}
         </div>
@@ -69,12 +80,8 @@ export function CrewSeatMap({
     const isSelected = selectedSeat?.assento === seat.assento;
     const isAttended = attendedSeats.has(seat.assento);
     const highlighted = isSeatHighlighted(seat);
-    const isEspacoAzul = row <= 4;
+    const isEspacoAzul = metadata?.codigo === "ATR 72-600" ? row <= 2 : row <= 4;
 
-    // Cores específicas por status exigidas pela especificação:
-    // - critico: vermelho / alerta
-    // - vip: dourado / azul marinho
-    // - normal: cinza claro
     let statusStyles = "";
     let indicatorIcon = null;
 
@@ -171,13 +178,28 @@ export function CrewSeatMap({
     );
   };
 
+  const getEmergencyRow = () => {
+    if (metadata?.codigo === "A320neo") return 11;
+    if (metadata?.codigo === "E195-E2") return 14;
+    return 1;
+  };
+
+  const emergencyRow = getEmergencyRow();
+  const espacoAzulLimit = metadata?.codigo === "ATR 72-600" ? 2 : 4;
+
   return (
     <div className="flex flex-col items-center w-full">
-      {/* Fuselagem do Avião (Formato Aerodinâmico com Bico e Cabine) */}
-      <div className="relative w-full max-w-xl bg-white dark:bg-[#071324] border border-border rounded-3xl p-4 sm:p-6 shadow-sm overflow-hidden">
-        {/* Cabine dos Pilotos (Cockpit) */}
+      {/* Fuselagem Dinâmica da Aeronave */}
+      <div
+        className={cn(
+          "relative w-full bg-white dark:bg-[#071324] border border-border rounded-3xl p-4 sm:p-6 shadow-sm overflow-hidden transition-all duration-200",
+          is6Seats ? "max-w-xl" : "max-w-md sm:max-w-lg"
+        )}
+      >
+        {/* Cabine de Comando (Cockpit) */}
         <div className="relative mx-auto -mt-2 mb-6 flex flex-col items-center">
-          <div className="h-6 w-24 bg-gradient-to-b from-sky-500/20 to-transparent rounded-t-full border-t border-sky-400/30 flex items-center justify-center">
+          <div className="h-6 w-28 bg-gradient-to-b from-sky-500/20 to-transparent rounded-t-full border-t border-sky-400/30 flex items-center justify-center gap-1.5">
+            <Plane className="h-3 w-3 text-sky-600 dark:text-sky-300" />
             <span className="text-[9px] font-mono tracking-widest text-sky-700 dark:text-sky-300 font-bold uppercase">
               COCKPIT
             </span>
@@ -185,21 +207,28 @@ export function CrewSeatMap({
           <div className="w-full flex items-center justify-between text-[10px] text-muted-foreground px-4 pt-1 border-b border-border/60 pb-2">
             <div className="flex items-center gap-1.5 font-medium">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Porta Dianteira 1L / Galley 1</span>
+              <span>Porta 1L / Galley Dianteira</span>
             </div>
-            <div className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
-              Airbus A320neo
+            <div className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
+              {metadata?.modelo || "Airbus A320neo"}
             </div>
           </div>
         </div>
 
-        {/* Indicadores de Coluna (A B C | Corredor | D E F) */}
+        {/* Indicadores Dinâmicos de Coluna (A B C | Corredor | D E F) ou (A B | Corredor | C D) */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 mb-3 px-2">
-          {/* Lado Esquerdo: A, B, C */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center text-xs font-bold text-muted-foreground">
-            <span>A (Janela)</span>
-            <span>B (Meio)</span>
-            <span>C (Corredor)</span>
+          {/* Lado Esquerdo */}
+          <div
+            className={cn(
+              "grid gap-1.5 sm:gap-2 text-center text-xs font-bold text-muted-foreground",
+              is6Seats ? "grid-cols-3" : "grid-cols-2"
+            )}
+          >
+            {leftCols.map((col, idx) => (
+              <span key={col}>
+                {col} {idx === 0 ? "(Janela)" : is6Seats && idx === 1 ? "(Meio)" : "(Corredor)"}
+              </span>
+            ))}
           </div>
 
           {/* Corredor Central */}
@@ -207,11 +236,18 @@ export function CrewSeatMap({
             Fila
           </div>
 
-          {/* Lado Direito: D, E, F */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center text-xs font-bold text-muted-foreground">
-            <span>D (Corredor)</span>
-            <span>E (Meio)</span>
-            <span>F (Janela)</span>
+          {/* Lado Direito */}
+          <div
+            className={cn(
+              "grid gap-1.5 sm:gap-2 text-center text-xs font-bold text-muted-foreground",
+              is6Seats ? "grid-cols-3" : "grid-cols-2"
+            )}
+          >
+            {rightCols.map((col, idx) => (
+              <span key={col}>
+                {col} {idx === rightCols.length - 1 ? "(Janela)" : is6Seats && idx === 1 ? "(Meio)" : "(Corredor)"}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -219,40 +255,43 @@ export function CrewSeatMap({
         <div className="mb-3 px-2 py-1 rounded-md bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/60 flex items-center justify-between text-[11px] text-[#002855] dark:text-blue-200 font-semibold">
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-[#0077C8] dark:text-[#38BDF8]" />
-            <span>Espaço Azul Premium (Fileiras 1 a 4) - Pitch Estendido de 86cm</span>
+            <span>Espaço Azul Premium (Fileiras 1 a {espacoAzulLimit}) - Prioridade de Bordo</span>
           </div>
           <span className="text-[10px] opacity-75 uppercase tracking-wide">
-            Prioridade de Bordo
+            {is6Seats ? "Pitch 86cm (3x3)" : "Pitch 84cm (2x2)"}
           </span>
         </div>
 
-        {/* Fileiras de Assentos */}
-        <div className="space-y-2">
+        {/* Fileiras de Assentos com Altura Confortável */}
+        <div className="space-y-2 max-h-[750px] overflow-y-auto pr-1">
           {rows.map((row) => {
-            const isMainCabinStart = row === 5;
-            const isEmergencyRow = row === 11 || row === 12;
+            const isMainCabinStart = row === espacoAzulLimit + 1;
+            const isEmergency = row === emergencyRow;
 
             return (
               <React.Fragment key={row}>
                 {isMainCabinStart && (
                   <div className="my-3 px-2 py-1 rounded-md bg-slate-100/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-[10px] font-semibold text-muted-foreground text-center uppercase tracking-wider">
-                    Cabine Principal (Fileiras 5 a 15)
+                    Cabine Principal (Fileiras {isMainCabinStart ? espacoAzulLimit + 1 : row} a {numFileiras})
                   </div>
                 )}
 
-                {isEmergencyRow && row === 11 && (
+                {isEmergency && (
                   <div className="px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400 flex items-center justify-center gap-1">
                     <ShieldAlert className="h-3 w-3" />
-                    <span>Saída de Emergência Sobre as Asas (Fileiras 11 e 12)</span>
+                    <span>Saída de Emergência Sobre as Asas (Fileira {emergencyRow})</span>
                   </div>
                 )}
 
                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 px-1 sm:px-2">
-                  {/* Assentos Lado Esquerdo: A, B, C */}
-                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                    {renderSeat(row, "A")}
-                    {renderSeat(row, "B")}
-                    {renderSeat(row, "C")}
+                  {/* Assentos Lado Esquerdo */}
+                  <div
+                    className={cn(
+                      "grid gap-1.5 sm:gap-2",
+                      is6Seats ? "grid-cols-3" : "grid-cols-2"
+                    )}
+                  >
+                    {leftCols.map((col) => renderSeat(row, col))}
                   </div>
 
                   {/* Corredor Central com Número da Fileira */}
@@ -262,11 +301,14 @@ export function CrewSeatMap({
                     </div>
                   </div>
 
-                  {/* Assentos Lado Direito: D, E, F */}
-                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                    {renderSeat(row, "D")}
-                    {renderSeat(row, "E")}
-                    {renderSeat(row, "F")}
+                  {/* Assentos Lado Direito */}
+                  <div
+                    className={cn(
+                      "grid gap-1.5 sm:gap-2",
+                      is6Seats ? "grid-cols-3" : "grid-cols-2"
+                    )}
+                  >
+                    {rightCols.map((col) => renderSeat(row, col))}
                   </div>
                 </div>
               </React.Fragment>
@@ -274,13 +316,12 @@ export function CrewSeatMap({
           })}
         </div>
 
-        {/* Fundo da Cabine / Galley Traseira */}
+        {/* Galley Traseira */}
         <div className="mt-6 pt-3 border-t border-border/60 flex items-center justify-between text-[10px] text-muted-foreground px-4">
-          <span>Galley Traseira 2 / Toaletes L e R</span>
+          <span>Galley Traseira / Toaletes L e R</span>
           <span>Saída Traseira 2L / 2R</span>
         </div>
       </div>
     </div>
   );
 }
-

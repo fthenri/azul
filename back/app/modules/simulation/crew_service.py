@@ -4,9 +4,15 @@ import logging
 from typing import Any, List
 
 from back.app.config import Settings, get_settings
-from back.app.core.exceptions import EntityNotFoundError, SimulationExecutionError
-from back.app.infrastructure.analytics.duckdb_client import DuckDBClient, get_duckdb_client
-from back.app.schemas.simulation import AssentoCliente, AssentoVoo, SimularBordoResponse
+from back.app.core.exceptions import EntityNotFoundError
+from back.app.infrastructure.analytics.duckdb_client import DuckDBClient
+from back.app.schemas.simulation import (
+    AssentoCliente,
+    AssentoVoo,
+    MetadataAeronave,
+    SimularBordoResponse,
+    VooSimuladoResponse,
+)
 from back.executor_decisao import (
     ROTULOS_ACOES_BORDO,
     arbitrar_acao_bordo,
@@ -32,6 +38,28 @@ LAST_NAMES = [
     "Moreira", "Nunes", "Marques", "Machado", "Mendes", "Freitas", "Cardoso", "Ramos",
     "Gonçalves", "Santana", "Teixeira", "Araújo", "Castro", "Cavalcanti", "Macedo", "Pinheiro"
 ]
+
+
+FROTA_AZUL: dict[str, dict[str, Any]] = {
+    "A320neo": {
+        "modelo": "Airbus A320neo",
+        "codigo": "A320neo",
+        "fileiras": 29,
+        "layout": ["A", "B", "C", "D", "E", "F"],
+    },
+    "E195-E2": {
+        "modelo": "Embraer E195-E2",
+        "codigo": "E195-E2",
+        "fileiras": 34,
+        "layout": ["A", "B", "C", "D"],
+    },
+    "ATR 72-600": {
+        "modelo": "ATR 72-600",
+        "codigo": "ATR 72-600",
+        "fileiras": 18,
+        "layout": ["A", "B", "C", "D"],
+    },
+}
 
 
 def gerar_nome_passageiro(id_cliente: str) -> str:
@@ -61,34 +89,52 @@ class CrewService:
             self._contexto_rag = carregar_contexto_rag(rag_path)
         return self._contexto_rag
 
-    def get_simulated_flight(self) -> List[AssentoVoo]:
-        """Gera o mapa de assentos para um voo simulado com 90 assentos (1A a 15F)."""
-        # Consulta estratificada para garantir presença equilibrada de VIPs, Críticos e Normais
-        sql_vips = """
+    def get_simulated_flight(self, modelo_aeronave: str | None = None) -> VooSimuladoResponse:
+        """Gera o mapa de assentos para um voo simulado sorteando um modelo da frota Azul."""
+        import random
+
+        if modelo_aeronave and modelo_aeronave in FROTA_AZUL:
+            aeronave = FROTA_AZUL[modelo_aeronave]
+        else:
+            codigo_sorteado = random.choice(list(FROTA_AZUL.keys()))
+            aeronave = FROTA_AZUL[codigo_sorteado]
+
+        fileiras = int(aeronave["fileiras"])
+        layout = list(aeronave["layout"])
+        assentos_codigos: list[str] = [
+            f"{row}{col}" for row in range(1, fileiras + 1) for col in layout
+        ]
+        total_assentos = len(assentos_codigos)
+
+        # Proporções analíticas baseadas na capacidade da aeronave sorteada
+        qtd_vips = max(int(total_assentos * 0.16), 10)
+        qtd_criticos = max(int(total_assentos * 0.14), 8)
+
+        sql_vips = f"""
         SELECT c.id_cliente, s.tier_fidelidade, p.persona, round(c.clv_previsto, 2) as clv_previsto,
                c.faixa_pareto, round(e.risco_evasao, 4) as risco_evasao, round(e.score_atrito_acumulado, 2) as score_atrito_acumulado
         FROM gold_clv c
         JOIN gold_evasao e ON c.id_cliente = e.id_cliente
         JOIN gold_personas p ON c.id_cliente = p.id_cliente
         JOIN silver_clientes s ON c.id_cliente = s.id_cliente
-        WHERE c.faixa_pareto IN ('Top 10% Receita', 'Top 20% Receita')
+        WHERE c.faixa_pareto IN ('Top 10% Receita', 'Top 20% Receita') AND e.risco_evasao <= 0.60
         ORDER BY c.clv_previsto DESC
-        LIMIT 14
+        LIMIT {qtd_vips + 15}
         """
 
-        sql_criticos = """
+        sql_criticos = f"""
         SELECT c.id_cliente, s.tier_fidelidade, p.persona, round(c.clv_previsto, 2) as clv_previsto,
                c.faixa_pareto, round(e.risco_evasao, 4) as risco_evasao, round(e.score_atrito_acumulado, 2) as score_atrito_acumulado
         FROM gold_clv c
         JOIN gold_evasao e ON c.id_cliente = e.id_cliente
         JOIN gold_personas p ON c.id_cliente = p.id_cliente
         JOIN silver_clientes s ON c.id_cliente = s.id_cliente
-        WHERE e.risco_evasao > 0.60 AND c.faixa_pareto NOT IN ('Top 10% Receita', 'Top 20% Receita')
+        WHERE e.risco_evasao > 0.60
         ORDER BY e.risco_evasao DESC
-        LIMIT 12
+        LIMIT {qtd_criticos + 15}
         """
 
-        sql_normais = """
+        sql_normais = f"""
         SELECT c.id_cliente, s.tier_fidelidade, p.persona, round(c.clv_previsto, 2) as clv_previsto,
                c.faixa_pareto, round(e.risco_evasao, 4) as risco_evasao, round(e.score_atrito_acumulado, 2) as score_atrito_acumulado
         FROM gold_clv c
@@ -97,63 +143,53 @@ class CrewService:
         JOIN silver_clientes s ON c.id_cliente = s.id_cliente
         WHERE e.risco_evasao <= 0.60 AND c.faixa_pareto NOT IN ('Top 10% Receita', 'Top 20% Receita')
         ORDER BY c.recencia_dias ASC
-        LIMIT 64
+        LIMIT {total_assentos + 35}
         """
 
         vips = self.duckdb_client.query(sql_vips)
         criticos = self.duckdb_client.query(sql_criticos)
         normais = self.duckdb_client.query(sql_normais)
 
-        # Monta a lista de assentos: 15 fileiras com assentos A, B, C, D, E, F
-        assentos_codigos: list[str] = [
-            f"{row}{col}" for row in range(1, 16) for col in ["A", "B", "C", "D", "E", "F"]
-        ]
-
-        # Alocação de cabine:
-        # Fileiras 1 a 4 (Espaço Azul / Premium): prioriza VIPs
-        # Fileiras 5 a 15: distribui Críticos e Normais
+        # Fileiras 1 a 4 (Espaço Azul): prioriza passageiros VIPs
+        assentos_espaco_azul = 4 * len(layout)
         passageiros_pool: list[dict[str, Any]] = []
 
-        # Intercala VIPs nas primeiras fileiras
         vip_idx = 0
         crit_idx = 0
         norm_idx = 0
+        step_critico = 7 if len(layout) == 6 else 5
 
-        for seat_num in range(len(assentos_codigos)):
-            if seat_num < 24 and vip_idx < len(vips):
-                # Assentos dianteiros recebem VIPs
-                passageiro = vips[vip_idx]
+        for seat_num in range(total_assentos):
+            if seat_num < assentos_espaco_azul and vip_idx < len(vips):
+                passageiros_pool.append(vips[vip_idx])
                 vip_idx += 1
-            elif (seat_num % 7 == 2 or seat_num % 9 == 4) and crit_idx < len(criticos):
-                # Espalha passageiros críticos pela cabine
-                passageiro = criticos[crit_idx]
+            elif (seat_num % step_critico == 2) and crit_idx < len(criticos):
+                passageiros_pool.append(criticos[crit_idx])
                 crit_idx += 1
             elif norm_idx < len(normais):
-                passageiro = normais[norm_idx]
+                passageiros_pool.append(normais[norm_idx])
                 norm_idx += 1
             elif crit_idx < len(criticos):
-                passageiro = criticos[crit_idx]
+                passageiros_pool.append(criticos[crit_idx])
                 crit_idx += 1
             elif vip_idx < len(vips):
-                passageiro = vips[vip_idx]
+                passageiros_pool.append(vips[vip_idx])
                 vip_idx += 1
             else:
                 break
 
-            passageiros_pool.append(passageiro)
-
         resultado: List[AssentoVoo] = []
         for idx, passageiro in enumerate(passageiros_pool):
+            if idx >= total_assentos:
+                break
             codigo_assento = assentos_codigos[idx]
             risco = float(passageiro["risco_evasao"])
             pareto = str(passageiro["faixa_pareto"])
 
-            if risco > 0.60 and pareto not in ("Top 10% Receita", "Top 20% Receita"):
+            if risco > 0.60:
                 status = "critico"
             elif pareto in ("Top 10% Receita", "Top 20% Receita"):
                 status = "vip"
-            elif risco > 0.60:
-                status = "critico"
             else:
                 status = "normal"
 
@@ -176,7 +212,18 @@ class CrewService:
                 )
             )
 
-        return resultado
+        metadata = MetadataAeronave(
+            modelo=str(aeronave["modelo"]),
+            codigo=str(aeronave["codigo"]),
+            fileiras=fileiras,
+            layout=layout,
+            total_assentos=total_assentos,
+        )
+
+        return VooSimuladoResponse(
+            metadata_aeronave=metadata,
+            assentos=resultado,
+        )
 
     def simulate_in_flight_action(
         self,
@@ -184,26 +231,19 @@ class CrewService:
         assento: str,
     ) -> SimularBordoResponse:
         """Arbitra ação de bordo e gera instrução do comissário via LLM."""
-        try:
-            perfil = carregar_perfil_cliente_gold(
-                id_cliente=id_cliente,
-                data_lake_dir=self.settings.data_lake_dir,
-            )
-        except Exception:
-            # Fallback para busca rápida via DuckDB caso não ache no Parquet direto
-            sql = """
-            SELECT c.id_cliente, s.tier_fidelidade, p.persona, c.clv_previsto,
-                   c.faixa_pareto, e.risco_evasao, e.score_atrito_acumulado
-            FROM gold_clv c
-            JOIN gold_evasao e ON c.id_cliente = e.id_cliente
-            JOIN gold_personas p ON c.id_cliente = p.id_cliente
-            JOIN silver_clientes s ON c.id_cliente = s.id_cliente
-            WHERE c.id_cliente = ?
-            LIMIT 1
-            """
-            row = self.duckdb_client.query_row(sql, [id_cliente])
-            if not row:
-                raise EntityNotFoundError(f"Passageiro '{id_cliente}' não encontrado na Camada Gold.")
+        # 1. Recupera o perfil analítico completo na Camada Gold via DuckDB (com faixa_pareto)
+        sql = """
+        SELECT c.id_cliente, s.tier_fidelidade, p.persona, c.clv_previsto,
+               c.faixa_pareto, e.risco_evasao, e.score_atrito_acumulado
+        FROM gold_clv c
+        JOIN gold_evasao e ON c.id_cliente = e.id_cliente
+        JOIN gold_personas p ON c.id_cliente = p.id_cliente
+        JOIN silver_clientes s ON c.id_cliente = s.id_cliente
+        WHERE c.id_cliente = ?
+        LIMIT 1
+        """
+        row = self.duckdb_client.query_row(sql, [id_cliente])
+        if row:
             perfil = {
                 "id_cliente": str(row["id_cliente"]),
                 "tier_fidelidade": str(row["tier_fidelidade"]),
@@ -213,18 +253,27 @@ class CrewService:
                 "risco_evasao": float(row["risco_evasao"]),
                 "score_atrito_acumulado": float(row["score_atrito_acumulado"]),
             }
+        else:
+            # Fallback resiliente para busca direta via Parquet se necessário
+            try:
+                perfil = carregar_perfil_cliente_gold(
+                    id_cliente=id_cliente,
+                    data_lake_dir=self.settings.data_lake_dir,
+                )
+            except Exception:
+                raise EntityNotFoundError(f"Passageiro '{id_cliente}' não encontrado na Camada Gold.")
 
-        # Árbitro de Bordo
+        # 2. Árbitro de Bordo
         decisao = arbitrar_acao_bordo(perfil)
-        acao_vencedora = decisao["acao_vencedora"]
-        rotulo_acao = ROTULOS_ACOES_BORDO.get(acao_vencedora, acao_vencedora)
+        acao_vencedora: str = str(decisao.get("acao_vencedora", "ABORDAGEM_CHEFE_CABINE"))
+        rotulo_acao: str = ROTULOS_ACOES_BORDO.get(acao_vencedora) or acao_vencedora
 
-        # Agente LLM para comissário
+        # 3. Agente LLM para comissário (passa o código técnico da ação vencedora para o prompt e mock)
         contexto_rag = self.get_contexto_rag()
         resultado_llm = gerar_instrucao_bordo_llm(
             perfil_cliente=perfil,
             assento=assento,
-            acao_vencedora=rotulo_acao,
+            acao_vencedora=acao_vencedora,
             contexto_rag=contexto_rag,
         )
 
@@ -232,12 +281,12 @@ class CrewService:
             assento=assento,
             id_cliente=id_cliente,
             acao_sugerida=rotulo_acao,
-            custo_acao=decisao["custo_acao"],
-            retorno_liquido=decisao["retorno_liquido"],
-            instrucao_comissario=resultado_llm["instrucao_comissario"],
+            custo_acao=float(decisao.get("custo_acao", 0.0)),
+            retorno_liquido=float(decisao.get("retorno_liquido", 0.0)),
+            instrucao_comissario=str(resultado_llm.get("instrucao_comissario", "")),
             dados_cliente={
                 "id_cliente": perfil.get("id_cliente"),
-                "nome": gerar_nome_passageiro(perfil.get("id_cliente", "")),
+                "nome": gerar_nome_passageiro(str(perfil.get("id_cliente", ""))),
                 "tier_fidelidade": perfil.get("tier_fidelidade"),
                 "persona": perfil.get("persona"),
                 "clv_previsto": perfil.get("clv_previsto"),

@@ -8,6 +8,7 @@ import {
   DecisaoAuditoria,
   ShapResponse,
   AssentoVoo,
+  VooSimuladoResponse,
   SimularBordoPayload,
   SimularBordoResponse,
 } from "@/types/api";
@@ -91,8 +92,8 @@ export const api = {
     request<ShapResponse>(`/auditoria/decisoes/${encodeURIComponent(decisaoId)}/shap`),
 
   // Tela 4: Visão da Tripulação (Mapa de Assentos)
-  getVooSimulado: (): Promise<AssentoVoo[]> =>
-    request<AssentoVoo[]>("/voo-simulado"),
+  getVooSimulado: (modelo?: string): Promise<VooSimuladoResponse> =>
+    request<VooSimuladoResponse>(`/voo-simulado${modelo ? `?modelo=${encodeURIComponent(modelo)}` : ""}`),
 
   simularBordo: (payload: SimularBordoPayload): Promise<SimularBordoResponse> =>
     request<SimularBordoResponse>("/motor/simular-bordo", {

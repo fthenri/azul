@@ -12,6 +12,7 @@ from back.app.schemas.simulation import (
     SimularBordoResponse,
     SimularPayload,
     SimularResponse,
+    VooSimuladoResponse,
 )
 
 router = APIRouter(prefix="/motor", tags=["Central de Decisões"])
@@ -52,11 +53,12 @@ async def simular_bordo(
 # Rota do mapa de voo simulado dentro do router motor
 @router.get(
     "/voo-simulado",
-    response_model=List[AssentoVoo],
+    response_model=VooSimuladoResponse,
     summary="Obter Mapa de Assentos do Voo Simulado",
-    description="Retorna a distribuição de 60 a 90 passageiros da Camada Gold com status ('critico', 'vip', 'normal').",
+    description="Retorna a distribuição dinâmica de passageiros da Camada Gold com metadados da aeronave sorteada.",
 )
 async def get_voo_simulado_motor(
+    modelo: str | None = None,
     crew_service: CrewService = Depends(get_crew_service),
-) -> List[AssentoVoo]:
-    return crew_service.get_simulated_flight()
+) -> VooSimuladoResponse:
+    return crew_service.get_simulated_flight(modelo_aeronave=modelo)

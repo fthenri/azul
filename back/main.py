@@ -6,6 +6,8 @@ from back.app.main import app, create_app
 from back.app.api.v1.endpoints.motor import simular_motor, simular_bordo
 from back.app.schemas.simulation import (
     AssentoVoo,
+    MetadataAeronave,
+    VooSimuladoResponse,
     SimularBordoPayload,
     SimularBordoResponse,
     SimularPayload,
@@ -26,6 +28,8 @@ __all__ = [
     "SimularBordoPayload",
     "SimularBordoResponse",
     "AssentoVoo",
+    "MetadataAeronave",
+    "VooSimuladoResponse",
 ]
 
 

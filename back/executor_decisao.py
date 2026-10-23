@@ -105,6 +105,7 @@ def carregar_perfil_cliente_gold(
         "tamanho_medio_pnr": float(row_personas["tamanho_medio_pnr"]),
         "score_atrito_acumulado": float(row_evasao["score_atrito_acumulado"]),
         "risco_evasao": float(row_evasao["risco_evasao"]),
+        "faixa_pareto": str(row_clv["faixa_pareto"]) if "faixa_pareto" in row_clv else "Cauda Longa",
     }
 
 
@@ -282,9 +283,11 @@ Responda ESTRITAMENTE em formato JSON (sem nenhum texto ou formatação fora do 
         conteudo_raw = ""
 
         if gemini_key:
-            import google.generativeai as genai
-            genai.configure(api_key=gemini_key)
-            model = genai.GenerativeModel(
+            from google.generativeai.client import configure
+            from google.generativeai.generative_models import GenerativeModel
+
+            configure(api_key=gemini_key)
+            model = GenerativeModel(
                 model_name="gemini-1.5-flash",
                 generation_config={"response_mime_type": "application/json"},
             )
@@ -446,9 +449,11 @@ Responda EXCLUSIVAMENTE em formato JSON (sem formatações markdown adicionais) 
 """
         conteudo_raw = ""
         if gemini_key:
-            import google.generativeai as genai
-            genai.configure(api_key=gemini_key)
-            model = genai.GenerativeModel(
+            from google.generativeai.client import configure
+            from google.generativeai.generative_models import GenerativeModel
+
+            configure(api_key=gemini_key)
+            model = GenerativeModel(
                 model_name="gemini-1.5-flash",
                 generation_config={"response_mime_type": "application/json"},
             )

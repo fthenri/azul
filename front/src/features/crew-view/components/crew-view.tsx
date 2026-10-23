@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 
 export function CrewView() {
   const {
+    metadata,
     seats,
     isLoadingFlight,
     isErrorFlight,
@@ -43,7 +44,7 @@ export function CrewView() {
   } = useCrewFlight();
 
   // Contagens para os cards de resumo
-  const totalAssentos = seats.length;
+  const totalAssentos = metadata?.total_assentos || seats.length;
   const totalCriticos = seats.filter((s) => s.status === "critico").length;
   const totalVips = seats.filter((s) => s.status === "vip").length;
   const totalAtendidos = attendedSeats.size;
@@ -65,6 +66,11 @@ export function CrewView() {
               <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 text-[10px] font-semibold">
                 Cruzeiro • FL360
               </Badge>
+              {metadata && (
+                <Badge className="bg-white/15 text-white border-white/25 text-[10px] font-mono">
+                  {metadata.codigo}
+                </Badge>
+              )}
               {isDemoMode && (
                 <Badge className="bg-amber-400/20 text-amber-200 border-amber-300/30 text-[10px]">
                   Modo Demo
@@ -75,7 +81,11 @@ export function CrewView() {
               VCP (Campinas) ➔ REC (Recife)
             </h1>
             <p className="text-xs text-white/75 flex items-center gap-2 mt-1">
-              <span>Airbus A320neo (15 Fileiras • 90 Passageiros)</span>
+              <span>
+                {metadata
+                  ? `${metadata.modelo} (${metadata.fileiras} Fileiras • ${metadata.total_assentos} Passageiros • Layout ${metadata.layout.length === 6 ? "3x3" : "2x2"})`
+                  : "Carregando configuração da aeronave..."}
+              </span>
               <span>•</span>
               <span className="flex items-center gap-1 text-[#38BDF8]">
                 <Sparkles className="h-3 w-3" />
@@ -109,10 +119,10 @@ export function CrewView() {
             <Users className="h-4 w-4 text-[#0077C8] dark:text-[#38BDF8]" />
           </div>
           <div className="text-2xl font-black text-foreground">
-            {totalAssentos || 90}
+            {totalAssentos}
           </div>
           <span className="text-[10px] text-muted-foreground">
-            Ocupação: 100% (60 a 90 da Gold)
+            Ocupação: 100% ({metadata?.modelo || "Frota Azul"})
           </span>
         </Card>
 
@@ -252,6 +262,7 @@ export function CrewView() {
             </div>
           ) : (
             <CrewSeatMap
+              metadata={metadata}
               seats={seats}
               selectedSeat={selectedSeat}
               onSelectSeat={setSelectedSeat}

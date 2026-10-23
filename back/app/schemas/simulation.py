@@ -81,6 +81,27 @@ class AssentoVoo(BaseModel):
     dados_cliente: AssentoCliente = Field(..., description="Perfil analítico do passageiro")
 
 
+class MetadataAeronave(BaseModel):
+    """Metadados de configuração da aeronave sorteada da frota Azul."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    modelo: str = Field(..., description="Nome comercial da aeronave (ex: 'Airbus A320neo')")
+    codigo: str = Field(..., description="Código do modelo (ex: 'A320neo', 'E195-E2', 'ATR 72-600')")
+    fileiras: int = Field(..., description="Número total de fileiras configuradas")
+    layout: List[str] = Field(..., description="Estrutura de letras das colunas de assentos")
+    total_assentos: int = Field(..., description="Capacidade máxima total de assentos")
+
+
+class VooSimuladoResponse(BaseModel):
+    """Resposta com mapa de cabine e metadados da aeronave."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    metadata_aeronave: MetadataAeronave = Field(..., description="Configuração do modelo de aeronave")
+    assentos: List[AssentoVoo] = Field(..., description="Lista de poltronas da cabine com passageiros alocados")
+
+
 class SimularBordoPayload(BaseModel):
     """Payload para acionar o motor de bordo para um assento."""
 

@@ -130,6 +130,19 @@ export interface AssentoVoo {
   dados_cliente: AssentoCliente;
 }
 
+export interface MetadataAeronave {
+  modelo: string;
+  codigo: string;
+  fileiras: number;
+  layout: string[];
+  total_assentos: number;
+}
+
+export interface VooSimuladoResponse {
+  metadata_aeronave: MetadataAeronave;
+  assentos: AssentoVoo[];
+}
+
 export interface SimularBordoPayload {
   id_cliente: string;
   assento: string;

@@ -4,8 +4,14 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
-import { DEMO_VOO_SIMULADO, getDemoSimularBordo } from "@/lib/demo-data";
-import { AssentoVoo, SimularBordoPayload, SimularBordoResponse } from "@/types/api";
+import { DEMO_VOO_SIMULADO, getDemoSimularBordo, getDemoVooSimulado } from "@/lib/demo-data";
+import {
+  AssentoVoo,
+  MetadataAeronave,
+  SimularBordoPayload,
+  SimularBordoResponse,
+  VooSimuladoResponse,
+} from "@/types/api";
 
 export type SeatFilter = "todos" | "atencao" | "critico" | "vip";
 
@@ -16,16 +22,16 @@ export function useCrewFlight() {
   const [filter, setFilter] = useState<SeatFilter>("todos");
   const [attendedSeats, setAttendedSeats] = useState<Set<string>>(new Set());
 
-  // Consulta do mapa de assentos do voo simulado
-  const flightQuery = useQuery<AssentoVoo[], Error>({
+  // Consulta do mapa de assentos do voo simulado com metadados dinâmicos da frota
+  const flightQuery = useQuery<VooSimuladoResponse, Error>({
     queryKey: ["voo-simulado", isDemoMode],
     queryFn: async () => {
       if (isDemoMode) {
-        return DEMO_VOO_SIMULADO;
+        return getDemoVooSimulado();
       }
       return api.getVooSimulado();
     },
-    staleTime: 1000 * 60 * 5, // 5 minutos de cache para estabilidade da cabine
+    staleTime: 0, // Permite novo sorteio de aeronave a cada acionamento manual
   });
 
   // Mutação para simulação e geração da instrução da tripulação de bordo
@@ -76,7 +82,9 @@ export function useCrewFlight() {
   };
 
   return {
-    seats: flightQuery.data || [],
+    flightData: flightQuery.data || null,
+    metadata: flightQuery.data?.metadata_aeronave || null,
+    seats: flightQuery.data?.assentos || [],
     isLoadingFlight: flightQuery.isLoading,
     isErrorFlight: flightQuery.isError,
     flightError: flightQuery.error,
