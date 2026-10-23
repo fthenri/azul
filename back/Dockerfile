@@ -13,13 +13,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia e instala dependências Python com cache de camadas
+# Copia e instala dependências Python a partir do requirements.txt único na raiz
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copia os arquivos do backend para /app/back
-COPY . /app/back
+COPY back/ /app/back
 
 # Expõe a porta HTTP da API
 EXPOSE 8000

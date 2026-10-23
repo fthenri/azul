@@ -1,8 +1,8 @@
 services:
   backend:
     build:
-      context: ./back
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: back/Dockerfile
     container_name: azul_backend
     ports:
       - "${BACKEND_PORT:-8000}:8000"
