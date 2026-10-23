@@ -9,8 +9,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // Rota independente PWA / Tablet de Bordo: renderiza tela cheia mobile-first sem layout desktop
-  if (pathname?.startsWith("/crew-mobile")) {
+  // Rotas independentes (Gateway na raiz '/' e Guest Service Tool em '/crew'):
+  // Renderizam tela cheia dedicada, sem a barra lateral do gestor
+  const isBarePage = pathname === "/" || pathname?.startsWith("/crew");
+  if (isBarePage) {
     return <>{children}</>;
   }
 

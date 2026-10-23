@@ -11,8 +11,7 @@ import {
   ShieldCheck,
   ChevronRight,
   Database,
-  Plane,
-  Tablet,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,12 +25,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const navItems = [
     {
-      href: "/executive",
+      href: "/dashboard",
       label: "Painel de Valor",
       sublabel: "Visão Executiva & ROI",
       icon: BarChart3,
       badge: "KPIs",
-      active: pathname === "/executive" || pathname === "/",
+      active: pathname === "/dashboard" || pathname === "/executive",
     },
     {
       href: "/simulator",
@@ -48,22 +47,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       icon: FileText,
       badge: "Audit",
       active: pathname === "/audit-logs",
-    },
-    {
-      href: "/crew-view",
-      label: "Tripulação (Voo ao Vivo)",
-      sublabel: "Mapa de Assentos & CRM de Bordo",
-      icon: Plane,
-      badge: "Ao Vivo",
-      active: pathname === "/crew-view",
-    },
-    {
-      href: "/crew-mobile",
-      label: "CrewApp (Tablet)",
-      sublabel: "Missões de IA para Comissária",
-      icon: Tablet,
-      badge: "PWA",
-      active: pathname === "/crew-mobile",
     },
   ];
 
@@ -184,6 +167,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <span>Azul B2B v1.2</span>
             <span>Zero Refactoring</span>
           </div>
+
+          <Link
+            href="/"
+            className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-semibold transition-colors"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span>Trocar de Perfil</span>
+          </Link>
         </div>
       </aside>
     </>
