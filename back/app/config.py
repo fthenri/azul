@@ -61,12 +61,15 @@ class Settings(BaseSettings):
 
     def validate_paths(self) -> None:
         """Validação Fail-Fast dos diretórios e arquivos críticos."""
-        if not self.data_lake_dir.exists():
-            raise FileNotFoundError(f"Diretório Data Lake não encontrado: {self.data_lake_dir}")
-        if not self.silver_dir.exists():
-            raise FileNotFoundError(f"Diretório Silver não encontrado: {self.silver_dir}")
-        if not self.gold_dir.exists():
-            raise FileNotFoundError(f"Diretório Gold não encontrado: {self.gold_dir}")
+        data_lake = self.data_lake_dir
+        if data_lake is None or not data_lake.exists():
+            raise FileNotFoundError(f"Diretório Data Lake não encontrado: {data_lake}")
+        silver = self.silver_dir
+        if silver is None or not silver.exists():
+            raise FileNotFoundError(f"Diretório Silver não encontrado: {silver}")
+        gold = self.gold_dir
+        if gold is None or not gold.exists():
+            raise FileNotFoundError(f"Diretório Gold não encontrado: {gold}")
 
 
 @lru_cache
