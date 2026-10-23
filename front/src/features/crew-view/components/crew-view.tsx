@@ -85,7 +85,7 @@ export function CrewView() {
               <span>•</span>
               <span className="flex items-center gap-1 text-[#38BDF8]">
                 <Sparkles className="h-3 w-3" />
-                Guest Service Tool Inspirada na Delta
+                Azul CrewApp • Copiloto de Cabine
               </span>
             </p>
           </div>

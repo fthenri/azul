@@ -9,19 +9,15 @@ import {
   Sparkles,
   AlertTriangle,
   Crown,
-  Plane,
   RotateCcw,
-  Wifi,
   ShieldCheck,
   Search,
   Check,
   LogOut,
-  Compass,
   ListTodo,
   LayoutGrid,
   X,
   Radio,
-  Inbox,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,7 +30,7 @@ import { AssentoVoo } from "@/types/api";
 
 /**
  * ============================================================================
- * Portal da Tripulação de Bordo (Azul Guest Service Tool)
+ * Portal da Tripulação de Bordo (Azul CrewApp - Painel de Serviço de Bordo)
  * Arquitetura de Comunicação Cross-Tab em Tempo Real:
  * - Receptor de missões despachadas pelo Gestor (via localStorage e eventos nativos)
  * - Zero dados estáticos mockados (carregamento reativo puro de getMissions())
@@ -168,10 +164,10 @@ export default function CrewPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans antialiased">
-      {/* 1. Header Superior Escuro Corporativo (Sem Sidebar do Gestor) */}
+      {/* 1. Header Corporativo Limpo da Tripulação (Logo da Azul, Identificação do Voo e Trocar Perfil) */}
       <header className="bg-slate-950 border-b border-slate-800 text-white px-4 sm:px-8 py-3.5 shadow-md shrink-0">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* Lado Esquerdo: Identidade Visual e Informações do Voo */}
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          {/* Lado Esquerdo: Identidade Visual e Identificação do Voo */}
           <div className="flex items-center gap-3">
             <div className="relative h-9 w-24 sm:w-28 flex items-center shrink-0">
               <Image
@@ -183,36 +179,22 @@ export default function CrewPage() {
                 priority
               />
             </div>
-            <div className="h-7 w-px bg-slate-800 hidden sm:block" />
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-black tracking-tight text-white leading-tight">
-                  Guest Service Tool
-                </h1>
-                <Badge className="bg-[#38BDF8]/20 text-[#38BDF8] border-[#38BDF8]/30 text-[10px] font-mono font-bold">
-                  Tripulação
-                </Badge>
-              </div>
-              <p className="text-xs text-slate-400 font-medium flex items-center gap-2 mt-0.5">
-                <span className="font-semibold text-slate-200">Voo AD4231</span>
-                <span>•</span>
-                <span>VCP ➔ REC</span>
-                <span>•</span>
-                <span className="text-[#38BDF8] text-[11px] font-semibold">
-                  A320neo (FL360)
-                </span>
+            <div className="h-6 w-px bg-slate-800" />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+              <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                Azul CrewApp
+              </h1>
+              <span className="hidden sm:inline text-slate-500">•</span>
+              <p className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+                <span className="font-semibold text-white">Voo AD4231</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-slate-400">VCP ➔ REC</span>
               </p>
             </div>
           </div>
 
-          {/* Lado Direito: Status de Conexão e Botão para Trocar de Perfil */}
-          <div className="flex items-center gap-3 self-end sm:self-auto">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
-              <Wifi className="h-3.5 w-3.5 animate-pulse" />
-              <span className="hidden sm:inline">Wi-Fi Conectado • Sync Ativo</span>
-              <span className="sm:hidden">Online</span>
-            </div>
-
+          {/* Lado Direito: Botão para Trocar de Perfil */}
+          <div className="flex items-center">
             <Link href="/">
               <Button
                 variant="outline"
@@ -229,7 +211,7 @@ export default function CrewPage() {
 
       {/* 2. Conteúdo Principal Responsivo */}
       <main className="container mx-auto p-4 sm:p-6 w-full max-w-7xl flex-1 space-y-6">
-        {/* Banner Tático Inspirado no Delta Guest Service Tool */}
+        {/* Banner Operacional do Copiloto de Cabine */}
         <div className="rounded-2xl bg-gradient-to-r from-[#002855] via-[#003B7A] to-[#0077C8] text-white p-5 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -239,18 +221,11 @@ export default function CrewPage() {
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black">
-              Missões Táticas da Comissária
+              Missões Táticas da Tripulação
             </h2>
             <p className="text-xs sm:text-sm text-white/80 max-w-2xl leading-relaxed">
               As missões prescritivas geradas pela IA e despachadas pelo Gestor na Central de Decisões chegam instantaneamente a esta tela. Realize a abordagem de bordo e confirme a conclusão.
             </p>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge className="bg-white/15 text-white border-white/25 text-xs py-1 px-3">
-              <Compass className="h-3.5 w-3.5 mr-1 text-[#38BDF8]" />
-              Tempo Restante de Voo: 01h 45m
-            </Badge>
           </div>
         </div>
 
@@ -819,7 +794,7 @@ export default function CrewPage() {
       {/* 6. Footer Corporativo */}
       <footer className="border-t border-border mt-12 py-4 px-6 text-center text-xs text-muted-foreground">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>Azul Linhas Aéreas Brasileiras • Guest Service Tool (Tablet & Desktop Operacional)</span>
+          <span>Azul Linhas Aéreas Brasileiras • Azul CrewApp (Painel de Serviço de Bordo)</span>
           <div className="flex items-center gap-2 text-[11px]">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
             <span>Sincronização Nativa em Tempo Real Ativa</span>

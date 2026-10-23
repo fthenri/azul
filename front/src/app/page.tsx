@@ -123,7 +123,7 @@ export default function GatewayPage() {
             </div>
           </Link>
 
-          {/* Card 2: Guest Service Tool */}
+          {/* Card 2: Azul CrewApp */}
           <Link
             href="/crew"
             className="group relative flex flex-col justify-between rounded-3xl border border-white/15 bg-white/10 backdrop-blur-md p-6 sm:p-8 hover:bg-white/15 hover:border-emerald-400/60 transition-all duration-300 shadow-xl hover:shadow-emerald-500/20 hover:-translate-y-1"
@@ -140,10 +140,10 @@ export default function GatewayPage() {
 
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
-                  <span>Guest Service Tool</span>
+                  <span>Azul CrewApp</span>
                 </h2>
                 <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300 mt-0.5">
-                  Assistente da Tripulação
+                  Copiloto de Cabine & Serviço de Bordo
                 </p>
                 <p className="text-xs sm:text-sm text-white/75 mt-2.5 leading-relaxed">
                   Interface tática para comissárias receberem missões de atendimento proativo da IA, acolhendo clientes com atritos ou celebrando fidelidade VIP.
