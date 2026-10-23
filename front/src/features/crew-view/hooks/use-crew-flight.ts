@@ -6,6 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
 import { DEMO_VOO_SIMULADO, getDemoSimularBordo, getDemoVooSimulado } from "@/lib/demo-data";
 import { addOrUpdateMission, setMissionStatus } from "@/lib/missions-storage";
+import { addMission as addSyncMission } from "@/lib/sync-storage";
 import {
   AssentoVoo,
   MetadataAeronave,
@@ -67,6 +68,24 @@ export function useCrewFlight() {
         instrucaoIA: data.instrucao_comissario,
         acaoSugerida: data.acao_sugerida,
         status: "pendente",
+      });
+
+      // Sincroniza também no novo serviço de estado global (azul_active_missions)
+      addSyncMission({
+        id: `mis_${variables.assento}`,
+        assento: variables.assento,
+        passageiro: passengerName,
+        instrucao: data.instrucao_comissario,
+        status: "pendente",
+        tipo: activeSeat?.status === "critico" ? "atrito" : "vip",
+        persona: activeSeat?.dados_cliente?.persona || "Cliente Especial",
+        tier: activeSeat?.dados_cliente?.tier_fidelidade || "Diamante",
+        statusBadge: activeSeat?.status === "critico" ? "Alerta de Atrito" : "Fidelização VIP",
+        gatilho: activeSeat?.status === "critico"
+          ? `Score de atrito elevado (${activeSeat.dados_cliente.score_atrito_acumulado}) • Risco ${Math.round(activeSeat.dados_cliente.risco_evasao * 100)}%`
+          : `Cliente de Alto Valor • Faixa Pareto ${activeSeat?.dados_cliente.faixa_pareto || "Top 10%"}`,
+        acao: data.acao_sugerida,
+        criadaEm: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
       });
     },
   });

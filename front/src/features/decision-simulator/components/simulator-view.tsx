@@ -24,6 +24,7 @@ export function SimulatorView() {
     setSelectedMomento,
     executeSimulation,
     simulationResult,
+    lastDispatchedMission,
     isSimulating,
     simulationError,
     shapData,
@@ -115,6 +116,34 @@ export function SimulatorView() {
 
           {simulationResult && (
             <>
+              {/* Notificação Visual: Sincronização Cross-Tab com a Comissária */}
+              {lastDispatchedMission && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-950 dark:text-emerald-100 text-xs shadow-xs animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-mono text-xs font-black">
+                      ✓
+                    </span>
+                    <div>
+                      <span className="font-bold text-foreground">Missão Despachada para a Comissária:</span>{" "}
+                      <span>Assento <strong>[{lastDispatchedMission.assento}]</strong> • {lastDispatchedMission.passageiro}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold hidden md:inline">
+                      Sincronizado via LocalStorage (Tempo Real)
+                    </span>
+                    <a
+                      href="/crew"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors shrink-0"
+                    >
+                      Ver no App da Comissária ↗
+                    </a>
+                  </div>
+                </div>
+              )}
+
               <ArbitrationPanel result={simulationResult} />
 
               {/* Componente Expansível: Explicabilidade do Risco (SHAP) */}
