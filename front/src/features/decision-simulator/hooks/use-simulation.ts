@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
-import { DEMO_MOMENTOS, DEMO_SIMULACAO_RESULT } from "@/lib/demo-data";
-import { Momento, SimularResponse } from "@/types/api";
+import { DEMO_MOMENTOS, DEMO_SIMULACAO_RESULT, DEMO_SHAP } from "@/lib/demo-data";
+import { Momento, SimularResponse, ShapResponse } from "@/types/api";
 
 export function useSimulation() {
   const { isDemoMode } = useDemoMode();
@@ -19,6 +19,23 @@ export function useSimulation() {
       if (isDemoMode) return DEMO_MOMENTOS;
       return api.getMomentos();
     },
+  });
+
+  // Alvo para consulta de explicabilidade SHAP (cliente ou momento selecionado)
+  const targetId =
+    selectedMomento?.cliente_id ||
+    simulationResult?.dados_cliente?.id_cliente ||
+    selectedMomento?.id;
+
+  // Conexão de estado: chamada à API para explicabilidade SHAP do evento/cliente selecionado
+  const shapQuery = useQuery<ShapResponse, Error>({
+    queryKey: ["shap", targetId, isDemoMode],
+    queryFn: async () => {
+      if (!targetId) throw new Error("Nenhum evento ou cliente selecionado");
+      if (isDemoMode) return DEMO_SHAP;
+      return api.getDecisaoShap(targetId);
+    },
+    enabled: !!targetId,
   });
 
   // Conexão de estado: chamada à API para execução da simulação do motor
@@ -57,6 +74,10 @@ export function useSimulation() {
     simulationResult,
     isSimulating: simularMutation.isPending,
     simulationError: simularMutation.error,
+    shapData: shapQuery.data,
+    isLoadingShap: shapQuery.isLoading,
+    isErrorShap: shapQuery.isError,
+    shapError: shapQuery.error,
     isDemoMode,
   };
 }

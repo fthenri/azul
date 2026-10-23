@@ -17,23 +17,34 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ShapResponse } from "@/types/api";
 import { formatPercent } from "@/lib/formatters";
+import { cn } from "@/lib/utils";
 
 interface ShapChartProps {
   data?: ShapResponse | null;
   isLoading: boolean;
   decisaoId?: string;
+  hideHeader?: boolean;
+  className?: string;
 }
 
-export function ShapChart({ data, isLoading, decisaoId }: ShapChartProps) {
+export function ShapChart({
+  data,
+  isLoading,
+  decisaoId,
+  hideHeader = false,
+  className,
+}: ShapChartProps) {
   if (isLoading) {
     return (
-      <Card className="h-full bg-white border border-[#E2E8F0] shadow-xs">
-        <CardHeader>
-          <Skeleton className="h-5 w-48" />
-          <Skeleton className="h-4 w-72" />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-10 w-full" />
+      <Card className={cn("h-full bg-card border-border shadow-xs", className)}>
+        {!hideHeader && (
+          <CardHeader>
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-4 w-72" />
+          </CardHeader>
+        )}
+        <CardContent className="space-y-4 pt-4">
+          <Skeleton className="h-14 w-full" />
           <Skeleton className="h-[220px] w-full" />
         </CardContent>
       </Card>
@@ -42,15 +53,19 @@ export function ShapChart({ data, isLoading, decisaoId }: ShapChartProps) {
 
   if (!data) {
     return (
-      <Card className="h-full bg-white border border-[#E2E8F0] shadow-xs">
-        <CardHeader>
-          <CardTitle className="text-base text-[#243447]">Explicabilidade dos Fatores (SHAP)</CardTitle>
-          <CardDescription className="text-xs text-[#5B6E84]">
-            Selecione uma decisão na tabela para analisar os fatores que influenciaram o risco
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex h-[280px] items-center justify-center text-xs text-[#5B6E84]">
-          Nenhuma decisão selecionada para inspeção de SHAP.
+      <Card className={cn("h-full bg-card border-border shadow-xs", className)}>
+        {!hideHeader && (
+          <CardHeader>
+            <CardTitle className="text-base text-foreground">
+              Explicabilidade dos Fatores (SHAP)
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground">
+              Decomposição aditiva dos fatores operacionais e comportamentais na pontuação de risco
+            </CardDescription>
+          </CardHeader>
+        )}
+        <CardContent className="flex h-[240px] items-center justify-center text-xs text-muted-foreground">
+          Nenhum dado de explicabilidade SHAP disponível para o evento/cliente selecionado.
         </CardContent>
       </Card>
     );
@@ -71,65 +86,84 @@ export function ShapChart({ data, isLoading, decisaoId }: ShapChartProps) {
   const riscoFinalEstimado = Math.max(0, Math.min(1, data.risco_base + somaImpactos));
 
   return (
-    <Card className="flex flex-col bg-white border border-[#E2E8F0] shadow-xs">
-      <CardHeader className="pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div>
-            <CardTitle className="text-base font-bold text-[#243447]">
-              Explicabilidade de Risco (Pesos SHAP)
-            </CardTitle>
-            <CardDescription className="text-xs text-[#5B6E84]">
-              Decomposição aditiva dos fatores operacionais e comportamentais na pontuação de dor
-            </CardDescription>
+    <Card className={cn("flex flex-col bg-card border-border shadow-xs", className)}>
+      {!hideHeader && (
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <CardTitle className="text-base font-bold text-foreground">
+                Explicabilidade de Risco (Pesos SHAP)
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Decomposição aditiva dos fatores operacionais e comportamentais na pontuação de dor
+              </CardDescription>
+            </div>
+            {decisaoId && (
+              <Badge
+                variant="outline"
+                className="font-mono text-xs w-fit bg-[#EAF4FC] dark:bg-[#003B7A]/30 text-[#003B7A] dark:text-[#38BDF8] border-[#0077C8]/40"
+              >
+                {decisaoId.startsWith("dec_") ? `Decisão: ${decisaoId}` : `Alvo: ${decisaoId}`}
+              </Badge>
+            )}
           </div>
-          {decisaoId && (
-            <Badge variant="outline" className="font-mono text-xs w-fit bg-[#EAF4FC] text-[#003B7A] border-[#0077C8]/40">
-              Decisão: {decisaoId}
+        </CardHeader>
+      )}
+
+      <CardContent className={cn("space-y-4", hideHeader ? "pt-4" : "pt-1")}>
+        {/* Resumo Risco Base vs Risco Final */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="grid grid-cols-2 gap-3 flex-1 text-xs">
+            <div className="rounded-lg bg-muted/40 p-2.5 border border-border">
+              <span className="text-muted-foreground block text-[10px] uppercase font-bold">
+                Risco Base (Prior da Carteira)
+              </span>
+              <span className="text-base font-bold text-foreground">
+                {formatPercent(data.risco_base)}
+              </span>
+            </div>
+            <div className="rounded-lg bg-[#EAF4FC] dark:bg-[#003B7A]/20 p-2.5 border border-[#0077C8]/30">
+              <span className="text-[#003B7A] dark:text-[#38BDF8] block text-[10px] uppercase font-bold">
+                Risco Ponderado Final
+              </span>
+              <span className="text-base font-bold text-[#0077C8] dark:text-[#38BDF8]">
+                {formatPercent(riscoFinalEstimado)}
+              </span>
+            </div>
+          </div>
+
+          {hideHeader && decisaoId && (
+            <Badge
+              variant="outline"
+              className="font-mono text-xs self-start sm:self-center bg-[#EAF4FC] dark:bg-[#003B7A]/30 text-[#003B7A] dark:text-[#38BDF8] border-[#0077C8]/40"
+            >
+              {decisaoId.startsWith("dec_") ? `Decisão: ${decisaoId}` : `Alvo: ${decisaoId}`}
             </Badge>
           )}
         </div>
 
-        {/* Resumo Risco Base vs Risco Final */}
-        <div className="grid grid-cols-2 gap-3 pt-2 text-xs">
-          <div className="rounded-lg bg-[#F4F7FA] p-2.5 border border-[#E2E8F0]">
-            <span className="text-[#5B6E84] block text-[10px] uppercase font-bold">
-              Risco Base (Prior da Carteira)
-            </span>
-            <span className="text-base font-bold text-[#243447]">
-              {formatPercent(data.risco_base)}
-            </span>
-          </div>
-          <div className="rounded-lg bg-[#EAF4FC] p-2.5 border border-[#0077C8]/30">
-            <span className="text-[#003B7A] block text-[10px] uppercase font-bold">
-              Risco Ponderado Final
-            </span>
-            <span className="text-base font-bold text-[#0077C8]">
-              {formatPercent(riscoFinalEstimado)}
-            </span>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="pt-2">
+        {/* Gráfico de Barras SHAP */}
         <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               layout="vertical"
               data={chartData}
-              margin={{ top: 10, right: 30, left: 20, bottom: 10 }}
+              margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
             >
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" className="text-border" />
               <XAxis
                 type="number"
                 unit="%"
-                tick={{ fontSize: 11, fill: "#5B6E84" }}
+                tick={{ fontSize: 11, fill: "currentColor" }}
+                className="text-muted-foreground"
                 tickLine={false}
               />
               <YAxis
                 type="category"
                 dataKey="variavel"
-                width={160}
-                tick={{ fontSize: 10, fill: "#243447" }}
+                width={170}
+                tick={{ fontSize: 10, fill: "currentColor" }}
+                className="text-foreground"
                 tickLine={false}
               />
               <ReferenceLine x={0} stroke="#94a3b8" strokeWidth={1.5} />
@@ -139,8 +173,8 @@ export function ShapChart({ data, isLoading, decisaoId }: ShapChartProps) {
                   const item = payload[0].payload;
                   const isAumenta = item.impacto_raw > 0;
                   return (
-                    <div className="rounded-lg border border-[#E2E8F0] bg-white p-3 shadow-md text-xs space-y-1">
-                      <p className="font-bold text-[#243447]">{item.variavel}</p>
+                    <div className="rounded-lg border border-border bg-card p-3 shadow-md text-xs space-y-1">
+                      <p className="font-bold text-foreground">{item.variavel}</p>
                       <p
                         className={`font-semibold ${
                           isAumenta ? "text-[#C43D4B]" : "text-[#16805D]"
@@ -149,10 +183,10 @@ export function ShapChart({ data, isLoading, decisaoId }: ShapChartProps) {
                         Impacto no Risco: {item.impacto_raw > 0 ? "+" : ""}
                         {formatPercent(item.impacto_raw)}
                       </p>
-                      <p className="text-[#5B6E84] text-[10px]">
+                      <p className="text-muted-foreground text-[10px]">
                         {isAumenta
-                          ? "Eleva a propensão de churn (atrito operacional)"
-                          : "Reduz a propensão de churn (fator protetor)"}
+                          ? "Eleva a propensão de churn (fator de atrito operacional)"
+                          : "Reduz a propensão de churn (fator protetor de fidelidade)"}
                       </p>
                     </div>
                   );
@@ -170,7 +204,7 @@ export function ShapChart({ data, isLoading, decisaoId }: ShapChartProps) {
           </ResponsiveContainer>
         </div>
 
-        <div className="flex items-center justify-center gap-6 mt-2 pt-2 border-t border-[#E2E8F0] text-[11px] text-[#5B6E84]">
+        <div className="flex flex-wrap items-center justify-center gap-6 pt-2 border-t border-border text-[11px] text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <span className="h-3 w-3 rounded-sm bg-[#C43D4B]" />
             <span>Eleva o Risco de Churn (Fator de Atrito)</span>

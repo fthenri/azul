@@ -17,10 +17,6 @@ export function AuditView() {
     refetchDecisoes,
     selectedDecisao,
     setSelectedDecisao,
-    shapData,
-    isLoadingShap,
-    isErrorShap,
-    shapError,
   } = useAuditLogs();
 
   return (
@@ -30,14 +26,14 @@ export function AuditView() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-[#003B7A] sm:text-3xl">
-              Logs & Explicabilidade
+              Logs & Auditoria
             </h1>
             <span className="rounded bg-[#EAF4FC] text-[#003B7A] border border-[#0077C8]/20 text-[11px] font-bold px-2.5 py-0.5">
               Auditoria Regulatória
             </span>
           </div>
           <p className="text-xs sm:text-sm text-[#5B6E84] mt-1">
-            Rastreabilidade de decisões tomadas, bloqueios de segurança e decomposição de risco via SHAP
+            Rastreabilidade completa de decisões executadas, bloqueios do árbitro e conformidade operacional
           </p>
         </div>
 
@@ -77,26 +73,23 @@ export function AuditView() {
         </Alert>
       )}
 
-      {/* Grid Principal: Tabela à esquerda, Detalhes + SHAP à direita */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-        <div className="lg:col-span-7">
-          <AuditTable
-            data={decisoes}
-            isLoading={isLoadingDecisoes}
-            selectedDecisao={selectedDecisao}
-            onSelectDecisao={setSelectedDecisao}
-          />
-        </div>
-
-        <div className="lg:col-span-5">
-          <DecisionDetailDrawer
-            decisao={selectedDecisao}
-            shapData={shapData}
-            isLoadingShap={isLoadingShap}
-            shapError={shapError}
-          />
-        </div>
+      {/* Tabela de Auditoria de Histórico: Visão Completa Full-Width */}
+      <div className="w-full">
+        <AuditTable
+          data={decisoes}
+          isLoading={isLoadingDecisoes}
+          selectedDecisao={selectedDecisao}
+          onSelectDecisao={setSelectedDecisao}
+        />
       </div>
+
+      {/* Modal de Detalhes da Decisão (se selecionada) focado em compliance e MLOps */}
+      {selectedDecisao && (
+        <DecisionDetailDrawer
+          decisao={selectedDecisao}
+          onClose={() => setSelectedDecisao(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,15 +1,17 @@
 "use client";
 
-import React from "react";
-import { RefreshCw, AlertCircle, Cpu } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { RefreshCw, AlertCircle, Cpu, Activity, ChevronDown } from "lucide-react";
 import { useSimulation } from "../hooks/use-simulation";
 import { MomentsQueue } from "./moments-queue";
 import { SimulationForm } from "./simulation-form";
 import { ArbitrationPanel } from "./arbitration-panel";
 import { LlmMessagePanel } from "./llm-message-panel";
+import { ShapChart } from "@/features/audit-logs/components/shap-chart";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 export function SimulatorView() {
   const {
@@ -24,7 +26,16 @@ export function SimulatorView() {
     simulationResult,
     isSimulating,
     simulationError,
+    shapData,
+    isLoadingShap,
   } = useSimulation();
+
+  const [isShapOpen, setIsShapOpen] = useState(false);
+
+  // Garante que o componente expansível inicie sempre recolhido/fechado ao alternar eventos
+  useEffect(() => {
+    setIsShapOpen(false);
+  }, [selectedMomento?.id]);
 
   return (
     <div className="space-y-6">
@@ -105,6 +116,60 @@ export function SimulatorView() {
           {simulationResult && (
             <>
               <ArbitrationPanel result={simulationResult} />
+
+              {/* Componente Expansível: Explicabilidade do Risco (SHAP) */}
+              <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden transition-all duration-200">
+                <button
+                  type="button"
+                  onClick={() => setIsShapOpen((prev) => !prev)}
+                  className="w-full flex items-center justify-between p-4 bg-card hover:bg-muted/40 transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  aria-expanded={isShapOpen}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EAF4FC] dark:bg-[#003B7A]/30 text-[#0077C8] dark:text-[#38BDF8]">
+                      <Activity className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-foreground">
+                          Explicabilidade do Risco (SHAP)
+                        </h3>
+                        <span className="rounded bg-[#EAF4FC] dark:bg-[#003B7A]/30 text-[#003B7A] dark:text-[#38BDF8] border border-[#0077C8]/20 text-[10px] font-bold px-2 py-0.5">
+                          Fatores Aditivos
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Decomposição dos fatores operacionais e comportamentais de risco para o cliente selecionado
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">
+                      {isShapOpen ? "Ocultar Análise" : "Ver Análise"}
+                    </span>
+                    <div
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition-transform duration-200",
+                        isShapOpen && "rotate-180"
+                      )}
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </div>
+                  </div>
+                </button>
+
+                {isShapOpen && (
+                  <div className="border-t border-border p-4 bg-muted/5 animate-in fade-in-50 duration-150">
+                    <ShapChart
+                      data={shapData}
+                      isLoading={isLoadingShap}
+                      decisaoId={selectedMomento?.cliente_id || selectedMomento?.id}
+                      hideHeader
+                    />
+                  </div>
+                )}
+              </div>
+
               <LlmMessagePanel decisaoFinal={simulationResult.decisao_final} />
             </>
           )}

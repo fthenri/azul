@@ -212,7 +212,7 @@ export function AuditTable({
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageSize: 6,
+        pageSize: 10,
       },
     },
   });

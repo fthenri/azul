@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
-import { DEMO_AUDITORIA_DECISOES, DEMO_SHAP } from "@/lib/demo-data";
-import { DecisaoAuditoria, ShapResponse } from "@/types/api";
+import { DEMO_AUDITORIA_DECISOES } from "@/lib/demo-data";
+import { DecisaoAuditoria } from "@/types/api";
 
 export function useAuditLogs() {
   const { isDemoMode } = useDemoMode();
@@ -20,17 +20,6 @@ export function useAuditLogs() {
     },
   });
 
-  // Conexão de estado: chamada à API para explicabilidade SHAP da decisão selecionada
-  const shapQuery = useQuery<ShapResponse, Error>({
-    queryKey: ["auditoria-shap", selectedDecisao?.decisao_id, isDemoMode],
-    queryFn: async () => {
-      if (!selectedDecisao) throw new Error("Nenhuma decisão selecionada");
-      if (isDemoMode) return DEMO_SHAP;
-      return api.getDecisaoShap(selectedDecisao.decisao_id);
-    },
-    enabled: !!selectedDecisao,
-  });
-
   return {
     decisoes: auditQuery.data,
     isLoadingDecisoes: auditQuery.isLoading,
@@ -39,10 +28,6 @@ export function useAuditLogs() {
     refetchDecisoes: auditQuery.refetch,
     selectedDecisao,
     setSelectedDecisao,
-    shapData: shapQuery.data,
-    isLoadingShap: shapQuery.isLoading,
-    isErrorShap: shapQuery.isError,
-    shapError: shapQuery.error,
     isDemoMode,
   };
 }
