@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
@@ -22,7 +22,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 
-export default function RoleLoginPage() {
+// Desativa pré-renderização estática evitando erros com useSearchParams
+export const dynamic = "force-dynamic";
+
+function RoleLoginContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -31,7 +34,7 @@ export default function RoleLoginPage() {
   const rawRole = (params?.role as string) || "manager";
   const isManager = rawRole === "manager" || rawRole === "gestor";
   const roleName = isManager ? "Gestor de CRM" : "Tripulação de Bordo";
-  const portalName = isManager ? "Portal do Gestor" : "Guest Service Tool";
+  const portalName = isManager ? "Portal do Gestor" : "Azul CrewApp";
 
   const { login } = useAuth();
 
@@ -228,6 +231,20 @@ export default function RoleLoginPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function RoleLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#001733] flex items-center justify-center text-white text-xs">
+          <span>Carregando portal de acesso...</span>
+        </div>
+      }
+    >
+      <RoleLoginContent />
+    </Suspense>
   );
 }
 

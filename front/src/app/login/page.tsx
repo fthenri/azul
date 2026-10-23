@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+// Força renderização dinâmica para desativar a pré-renderização estática
+export const dynamic = "force-dynamic";
+
+function LoginRedirectContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect");
@@ -23,5 +26,19 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#001733] flex items-center justify-center text-white text-xs">
       <span>Redirecionando para seleção de perfil...</span>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#001733] flex items-center justify-center text-white text-xs">
+          <span>Carregando...</span>
+        </div>
+      }
+    >
+      <LoginRedirectContent />
+    </Suspense>
   );
 }
