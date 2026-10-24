@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -18,7 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 
-export default function LoginPage() {
+// Força renderização dinâmica para desativar a pré-renderização estática
+export const dynamic = "force-dynamic";
+
+function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect");
@@ -189,5 +192,19 @@ export default function LoginPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#001733] flex items-center justify-center text-white text-xs">
+          <span>Carregando portal de acesso...</span>
+        </div>
+      }
+    >
+      <LoginFormContent />
+    </Suspense>
   );
 }
