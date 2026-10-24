@@ -57,14 +57,19 @@ export default function CrewPage() {
   const { metadata, seats, isLoadingFlight } = useCrewFlight();
 
   // Estados dinâmicos de metadados e assentos sincronizados em tempo real via azul_active_flight
-  const [dynamicMetadata, setDynamicMetadata] = useState<MetadataAeronave | null>(null);
+  const [dynamicMetadata, setDynamicMetadata] = useState<any>({
+    aircraft_model: "Embraer E195-E2",
+    layout: "2x2",
+  });
   const [dynamicSeats, setDynamicSeats] = useState<AssentoVoo[]>([]);
 
   const aircraftModelName = useMemo(() => {
     return (
+      dynamicMetadata?.aircraft_model ||
       dynamicMetadata?.modelo ||
       activeFlight?.aircraft_model ||
-      activeFlight?.metadata?.modelo ||
+      (activeFlight?.metadata as any)?.aircraft_model ||
+      (activeFlight?.metadata as any)?.modelo ||
       activeFlight?.aeronave ||
       metadata?.modelo ||
       "Embraer E195-E2"
@@ -88,38 +93,32 @@ export default function CrewPage() {
   const [selectedMissionModal, setSelectedMissionModal] = useState<SyncMission | null>(null);
 
   // ==========================================================================
-  // Sincronização em Tempo Real do localStorage (azul_active_flight)
+  // O 'Hackathon-Proof Sync' (Polling de 1 segundo a prova de falhas cross-tab)
   // ==========================================================================
   useEffect(() => {
-    const loadActiveFlight = () => {
+    const fetchFlightData = () => {
       const flightData = localStorage.getItem("azul_active_flight");
       if (flightData) {
         try {
-          const parsedData = JSON.parse(flightData);
-          setActiveFlight(parsedData);
-          setDynamicMetadata(parsedData.metadata);
-          setDynamicSeats(parsedData.assentos || []);
+          const parsed = JSON.parse(flightData);
+          setActiveFlight(parsed);
+          setDynamicMetadata(parsed.metadata || { aircraft_model: "Embraer E195-E2", layout: "2x2" });
+          setDynamicSeats(parsed.assentos || []);
         } catch (e) {
-          console.error("Erro ao ler azul_active_flight:", e);
+          console.error("Erro JSON", e);
         }
+      } else {
+        setActiveFlight(null);
       }
       setMissions(getMissions());
     };
 
-    loadActiveFlight();
-
-    window.addEventListener("storage", loadActiveFlight);
-    window.addEventListener("azul_flight_updated", loadActiveFlight);
-
-    return () => {
-      window.removeEventListener("storage", loadActiveFlight);
-      window.removeEventListener("azul_flight_updated", loadActiveFlight);
-    };
+    fetchFlightData(); // Busca inicial
+    const interval = setInterval(fetchFlightData, 1000); // Polling a cada 1s cruzando abas
+    return () => clearInterval(interval);
   }, []);
 
-  const isFlightDispatched = Boolean(
-    activeFlight && (activeFlight.despachado === true || activeFlight.status === "ativo")
-  );
+  const isFlightDispatched = Boolean(activeFlight);
 
   // Helper para verificar status de conclusão
   const isMissionDone = (m: SyncMission) => m.status === "concluida";

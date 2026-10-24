@@ -31,7 +31,11 @@ export interface ActiveFlight {
   total_rows?: number; // Ex: 29
   fileiras?: number;
   assentos?: AssentoVoo[];
-  metadata?: MetadataAeronave | null;
+  metadata?: {
+    aircraft_model?: string;
+    layout?: string | string[];
+    [key: string]: any;
+  } | MetadataAeronave | null;
   missions?: SyncMission[];
 }
 
@@ -116,6 +120,16 @@ export function dispatchFlight(flightData?: Partial<ActiveFlight>): ActiveFlight
     fileiras: totalRows,
     totalPassageiros: flightData?.totalPassageiros || (layout === "2x2" ? 116 : 174),
     ...flightData,
+    assentos: flightData?.assentos || [],
+    metadata: {
+      ...((flightData?.metadata as any) || {}),
+      aircraft_model: (flightData?.metadata as any)?.aircraft_model || model,
+      layout: (flightData?.metadata as any)?.layout || layout,
+      modelo: (flightData?.metadata as any)?.modelo || model,
+      codigo: (flightData?.metadata as any)?.codigo || "E195-E2",
+      fileiras: (flightData?.metadata as any)?.fileiras || totalRows,
+      total_assentos: (flightData?.metadata as any)?.total_assentos || (layout === "2x2" ? 116 : 174),
+    },
   };
 
   if (typeof window !== "undefined") {

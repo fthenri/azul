@@ -95,20 +95,15 @@ export function CrewView() {
       fileiras: totalRows,
       totalPassageiros: totalAssentos || seats.length || (layout === "2x2" ? 116 : 174),
       assentos: seats,
-      metadata: metadata
-        ? {
-            ...metadata,
-            modelo: aircraftModel,
-            fileiras: totalRows,
-            layout: metadata.layout || (layout === "2x2" ? ["A", "B", "C", "D"] : ["A", "B", "C", "D", "E", "F"]),
-          }
-        : {
-            modelo: aircraftModel,
-            codigo: "E195-E2",
-            fileiras: totalRows,
-            layout: layout === "2x2" ? ["A", "B", "C", "D"] : ["A", "B", "C", "D", "E", "F"],
-            total_assentos: totalAssentos || seats.length || 116,
-          },
+      metadata: {
+        ...(metadata || {}),
+        aircraft_model: aircraftModel,
+        layout: layout,
+        modelo: aircraftModel,
+        codigo: metadata?.codigo || "E195-E2",
+        fileiras: totalRows,
+        total_assentos: totalAssentos || seats.length || 116,
+      },
       missions: getMissions(),
     };
 

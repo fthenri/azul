@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 export type SeatMapRole = "gestor" | "crew";
 
 export interface CrewSeatMapProps {
-  metadata: MetadataAeronave | null;
+  metadata: any;
   seats: AssentoVoo[];
   selectedSeat: AssentoVoo | null;
   onSelectSeat: (seat: AssentoVoo) => void;
