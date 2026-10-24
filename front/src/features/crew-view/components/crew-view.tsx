@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Plane,
@@ -13,6 +13,8 @@ import {
   Sparkles,
   ShieldAlert,
   Smartphone,
+  Send,
+  Lock,
 } from "lucide-react";
 import { useCrewFlight, SeatFilter } from "../hooks/use-crew-flight";
 import { CrewSeatMap } from "./crew-seat-map";
@@ -22,8 +24,32 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import {
+  getActiveFlight,
+  dispatchFlight,
+  ActiveFlight,
+} from "@/lib/sync-storage";
 
 export function CrewView() {
+  const [activeFlight, setActiveFlight] = useState<ActiveFlight | null>(null);
+
+  // Sincronização em tempo real do estado de despacho do voo
+  useEffect(() => {
+    setActiveFlight(getActiveFlight());
+
+    const handleSync = () => {
+      setActiveFlight(getActiveFlight());
+    };
+
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("local-storage-update", handleSync);
+
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("local-storage-update", handleSync);
+    };
+  }, []);
+
   const {
     metadata,
     seats,
@@ -43,6 +69,23 @@ export function CrewView() {
     attendedSeats,
     markSeatAsAttended,
   } = useCrewFlight();
+
+  // Ação de Despacho de Voo pelo Gestor (Torre de Controle)
+  const handleDispatch = () => {
+    const flight = dispatchFlight({
+      id: "AD4231",
+      rota: "VCP ➔ REC",
+      origem: "VCP",
+      destino: "REC",
+      status: "ativo",
+      despachado: true,
+      aeronave: metadata?.codigo || "A320neo",
+      totalPassageiros: metadata?.total_assentos || seats.length || 174,
+    });
+    setActiveFlight(flight);
+  };
+
+  const isDispatched = Boolean(activeFlight && activeFlight.despachado);
 
   // Contagens para os cards de resumo
   const totalAssentos = metadata?.total_assentos || seats.length;
@@ -92,6 +135,34 @@ export function CrewView() {
         </div>
 
         <div className="flex items-center gap-2.5 self-start lg:self-auto flex-wrap">
+          {!isDispatched ? (
+            <Button
+              size="sm"
+              onClick={handleDispatch}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 h-9 shadow-md animate-pulse cursor-pointer border border-emerald-400"
+            >
+              <Send className="h-3.5 w-3.5" />
+              <span>Simular e Despachar Voo AD4231</span>
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Badge className="bg-emerald-500/25 text-emerald-200 border-emerald-400/40 text-xs py-1 px-2.5 font-bold flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                <span>Voo Despachado ({activeFlight?.despachadoEm || "Ativo"})</span>
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDispatch}
+                className="border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs gap-1.5 h-9"
+                title="Redespachar voo e sincronizar com a tripulação"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Redespachar</span>
+              </Button>
+            </div>
+          )}
+
           <Link href="/crew" target="_blank">
             <Button
               variant="outline"
@@ -266,8 +337,48 @@ export function CrewView() {
                 Conectando ao endpoint GET /api/v1/voo-simulado
               </p>
             </div>
+          ) : !isDispatched ? (
+            <div className="relative w-full flex flex-col items-center">
+              {/* Mapa de assentos desabilitado e com efeito de bloqueio visual */}
+              <div className="w-full flex justify-center pointer-events-none opacity-30 select-none grayscale blur-[1px]">
+                <CrewSeatMap
+                  role="gestor"
+                  metadata={metadata}
+                  seats={seats}
+                  selectedSeat={null}
+                  onSelectSeat={() => {}}
+                  filter={filter}
+                  attendedSeats={attendedSeats}
+                />
+              </div>
+
+              {/* Overlay de Bloqueio Operacional */}
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center bg-slate-950/40 backdrop-blur-xs rounded-3xl">
+                <div className="max-w-md p-6 sm:p-8 rounded-2xl bg-card border-2 border-primary/30 shadow-2xl text-center space-y-4 animate-in zoom-in-95 duration-200">
+                  <div className="h-14 w-14 rounded-2xl bg-[#002855]/10 dark:bg-[#38BDF8]/10 text-[#0077C8] dark:text-[#38BDF8] mx-auto flex items-center justify-center">
+                    <Lock className="h-7 w-7 text-[#0077C8] dark:text-[#38BDF8]" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-lg font-bold text-foreground">
+                      Despacho de Voo Pendente
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      O mapa de assentos e simulação tática da cabine estão bloqueados. Efetue o despacho do voo para liberar a interação e sincronizar as missões em tempo real com a tripulação de bordo.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleDispatch}
+                    className="w-full h-10 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm gap-2 shadow-md cursor-pointer"
+                  >
+                    <Send className="h-4 w-4" />
+                    <span>Simular e Despachar Voo AD4231</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
           ) : (
             <CrewSeatMap
+              role="gestor"
               metadata={metadata}
               seats={seats}
               selectedSeat={selectedSeat}

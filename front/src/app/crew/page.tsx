@@ -18,12 +18,19 @@ import {
   LayoutGrid,
   X,
   Radio,
+  Plane,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { getMissions, updateMissionStatus, SyncMission } from "@/lib/sync-storage";
+import {
+  getMissions,
+  updateMissionStatus,
+  SyncMission,
+  getActiveFlight,
+  ActiveFlight,
+} from "@/lib/sync-storage";
 import { useCrewFlight } from "@/features/crew-view/hooks/use-crew-flight";
 import { CrewSeatMap } from "@/features/crew-view/components/crew-seat-map";
 import { AssentoVoo } from "@/types/api";
@@ -35,11 +42,14 @@ import { useAuth } from "@/lib/auth-context";
  * Arquitetura de Comunicação Cross-Tab em Tempo Real:
  * - Receptor de missões despachadas pelo Gestor (via localStorage e eventos nativos)
  * - Zero dados estáticos mockados (carregamento reativo puro de getMissions())
- * - Empty state mandatório caso não haja missões despachadas
+ * - Empty state mandatório caso não haja missões despachadas ou o voo não tenha sido despachado
  * ============================================================================
  */
 export default function CrewPage() {
   const { user, logout } = useAuth();
+  // Estado do voo ativo despachado pela Torre de Controle (Gestor)
+  const [activeFlight, setActiveFlight] = useState<ActiveFlight | null>(null);
+
   // 1. Estado Reativo de Missões (Inicializado vazio, sem dados hardcoded)
   const [missions, setMissions] = useState<SyncMission[]>([]);
 
@@ -60,11 +70,13 @@ export default function CrewPage() {
   // Sincronização Cross-Tab e Same-Tab (Receptor)
   // ==========================================================================
   useEffect(() => {
-    // 1. Carrega as missões via getMissions() na montagem do componente
+    // 1. Carrega o status do voo e missões ativas na montagem
+    setActiveFlight(getActiveFlight());
     setMissions(getMissions());
 
     // 2. Handler nativo para eventos de sincronização
     const handleSync = () => {
+      setActiveFlight(getActiveFlight());
       setMissions(getMissions());
     };
 
@@ -78,6 +90,8 @@ export default function CrewPage() {
       window.removeEventListener("local-storage-update", handleSync);
     };
   }, []);
+
+  const isFlightDispatched = Boolean(activeFlight && activeFlight.despachado);
 
   // Helper para verificar status de conclusão
   const isMissionDone = (m: SyncMission) => m.status === "concluida";
@@ -159,9 +173,26 @@ export default function CrewPage() {
     }
   };
 
-  // Handler para clique em assento com missão no Mapa Direcional
-  const handleSelectMissionSeat = (mission: SyncMission, _seat: AssentoVoo) => {
-    setSelectedMissionModal(mission);
+  // Handler para clique em assento com missão no Mapa Direcional (Compatível com SyncMission e Mission)
+  const handleSelectMissionSeat = (mission: SyncMission | any, _seat: AssentoVoo) => {
+    const syncMission: SyncMission = "instrucao" in mission
+      ? (mission as SyncMission)
+      : {
+          id: mission.id,
+          assento: mission.assento,
+          passageiro: mission.passageiro,
+          instrucao: mission.instrucao_ia || mission.instrucaoIA || "",
+          status: mission.status,
+          tipo: mission.tipo,
+          persona: mission.persona,
+          tier: mission.tier,
+          statusBadge: mission.statusBadge,
+          gatilho: mission.gatilho,
+          acao: mission.acaoSugerida,
+          criadaEm: mission.criadaEm,
+          concluidaEm: mission.concluidaEm,
+        };
+    setSelectedMissionModal(syncMission);
   };
 
   return (
@@ -188,9 +219,24 @@ export default function CrewPage() {
               </h1>
               <span className="hidden sm:inline text-slate-500">•</span>
               <p className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-                <span className="font-semibold text-white">Voo AD4231</span>
+                <span className="font-semibold text-white">Voo {activeFlight?.id || "AD4231"}</span>
                 <span className="text-slate-500">•</span>
-                <span className="text-slate-400">VCP ➔ REC</span>
+                <span className="text-slate-400">{activeFlight?.rota || "VCP ➔ REC"}</span>
+                {isFlightDispatched ? (
+                  <>
+                    <span className="text-slate-500">•</span>
+                    <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 text-[10px] py-0 px-1.5 font-semibold">
+                      Despachado
+                    </Badge>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-slate-500">•</span>
+                    <Badge className="bg-amber-500/20 text-amber-300 border-amber-400/30 text-[10px] py-0 px-1.5 font-semibold">
+                      Aguardando Despacho
+                    </Badge>
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -214,8 +260,31 @@ export default function CrewPage() {
       </header>
 
       {/* 2. Conteúdo Principal Responsivo */}
-      <main className="container mx-auto p-4 sm:p-6 w-full max-w-7xl flex-1 space-y-6">
-        {/* Banner Operacional do Copiloto de Cabine */}
+      <main className="container mx-auto p-4 sm:p-6 w-full max-w-7xl flex-1 space-y-6 flex flex-col justify-center">
+        {/* Empty State Obrigatório: Exibido se o voo ainda não foi despachado pela Torre de Controle */}
+        {!isFlightDispatched ? (
+          <div className="flex-1 flex flex-col items-center justify-center min-h-[500px] p-6 text-center animate-in fade-in duration-300">
+            <div className="max-w-md w-full p-8 rounded-3xl border-2 border-dashed border-border bg-card/60 backdrop-blur-xs space-y-4 shadow-sm text-center">
+              <div className="h-16 w-16 rounded-2xl bg-[#002855]/10 dark:bg-[#38BDF8]/10 text-[#0077C8] dark:text-[#38BDF8] mx-auto flex items-center justify-center">
+                <Plane className="h-8 w-8 text-[#0077C8] dark:text-[#38BDF8] animate-pulse" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-lg sm:text-xl font-bold text-foreground">
+                  Aguardando simulação e despacho do voo pela Torre de Controle.
+                </h2>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  A cabine e o plano de voo ainda não foram despachados pelo Gestor. Assim que a operação for despachada em outra aba, esta tela atualizará automaticamente.
+                </p>
+              </div>
+              <div className="pt-2 flex items-center justify-center gap-2 text-xs text-muted-foreground font-mono">
+                <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
+                <span>Sincronização em tempo real ativa</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Banner Operacional do Copiloto de Cabine */}
         <div className="rounded-2xl bg-gradient-to-r from-[#002855] via-[#003B7A] to-[#0077C8] text-white p-5 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -627,7 +696,7 @@ export default function CrewPage() {
               </div>
             )}
 
-            {/* Mapa de Assentos Físico */}
+            {/* Mapa de Assentos Físico com RBAC Tripulação (role="crew" e missions ativas) */}
             {isLoadingFlight ? (
               <div className="h-96 rounded-3xl border border-border bg-card flex flex-col items-center justify-center gap-3">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -638,19 +707,21 @@ export default function CrewPage() {
             ) : (
               <div className="w-full flex justify-center">
                 <CrewSeatMap
+                  role="crew"
+                  missions={missions}
                   metadata={metadata}
                   seats={seats}
                   selectedSeat={null}
                   onSelectSeat={() => {}}
                   filter="todos"
                   attendedSeats={attendedSeatsSet}
-                  isDirectionalOnly={true}
-                  missionSeatMap={missionSeatMap as any}
-                  onSelectMissionSeat={handleSelectMissionSeat as any}
+                  onSelectMissionSeat={handleSelectMissionSeat}
                 />
               </div>
             )}
           </div>
+        )}
+          </>
         )}
       </main>
 

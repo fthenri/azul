@@ -2,14 +2,28 @@
 
 /**
  * ============================================================================
- * Serviço de Estado Global e Sincronização Cross-Tab em Tempo Real
- * Chave de Armazenamento: azul_active_missions
+ * Serviço de Estado Global e Sincronização Cross-Tab em Tempo Real (B2B RBAC)
+ * Chave de Missões: azul_active_missions
+ * Chave de Voo Ativo / Despacho: azul_active_flight
  * Evento Nativo de Sincronização: local-storage-update
  * ============================================================================
  */
 
 export const STORAGE_KEY = "azul_active_missions";
+export const FLIGHT_STORAGE_KEY = "azul_active_flight";
 export const SYNC_EVENT_NAME = "local-storage-update";
+
+export interface ActiveFlight {
+  id: string; // Ex: "AD4231"
+  rota: string; // Ex: "VCP ➔ REC"
+  status: "planejado" | "ativo" | "concluido";
+  despachado: boolean;
+  despachadoEm?: string;
+  origem?: string;
+  destino?: string;
+  aeronave?: string;
+  totalPassageiros?: number;
+}
 
 export interface SyncMission {
   id: string;
@@ -37,6 +51,84 @@ function emitLocalStorageUpdate(): void {
     window.dispatchEvent(new Event(SYNC_EVENT_NAME));
   }
 }
+
+// ============================================================================
+// 1. GESTÃO DE ESTADO DO VOO E DESPACHO (Torre de Controle <-> Tripulação)
+// ============================================================================
+
+/**
+ * Recupera o registro do voo ativo despachado no localStorage.
+ * Retorna null se nenhum voo tiver sido despachado ainda pelo gestor.
+ */
+export function getActiveFlight(): ActiveFlight | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const raw = localStorage.getItem(FLIGHT_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && parsed.despachado) {
+      return parsed as ActiveFlight;
+    }
+    return null;
+  } catch (error) {
+    console.error("Erro ao carregar azul_active_flight:", error);
+    return null;
+  }
+}
+
+/**
+ * Despacha formalmente um voo pelo Gestor na Torre de Controle.
+ * Grava na chave azul_active_flight e emite o evento de sincronização cross-tab.
+ */
+export function dispatchFlight(flightData?: Partial<ActiveFlight>): ActiveFlight {
+  const flight: ActiveFlight = {
+    id: flightData?.id || "AD4231",
+    rota: flightData?.rota || "VCP ➔ REC",
+    origem: flightData?.origem || "VCP",
+    destino: flightData?.destino || "REC",
+    status: "ativo",
+    despachado: true,
+    despachadoEm:
+      flightData?.despachadoEm ||
+      new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+    aeronave: flightData?.aeronave || "A320neo",
+    totalPassageiros: flightData?.totalPassageiros || 174,
+    ...flightData,
+  };
+
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(FLIGHT_STORAGE_KEY, JSON.stringify(flight));
+    } catch (e) {
+      console.error("Erro ao salvar azul_active_flight no localStorage:", e);
+    }
+    emitLocalStorageUpdate();
+  }
+
+  return flight;
+}
+
+/**
+ * Reseta o despacho de voo (para testes ou reinicialização).
+ */
+export function resetFlightDispatch(): void {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem(FLIGHT_STORAGE_KEY);
+    } catch (e) {
+      console.error("Erro ao remover azul_active_flight:", e);
+    }
+    emitLocalStorageUpdate();
+  }
+}
+
+// ============================================================================
+// 2. GESTÃO DE MISSÕES IA (Emissão do Gestor <-> Recepção da Comissária)
+// ============================================================================
 
 /**
  * Recupera todas as missões ativas salvas no localStorage.
@@ -84,7 +176,10 @@ export function addMission(mission: Partial<SyncMission> & { assento: string }):
     gatilho: mission.gatilho || "Ação despachada pelo simulador de decisões",
     acao: mission.acao || "Abordagem com Cortesia",
     criadaEm: mission.criadaEm || new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    concluidaEm: status === "concluida" ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined,
+    concluidaEm:
+      status === "concluida"
+        ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+        : undefined,
   };
 
   // Se já existir missão com o mesmo id ou assento, atualiza o registro
@@ -155,4 +250,3 @@ export function clearMissions(): void {
     emitLocalStorageUpdate();
   }
 }
-

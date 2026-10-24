@@ -13,19 +13,25 @@ import {
 import { AssentoVoo, MetadataAeronave } from "@/types/api";
 import { SeatFilter } from "../hooks/use-crew-flight";
 import { Mission } from "@/lib/flight-state";
+import { SyncMission } from "@/lib/sync-storage";
 import { cn } from "@/lib/utils";
 
-interface CrewSeatMapProps {
+export type SeatMapRole = "gestor" | "crew";
+
+export interface CrewSeatMapProps {
   metadata: MetadataAeronave | null;
   seats: AssentoVoo[];
   selectedSeat: AssentoVoo | null;
   onSelectSeat: (seat: AssentoVoo) => void;
-  filter: SeatFilter;
-  attendedSeats: Set<string>;
-  // Propriedades para a Visão Direcional Restrita da Tripulação
+  filter?: SeatFilter;
+  attendedSeats?: Set<string>;
+  // RBAC Prop
+  role?: SeatMapRole;
+  missions?: (SyncMission | Mission)[];
+  onSelectMissionSeat?: (mission: SyncMission | Mission, seat: AssentoVoo) => void;
+  // Compatibilidade retroativa com código existente
   isDirectionalOnly?: boolean;
-  missionSeatMap?: Map<string, Mission>;
-  onSelectMissionSeat?: (mission: Mission, seat: AssentoVoo) => void;
+  missionSeatMap?: Map<string, SyncMission | Mission>;
 }
 
 export function CrewSeatMap({
@@ -33,11 +39,13 @@ export function CrewSeatMap({
   seats,
   selectedSeat,
   onSelectSeat,
-  filter,
-  attendedSeats,
+  filter = "todos",
+  attendedSeats = new Set(),
+  role = "gestor",
+  missions = [],
+  onSelectMissionSeat,
   isDirectionalOnly = false,
   missionSeatMap,
-  onSelectMissionSeat,
 }: CrewSeatMapProps) {
   // Indexa assentos por código (ex: "1A", "34D") para acesso O(1)
   const seatMap = useMemo(() => {
@@ -45,6 +53,18 @@ export function CrewSeatMap({
     seats.forEach((s) => map.set(s.assento, s));
     return map;
   }, [seats]);
+
+  // Indexa missões por assento para o modo crew (RBAC)
+  const activeMissionMap = useMemo(() => {
+    const map = new Map<string, SyncMission | Mission>();
+    if (Array.isArray(missions)) {
+      missions.forEach((m) => map.set(m.assento, m));
+    }
+    if (missionSeatMap) {
+      missionSeatMap.forEach((m, k) => map.set(k, m));
+    }
+    return map;
+  }, [missions, missionSeatMap]);
 
   const numFileiras = metadata?.fileiras || 29;
   const layout = metadata?.layout || ["A", "B", "C", "D", "E", "F"];
@@ -91,23 +111,26 @@ export function CrewSeatMap({
     const isEspacoAzul = metadata?.codigo === "ATR 72-600" ? row <= 2 : row <= 4;
 
     // =========================================================================
-    // VISÃO DIRECIONAL RESTRITA DA TRIPULAÇÃO (B2B Cabin Crew Mode)
-    // Regra de Negócio Crucial: O mapa da tripulação é estritamente de leitura direcional.
-    // Assentos sem missões pendentes ou concluídas devem estar desabilitados (cinza/opacos)
-    // e sem eventos de clique. Assentos com missão devem estar destacados.
-    // Ao clicar em um assento destacado, o sistema deve exibir os detalhes da missão para execução.
+    // RBAC: MODO TRIPULAÇÃO (role === 'crew' ou isDirectionalOnly)
+    // Se role === 'crew': O componente varre o array de missions.
+    // Se o assento TEM uma missão associada, ele fica destacado (ativo) e clicável.
+    // Se o assento NÃO TEM missão, ele recebe classes como opacity-40 cursor-not-allowed grayscale
+    // e o clique é desabilitado.
     // =========================================================================
-    if (isDirectionalOnly) {
-      const mission = missionSeatMap?.get(seatCode);
+    const isCrewMode = role === "crew" || isDirectionalOnly;
 
-      // Assento SEM missão vinculada: Desabilitado (cinza/opaco) e sem evento de clique
+    if (isCrewMode) {
+      const mission = activeMissionMap.get(seatCode);
+
+      // Assento SEM missão vinculada no modo tripulação:
+      // opacity-40 cursor-not-allowed grayscale e sem eventos de clique
       if (!mission) {
         return (
           <div
             key={seatCode}
             aria-disabled="true"
-            className="relative flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border border-slate-200/50 dark:border-slate-800/40 bg-slate-100/30 dark:bg-slate-900/30 text-slate-400 dark:text-slate-600 opacity-20 cursor-not-allowed select-none"
-            title={`${seatCode}: Sem missão operacional ativa`}
+            className="relative flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border border-slate-200/50 dark:border-slate-800/40 bg-slate-100/30 dark:bg-slate-900/30 text-slate-400 dark:text-slate-600 opacity-40 cursor-not-allowed grayscale select-none"
+            title={`${seatCode}: Sem missão operacional associada`}
           >
             <div className="flex items-center justify-between w-full">
               <span className="font-mono text-[11px] font-bold text-slate-400 dark:text-slate-600">
@@ -124,8 +147,9 @@ export function CrewSeatMap({
         );
       }
 
-      // Assento COM missão: Destacado visualmente com pulso/alerta ou check de concluído
-      const isDone = mission.status === "concluida" || mission.concluida;
+      // Assento COM missão no modo tripulação:
+      // Destacado (ativo), colorido com pulso ou check de concluído, e clicável
+      const isDone = mission.status === "concluida" || (mission as any).concluida;
       const isAtrito = mission.tipo === "atrito";
 
       return (
@@ -148,7 +172,7 @@ export function CrewSeatMap({
               : "bg-amber-50 text-amber-950 border-amber-400 dark:bg-amber-950/70 dark:text-amber-100 dark:border-amber-400 ring-2 ring-amber-400 ring-offset-2 hover:bg-amber-100 dark:hover:bg-amber-900/70 animate-pulse",
             isSelected && "scale-105 ring-4 z-20 shadow-lg"
           )}
-          title={`Missão IA: ${seatCode} - ${mission.passageiro || seat.dados_cliente.nome} (${isDone ? "Concluída" : "Pendente"})`}
+          title={`Missão IA: ${seatCode} - ${mission.passageiro || seat.dados_cliente?.nome} (${isDone ? "Concluída" : "Pendente"})`}
         >
           {/* Header do Assento com Missão */}
           <div className="flex items-center justify-between w-full">
@@ -166,13 +190,13 @@ export function CrewSeatMap({
 
           {/* Nome do Passageiro da Missão */}
           <div className="w-full truncate text-[9px] sm:text-[10px] font-bold leading-tight">
-            {(mission.passageiro || seat.dados_cliente.nome).split(" ")[0]}
+            {(mission.passageiro || seat.dados_cliente?.nome || "").split(" ")[0]}
           </div>
 
           {/* Rodapé: Tier e Badge de IA */}
           <div className="flex items-center justify-between w-full text-[8px] font-black uppercase">
             <span className="truncate">
-              {mission.tier?.slice(0, 3) || seat.dados_cliente.tier_fidelidade.slice(0, 3)}
+              {mission.tier?.slice(0, 3) || seat.dados_cliente?.tier_fidelidade?.slice(0, 3) || "VIP"}
             </span>
             <span
               className={cn(
@@ -209,6 +233,11 @@ export function CrewSeatMap({
       );
     }
 
+    // =========================================================================
+    // RBAC: MODO GESTOR (role === 'gestor')
+    // Se role === 'gestor': Todos os assentos são renderizados normalmente.
+    // O clique no assento abre o modal/agente LLM para gerar a missão.
+    // =========================================================================
     let statusStyles = "";
     let indicatorIcon = null;
 
