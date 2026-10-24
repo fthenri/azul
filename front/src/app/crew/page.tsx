@@ -33,7 +33,7 @@ import {
 } from "@/lib/sync-storage";
 import { useCrewFlight } from "@/features/crew-view/hooks/use-crew-flight";
 import { CrewSeatMap } from "@/features/crew-view/components/crew-seat-map";
-import { AssentoVoo } from "@/types/api";
+import { AssentoVoo, MetadataAeronave } from "@/types/api";
 import { useAuth } from "@/lib/auth-context";
 
 /**
@@ -53,8 +53,53 @@ export default function CrewPage() {
   // 1. Estado Reativo de Missões (Inicializado vazio, sem dados hardcoded)
   const [missions, setMissions] = useState<SyncMission[]>([]);
 
-  // 2. Consulta dos Metadados da Aeronave e Geometria da Cabine
+  // 2. Consulta dos Metadados da Aeronave e Geometria da Cabine (Fallback)
   const { metadata, seats, isLoadingFlight } = useCrewFlight();
+
+  // Assentos e Metadados dinâmicos lidos do despacho do Gestor (azul_active_flight)
+  // Garante que a Tripulação veja a PLANTA EXATA recebida do Gestor, sem sorteio divergente
+  const dynamicSeats = useMemo(() => {
+    if (activeFlight?.assentos && activeFlight.assentos.length > 0) {
+      return activeFlight.assentos;
+    }
+    return seats;
+  }, [activeFlight?.assentos, seats]);
+
+  const dynamicMetadata = useMemo<MetadataAeronave | null>(() => {
+    if (activeFlight?.metadata) {
+      return activeFlight.metadata;
+    }
+    if (activeFlight?.aircraft_model || activeFlight?.layout) {
+      const is2x2 =
+        activeFlight.layout === "2x2" ||
+        (Array.isArray(activeFlight.layout) && activeFlight.layout.length === 4);
+      return {
+        modelo: activeFlight.aircraft_model || activeFlight.aeronave || "Embraer E195-E2",
+        codigo: activeFlight.aeronave || (is2x2 ? "E195-E2" : "A320neo"),
+        fileiras: activeFlight.total_rows || activeFlight.fileiras || 29,
+        layout: is2x2 ? ["A", "B", "C", "D"] : ["A", "B", "C", "D", "E", "F"],
+        total_assentos: activeFlight.totalPassageiros || (is2x2 ? 116 : 174),
+      };
+    }
+    return metadata;
+  }, [activeFlight, metadata]);
+
+  const aircraftModelName = useMemo(() => {
+    return (
+      activeFlight?.aircraft_model ||
+      activeFlight?.metadata?.modelo ||
+      dynamicMetadata?.modelo ||
+      activeFlight?.aeronave ||
+      metadata?.modelo ||
+      "Embraer E195-E2"
+    );
+  }, [activeFlight, dynamicMetadata, metadata]);
+
+  const dynamicLayout = useMemo(() => {
+    if (activeFlight?.layout) return activeFlight.layout;
+    if (dynamicMetadata?.layout) return dynamicMetadata.layout;
+    return "2x2";
+  }, [activeFlight?.layout, dynamicMetadata?.layout]);
 
   // 3. Estado de Navegação da Interface: Tabs ("Lista de Tarefas" | "Mapa da Cabine")
   const [activeTab, setActiveTab] = useState<"tarefas" | "mapa">("tarefas");
@@ -227,10 +272,12 @@ export default function CrewPage() {
                 Azul CrewApp
               </h1>
               <span className="hidden sm:inline text-slate-500">•</span>
-              <p className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+              <p className="text-xs text-slate-300 font-medium flex items-center gap-1.5 flex-wrap">
                 <span className="font-semibold text-white">Voo {activeFlight?.id || "AD4231"}</span>
                 <span className="text-slate-500">•</span>
                 <span className="text-slate-400">{activeFlight?.rota || "VCP ➔ REC"}</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-sky-300 font-mono text-[11px] font-semibold">{aircraftModelName}</span>
                 {isFlightDispatched ? (
                   <>
                     <span className="text-slate-500">•</span>
@@ -442,7 +489,7 @@ export default function CrewPage() {
           <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-2 font-medium">
             <span>Aeronave:</span>
             <Badge variant="outline" className="font-mono text-xs">
-              {metadata?.modelo || "Airbus A320neo"}
+              {aircraftModelName}
             </Badge>
           </div>
         </div>
@@ -732,8 +779,10 @@ export default function CrewPage() {
                 <CrewSeatMap
                   role="crew"
                   missions={missions}
-                  metadata={metadata}
-                  seats={seats}
+                  metadata={dynamicMetadata}
+                  seats={dynamicSeats}
+                  layout={dynamicLayout}
+                  aircraftModel={aircraftModelName}
                   selectedSeat={null}
                   onSelectSeat={() => {}}
                   filter="todos"

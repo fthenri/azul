@@ -29,6 +29,9 @@ export interface CrewSeatMapProps {
   role?: SeatMapRole;
   missions?: (SyncMission | Mission)[];
   onSelectMissionSeat?: (mission: SyncMission | Mission, seat: AssentoVoo) => void;
+  // Propriedades dinâmicas de planta e aeronave recebidas do despacho
+  layout?: string | string[];
+  aircraftModel?: string;
   // Compatibilidade retroativa com código existente
   isDirectionalOnly?: boolean;
   missionSeatMap?: Map<string, SyncMission | Mission>;
@@ -44,6 +47,8 @@ export function CrewSeatMap({
   role = "gestor",
   missions = [],
   onSelectMissionSeat,
+  layout: layoutProp,
+  aircraftModel,
   isDirectionalOnly = false,
   missionSeatMap,
 }: CrewSeatMapProps) {
@@ -66,9 +71,27 @@ export function CrewSeatMap({
     return map;
   }, [missions, missionSeatMap]);
 
+  // Determina o layout exato a partir da prop layout recebida do storage ou do metadata
+  const effectiveLayout = useMemo(() => {
+    if (typeof layoutProp === "string") {
+      if (layoutProp === "2x2" || layoutProp.includes("2x2")) {
+        return ["A", "B", "C", "D"];
+      }
+      if (layoutProp === "3x3" || layoutProp.includes("3x3")) {
+        return ["A", "B", "C", "D", "E", "F"];
+      }
+    }
+    if (Array.isArray(layoutProp) && layoutProp.length > 0) {
+      return layoutProp;
+    }
+    if (metadata?.layout && Array.isArray(metadata.layout) && metadata.layout.length > 0) {
+      return metadata.layout;
+    }
+    return ["A", "B", "C", "D"]; // Default dinâmico (2x2 para E195-E2 / ATR)
+  }, [layoutProp, metadata?.layout]);
+
   const numFileiras = metadata?.fileiras || 29;
-  const layout = metadata?.layout || ["A", "B", "C", "D", "E", "F"];
-  const is6Seats = layout.length === 6;
+  const is6Seats = effectiveLayout.length === 6;
 
   // Divisão dinâmica das colunas: 3x3 para A320 ou 2x2 para E195 e ATR
   const leftCols = is6Seats ? ["A", "B", "C"] : ["A", "B"];
@@ -123,13 +146,13 @@ export function CrewSeatMap({
       const mission = activeMissionMap.get(seatCode);
 
       // Assento SEM missão vinculada no modo tripulação:
-      // opacity-40 cursor-not-allowed grayscale e sem eventos de clique
+      // grayscale opacity-40 pointer-events-none estritamente nos assentos que não possuem missão vinculada
       if (!mission) {
         return (
           <div
             key={seatCode}
             aria-disabled="true"
-            className="relative flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border border-slate-200/50 dark:border-slate-800/40 bg-slate-100/30 dark:bg-slate-900/30 text-slate-400 dark:text-slate-600 opacity-40 cursor-not-allowed grayscale select-none"
+            className="relative flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border border-slate-200/50 dark:border-slate-800/40 bg-slate-100/30 dark:bg-slate-900/30 text-slate-400 dark:text-slate-600 grayscale opacity-40 pointer-events-none cursor-not-allowed select-none"
             title={`${seatCode}: Sem missão operacional associada`}
           >
             <div className="flex items-center justify-between w-full">
@@ -366,7 +389,7 @@ export function CrewSeatMap({
               <span>Porta 1L / Galley Dianteira</span>
             </div>
             <div className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
-              {metadata?.modelo || "Airbus A320neo"}
+              {aircraftModel || metadata?.modelo || (is6Seats ? "Airbus A320neo" : "Embraer E195-E2")}
             </div>
           </div>
         </div>

@@ -76,6 +76,10 @@ export function CrewView() {
   // 1. Criação do Gatilho de Despacho (Visão do Gestor)
   // Pega o estado atual do voo (lista de passageiros, assentos, metadata e status) e salva no localStorage
   const handleDispatchFlight = () => {
+    const aircraftModel = metadata?.modelo || (metadata?.codigo ? `Embraer ${metadata.codigo}` : "Embraer E195-E2");
+    const layout = metadata?.layout ? (metadata.layout.length === 4 ? "2x2" : "3x3") : "2x2";
+    const totalRows = metadata?.fileiras || 29;
+
     const flightPayload: ActiveFlight = {
       id: "AD4231",
       rota: "VCP ➔ REC",
@@ -84,10 +88,27 @@ export function CrewView() {
       status: "ativo",
       despachado: true,
       despachadoEm: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-      aeronave: metadata?.codigo || "A320neo",
-      totalPassageiros: totalAssentos || seats.length || 174,
+      aeronave: aircraftModel,
+      aircraft_model: aircraftModel,
+      layout,
+      total_rows: totalRows,
+      fileiras: totalRows,
+      totalPassageiros: totalAssentos || seats.length || (layout === "2x2" ? 116 : 174),
       assentos: seats,
-      metadata: metadata,
+      metadata: metadata
+        ? {
+            ...metadata,
+            modelo: aircraftModel,
+            fileiras: totalRows,
+            layout: metadata.layout || (layout === "2x2" ? ["A", "B", "C", "D"] : ["A", "B", "C", "D", "E", "F"]),
+          }
+        : {
+            modelo: aircraftModel,
+            codigo: "E195-E2",
+            fileiras: totalRows,
+            layout: layout === "2x2" ? ["A", "B", "C", "D"] : ["A", "B", "C", "D", "E", "F"],
+            total_assentos: totalAssentos || seats.length || 116,
+          },
       missions: getMissions(),
     };
 
@@ -367,6 +388,8 @@ export function CrewView() {
               role="gestor"
               metadata={metadata}
               seats={seats}
+              layout={metadata?.layout ? (metadata.layout.length === 4 ? "2x2" : "3x3") : "2x2"}
+              aircraftModel={metadata?.modelo}
               selectedSeat={selectedSeat}
               onSelectSeat={setSelectedSeat}
               filter={filter}

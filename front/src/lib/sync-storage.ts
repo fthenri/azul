@@ -23,8 +23,13 @@ export interface ActiveFlight {
   despachadoEm?: string;
   origem?: string;
   destino?: string;
-  aeronave?: string;
+  aeronave?: string; // Ex: "Embraer E195-E2"
   totalPassageiros?: number;
+  // Metadados enriquecidos para sincronização exata da planta da aeronave
+  aircraft_model?: string; // Ex: "Embraer E195-E2"
+  layout?: string | string[]; // Ex: "2x2" ou "3x3" ou ["A", "B", "C", "D"]
+  total_rows?: number; // Ex: 29
+  fileiras?: number;
   assentos?: AssentoVoo[];
   metadata?: MetadataAeronave | null;
   missions?: SyncMission[];
@@ -90,6 +95,10 @@ export function getActiveFlight(): ActiveFlight | null {
  * Grava na chave azul_active_flight e emite o evento de sincronização cross-tab.
  */
 export function dispatchFlight(flightData?: Partial<ActiveFlight>): ActiveFlight {
+  const model = flightData?.aircraft_model || flightData?.aeronave || "Embraer E195-E2";
+  const layout = flightData?.layout || (flightData?.metadata?.layout?.length === 4 ? "2x2" : "3x3");
+  const totalRows = flightData?.total_rows || flightData?.metadata?.fileiras || 29;
+
   const flight: ActiveFlight = {
     id: flightData?.id || "AD4231",
     rota: flightData?.rota || "VCP ➔ REC",
@@ -100,8 +109,12 @@ export function dispatchFlight(flightData?: Partial<ActiveFlight>): ActiveFlight
     despachadoEm:
       flightData?.despachadoEm ||
       new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    aeronave: flightData?.aeronave || "A320neo",
-    totalPassageiros: flightData?.totalPassageiros || 174,
+    aeronave: model,
+    aircraft_model: model,
+    layout: layout,
+    total_rows: totalRows,
+    fileiras: totalRows,
+    totalPassageiros: flightData?.totalPassageiros || (layout === "2x2" ? 116 : 174),
     ...flightData,
   };
 
