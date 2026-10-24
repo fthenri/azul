@@ -115,9 +115,15 @@ export function CrewView() {
     dispatchFlight(flightPayload);
     setActiveFlight(flightPayload);
 
-    // Em seguida, dispara o evento de sincronização nativo
+    // Salva explicitamente no localStorage e dispara o evento azul_flight_updated
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("local-storage-update"));
+      try {
+        localStorage.setItem("azul_active_flight", JSON.stringify(flightPayload));
+        window.dispatchEvent(new Event("azul_flight_updated"));
+        window.dispatchEvent(new Event("local-storage-update"));
+      } catch (e) {
+        console.error("Erro ao salvar azul_active_flight no localStorage:", e);
+      }
     }
 
     // Feedback visual do botão

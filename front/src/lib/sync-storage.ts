@@ -121,6 +121,7 @@ export function dispatchFlight(flightData?: Partial<ActiveFlight>): ActiveFlight
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem(FLIGHT_STORAGE_KEY, JSON.stringify(flight));
+      window.dispatchEvent(new Event("azul_flight_updated"));
     } catch (e) {
       console.error("Erro ao salvar azul_active_flight no localStorage:", e);
     }
@@ -230,6 +231,7 @@ export function addMission(mission: Partial<SyncMission> & { assento: string }):
         const flightParsed = JSON.parse(flightRaw);
         flightParsed.missions = updated;
         localStorage.setItem(FLIGHT_STORAGE_KEY, JSON.stringify(flightParsed));
+        window.dispatchEvent(new Event("azul_flight_updated"));
       }
     } catch (e) {
       console.error("Erro ao salvar missão no localStorage:", e);
@@ -271,6 +273,7 @@ export function updateMissionStatus(id: string, status: "pendente" | "concluida"
         const flightParsed = JSON.parse(flightRaw);
         flightParsed.missions = updated;
         localStorage.setItem(FLIGHT_STORAGE_KEY, JSON.stringify(flightParsed));
+        window.dispatchEvent(new Event("azul_flight_updated"));
       }
     } catch (e) {
       console.error("Erro ao atualizar status da missão no localStorage:", e);

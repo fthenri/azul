@@ -56,50 +56,26 @@ export default function CrewPage() {
   // 2. Consulta dos Metadados da Aeronave e Geometria da Cabine (Fallback)
   const { metadata, seats, isLoadingFlight } = useCrewFlight();
 
-  // Assentos e Metadados dinâmicos lidos do despacho do Gestor (azul_active_flight)
-  // Garante que a Tripulação veja a PLANTA EXATA recebida do Gestor, sem sorteio divergente
-  const dynamicSeats = useMemo(() => {
-    if (activeFlight?.assentos && activeFlight.assentos.length > 0) {
-      return activeFlight.assentos;
-    }
-    return seats;
-  }, [activeFlight?.assentos, seats]);
-
-  const dynamicMetadata = useMemo<MetadataAeronave | null>(() => {
-    if (activeFlight?.metadata) {
-      return activeFlight.metadata;
-    }
-    if (activeFlight?.aircraft_model || activeFlight?.layout) {
-      const is2x2 =
-        activeFlight.layout === "2x2" ||
-        (Array.isArray(activeFlight.layout) && activeFlight.layout.length === 4);
-      return {
-        modelo: activeFlight.aircraft_model || activeFlight.aeronave || "Embraer E195-E2",
-        codigo: activeFlight.aeronave || (is2x2 ? "E195-E2" : "A320neo"),
-        fileiras: activeFlight.total_rows || activeFlight.fileiras || 29,
-        layout: is2x2 ? ["A", "B", "C", "D"] : ["A", "B", "C", "D", "E", "F"],
-        total_assentos: activeFlight.totalPassageiros || (is2x2 ? 116 : 174),
-      };
-    }
-    return metadata;
-  }, [activeFlight, metadata]);
+  // Estados dinâmicos de metadados e assentos sincronizados em tempo real via azul_active_flight
+  const [dynamicMetadata, setDynamicMetadata] = useState<MetadataAeronave | null>(null);
+  const [dynamicSeats, setDynamicSeats] = useState<AssentoVoo[]>([]);
 
   const aircraftModelName = useMemo(() => {
     return (
+      dynamicMetadata?.modelo ||
       activeFlight?.aircraft_model ||
       activeFlight?.metadata?.modelo ||
-      dynamicMetadata?.modelo ||
       activeFlight?.aeronave ||
       metadata?.modelo ||
       "Embraer E195-E2"
     );
-  }, [activeFlight, dynamicMetadata, metadata]);
+  }, [dynamicMetadata, activeFlight, metadata]);
 
   const dynamicLayout = useMemo(() => {
-    if (activeFlight?.layout) return activeFlight.layout;
     if (dynamicMetadata?.layout) return dynamicMetadata.layout;
+    if (activeFlight?.layout) return activeFlight.layout;
     return "2x2";
-  }, [activeFlight?.layout, dynamicMetadata?.layout]);
+  }, [dynamicMetadata?.layout, activeFlight?.layout]);
 
   // 3. Estado de Navegação da Interface: Tabs ("Lista de Tarefas" | "Mapa da Cabine")
   const [activeTab, setActiveTab] = useState<"tarefas" | "mapa">("tarefas");
@@ -112,34 +88,32 @@ export default function CrewPage() {
   const [selectedMissionModal, setSelectedMissionModal] = useState<SyncMission | null>(null);
 
   // ==========================================================================
-  // Sincronização Cross-Tab e Same-Tab (Receptor da Comissária)
+  // Sincronização em Tempo Real do localStorage (azul_active_flight)
   // ==========================================================================
   useEffect(() => {
-    // 1. Carrega o status do voo e missões ativas na montagem lendo do localStorage
-    setActiveFlight(getActiveFlight());
-    setMissions(getMissions());
-
-    // 2. Handler nativo para eventos de sincronização (local-storage-update e storage)
-    // Atualiza o estado lendo a chave azul_active_flight e azul_active_missions
-    const handleSync = () => {
-      const flight = getActiveFlight();
-      const loadedMissions = getMissions();
-      setActiveFlight(flight);
-      setMissions(loadedMissions);
+    const loadActiveFlight = () => {
+      const flightData = localStorage.getItem("azul_active_flight");
+      if (flightData) {
+        try {
+          const parsedData = JSON.parse(flightData);
+          setActiveFlight(parsedData);
+          setDynamicMetadata(parsedData.metadata);
+          setDynamicSeats(parsedData.assentos || []);
+        } catch (e) {
+          console.error("Erro ao ler azul_active_flight:", e);
+        }
+      }
+      setMissions(getMissions());
     };
 
-    // 'storage': Disparado nativamente pelo navegador em abas paralelas
-    window.addEventListener("storage", handleSync);
-    // 'local-storage-update': Disparado pelo sync-storage na mesma aba
-    window.addEventListener("local-storage-update", handleSync);
+    loadActiveFlight();
 
-    // Fallback reativo periódico para garantir sincronização instantânea
-    const interval = setInterval(handleSync, 1000);
+    window.addEventListener("storage", loadActiveFlight);
+    window.addEventListener("azul_flight_updated", loadActiveFlight);
 
     return () => {
-      window.removeEventListener("storage", handleSync);
-      window.removeEventListener("local-storage-update", handleSync);
-      clearInterval(interval);
+      window.removeEventListener("storage", loadActiveFlight);
+      window.removeEventListener("azul_flight_updated", loadActiveFlight);
     };
   }, []);
 
@@ -779,8 +753,8 @@ export default function CrewPage() {
                 <CrewSeatMap
                   role="crew"
                   missions={missions}
-                  metadata={dynamicMetadata}
-                  seats={dynamicSeats}
+                  metadata={dynamicMetadata || metadata}
+                  seats={dynamicSeats.length > 0 ? dynamicSeats : seats}
                   layout={dynamicLayout}
                   aircraftModel={aircraftModelName}
                   selectedSeat={null}
