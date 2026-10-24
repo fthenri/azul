@@ -15,6 +15,7 @@ import {
   Smartphone,
   Send,
   Lock,
+  Check,
 } from "lucide-react";
 import { useCrewFlight, SeatFilter } from "../hooks/use-crew-flight";
 import { CrewSeatMap } from "./crew-seat-map";
@@ -27,11 +28,13 @@ import { cn } from "@/lib/utils";
 import {
   getActiveFlight,
   dispatchFlight,
+  getMissions,
   ActiveFlight,
 } from "@/lib/sync-storage";
 
 export function CrewView() {
   const [activeFlight, setActiveFlight] = useState<ActiveFlight | null>(null);
+  const [isDispatchedSuccess, setIsDispatchedSuccess] = useState(false);
 
   // Sincronização em tempo real do estado de despacho do voo
   useEffect(() => {
@@ -70,19 +73,37 @@ export function CrewView() {
     markSeatAsAttended,
   } = useCrewFlight();
 
-  // Ação de Despacho de Voo pelo Gestor (Torre de Controle)
-  const handleDispatch = () => {
-    const flight = dispatchFlight({
+  // 1. Criação do Gatilho de Despacho (Visão do Gestor)
+  // Pega o estado atual do voo (lista de passageiros, assentos, metadata e status) e salva no localStorage
+  const handleDispatchFlight = () => {
+    const flightPayload: ActiveFlight = {
       id: "AD4231",
       rota: "VCP ➔ REC",
       origem: "VCP",
       destino: "REC",
       status: "ativo",
       despachado: true,
+      despachadoEm: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
       aeronave: metadata?.codigo || "A320neo",
-      totalPassageiros: metadata?.total_assentos || seats.length || 174,
-    });
-    setActiveFlight(flight);
+      totalPassageiros: totalAssentos || seats.length || 174,
+      assentos: seats,
+      metadata: metadata,
+      missions: getMissions(),
+    };
+
+    dispatchFlight(flightPayload);
+    setActiveFlight(flightPayload);
+
+    // Em seguida, dispara o evento de sincronização nativo
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("local-storage-update"));
+    }
+
+    // Feedback visual do botão
+    setIsDispatchedSuccess(true);
+    setTimeout(() => {
+      setIsDispatchedSuccess(false);
+    }, 3500);
   };
 
   const isDispatched = Boolean(activeFlight && activeFlight.despachado);
@@ -135,34 +156,38 @@ export function CrewView() {
         </div>
 
         <div className="flex items-center gap-2.5 self-start lg:self-auto flex-wrap">
-          {!isDispatched ? (
-            <Button
-              size="sm"
-              onClick={handleDispatch}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 h-9 shadow-md animate-pulse cursor-pointer border border-emerald-400"
-            >
-              <Send className="h-3.5 w-3.5" />
-              <span>Simular e Despachar Voo AD4231</span>
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Badge className="bg-emerald-500/25 text-emerald-200 border-emerald-400/40 text-xs py-1 px-2.5 font-bold flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                <span>Voo Despachado ({activeFlight?.despachadoEm || "Ativo"})</span>
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDispatch}
-                className="border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs gap-1.5 h-9"
-                title="Redespachar voo e sincronizar com a tripulação"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                <span>Redespachar</span>
-              </Button>
-            </div>
-          )}
+          {/* Botão Primário com Destaque Visual: Despachar Voo para Cabine */}
+          <Button
+            size="sm"
+            onClick={handleDispatchFlight}
+            className={cn(
+              "font-bold text-xs gap-1.5 h-9 shadow-md transition-all cursor-pointer border",
+              isDispatchedSuccess
+                ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400 ring-2 ring-emerald-400/40"
+                : isDispatched
+                ? "bg-emerald-600/90 hover:bg-emerald-500 text-white border-emerald-400"
+                : "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400 ring-2 ring-emerald-400/40 animate-pulse"
+            )}
+          >
+            {isDispatchedSuccess ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 text-white" />
+                <span>Voo Despachado ✓</span>
+              </>
+            ) : isDispatched ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-200" />
+                <span>Voo Despachado (Atualizar)</span>
+              </>
+            ) : (
+              <>
+                <Send className="h-3.5 w-3.5" />
+                <span>Despachar Voo para Cabine</span>
+              </>
+            )}
+          </Button>
 
+          {/* Botão de Navegação: Abrir App da Comissária */}
           <Link href="/crew" target="_blank">
             <Button
               variant="outline"
@@ -336,45 +361,6 @@ export function CrewView() {
               <p className="text-xs text-muted-foreground mt-1">
                 Conectando ao endpoint GET /api/v1/voo-simulado
               </p>
-            </div>
-          ) : !isDispatched ? (
-            <div className="relative w-full flex flex-col items-center">
-              {/* Mapa de assentos desabilitado e com efeito de bloqueio visual */}
-              <div className="w-full flex justify-center pointer-events-none opacity-30 select-none grayscale blur-[1px]">
-                <CrewSeatMap
-                  role="gestor"
-                  metadata={metadata}
-                  seats={seats}
-                  selectedSeat={null}
-                  onSelectSeat={() => {}}
-                  filter={filter}
-                  attendedSeats={attendedSeats}
-                />
-              </div>
-
-              {/* Overlay de Bloqueio Operacional */}
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center bg-slate-950/40 backdrop-blur-xs rounded-3xl">
-                <div className="max-w-md p-6 sm:p-8 rounded-2xl bg-card border-2 border-primary/30 shadow-2xl text-center space-y-4 animate-in zoom-in-95 duration-200">
-                  <div className="h-14 w-14 rounded-2xl bg-[#002855]/10 dark:bg-[#38BDF8]/10 text-[#0077C8] dark:text-[#38BDF8] mx-auto flex items-center justify-center">
-                    <Lock className="h-7 w-7 text-[#0077C8] dark:text-[#38BDF8]" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <h3 className="text-lg font-bold text-foreground">
-                      Despacho de Voo Pendente
-                    </h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      O mapa de assentos e simulação tática da cabine estão bloqueados. Efetue o despacho do voo para liberar a interação e sincronizar as missões em tempo real com a tripulação de bordo.
-                    </p>
-                  </div>
-                  <Button
-                    onClick={handleDispatch}
-                    className="w-full h-10 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm gap-2 shadow-md cursor-pointer"
-                  >
-                    <Send className="h-4 w-4" />
-                    <span>Simular e Despachar Voo AD4231</span>
-                  </Button>
-                </div>
-              </div>
             </div>
           ) : (
             <CrewSeatMap

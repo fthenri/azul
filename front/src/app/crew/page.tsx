@@ -67,17 +67,20 @@ export default function CrewPage() {
   const [selectedMissionModal, setSelectedMissionModal] = useState<SyncMission | null>(null);
 
   // ==========================================================================
-  // Sincronização Cross-Tab e Same-Tab (Receptor)
+  // Sincronização Cross-Tab e Same-Tab (Receptor da Comissária)
   // ==========================================================================
   useEffect(() => {
-    // 1. Carrega o status do voo e missões ativas na montagem
+    // 1. Carrega o status do voo e missões ativas na montagem lendo do localStorage
     setActiveFlight(getActiveFlight());
     setMissions(getMissions());
 
-    // 2. Handler nativo para eventos de sincronização
+    // 2. Handler nativo para eventos de sincronização (local-storage-update e storage)
+    // Atualiza o estado lendo a chave azul_active_flight e azul_active_missions
     const handleSync = () => {
-      setActiveFlight(getActiveFlight());
-      setMissions(getMissions());
+      const flight = getActiveFlight();
+      const loadedMissions = getMissions();
+      setActiveFlight(flight);
+      setMissions(loadedMissions);
     };
 
     // 'storage': Disparado nativamente pelo navegador em abas paralelas
@@ -85,13 +88,19 @@ export default function CrewPage() {
     // 'local-storage-update': Disparado pelo sync-storage na mesma aba
     window.addEventListener("local-storage-update", handleSync);
 
+    // Fallback reativo periódico para garantir sincronização instantânea
+    const interval = setInterval(handleSync, 1000);
+
     return () => {
       window.removeEventListener("storage", handleSync);
       window.removeEventListener("local-storage-update", handleSync);
+      clearInterval(interval);
     };
   }, []);
 
-  const isFlightDispatched = Boolean(activeFlight && activeFlight.despachado);
+  const isFlightDispatched = Boolean(
+    activeFlight && (activeFlight.despachado === true || activeFlight.status === "ativo")
+  );
 
   // Helper para verificar status de conclusão
   const isMissionDone = (m: SyncMission) => m.status === "concluida";
@@ -276,9 +285,23 @@ export default function CrewPage() {
                   A cabine e o plano de voo ainda não foram despachados pelo Gestor. Assim que a operação for despachada em outra aba, esta tela atualizará automaticamente.
                 </p>
               </div>
-              <div className="pt-2 flex items-center justify-center gap-2 text-xs text-muted-foreground font-mono">
-                <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
-                <span>Sincronização em tempo real ativa</span>
+              <div className="pt-2 flex flex-col items-center gap-2">
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground font-mono">
+                  <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
+                  <span>Sincronização em tempo real ativa</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActiveFlight(getActiveFlight());
+                    setMissions(getMissions());
+                  }}
+                  className="text-xs gap-1.5 h-8 mt-1 cursor-pointer"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Checar Despacho Agora</span>
+                </Button>
               </div>
             </div>
           </div>

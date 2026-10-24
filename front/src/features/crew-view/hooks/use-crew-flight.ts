@@ -72,7 +72,7 @@ export function useCrewFlight() {
         status: "pendente",
       });
 
-      // Sincroniza também no novo serviço de estado global (azul_active_missions)
+      // Sincroniza também no novo serviço de estado global (azul_active_missions e azul_active_flight)
       addSyncMission({
         id: `mis_${variables.assento}`,
         assento: variables.assento,
@@ -89,6 +89,11 @@ export function useCrewFlight() {
         acao: data.acao_sugerida,
         criadaEm: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
       });
+
+      // Dispara explicitamente o evento para garantir sincronização em tempo real na comissária
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("local-storage-update"));
+      }
     },
   });
 

@@ -9,6 +9,8 @@
  * ============================================================================
  */
 
+import { AssentoVoo, MetadataAeronave } from "@/types/api";
+
 export const STORAGE_KEY = "azul_active_missions";
 export const FLIGHT_STORAGE_KEY = "azul_active_flight";
 export const SYNC_EVENT_NAME = "local-storage-update";
@@ -23,6 +25,9 @@ export interface ActiveFlight {
   destino?: string;
   aeronave?: string;
   totalPassageiros?: number;
+  assentos?: AssentoVoo[];
+  metadata?: MetadataAeronave | null;
+  missions?: SyncMission[];
 }
 
 export interface SyncMission {
@@ -140,12 +145,19 @@ export function getMissions(): SyncMission[] {
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
     }
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return parsed;
+    // Fallback: busca dentro de azul_active_flight.missions se existir
+    const flightRaw = localStorage.getItem(FLIGHT_STORAGE_KEY);
+    if (flightRaw) {
+      const flightParsed = JSON.parse(flightRaw);
+      if (Array.isArray(flightParsed?.missions) && flightParsed.missions.length > 0) {
+        return flightParsed.missions;
+      }
     }
     return [];
   } catch (error) {
@@ -156,7 +168,8 @@ export function getMissions(): SyncMission[] {
 
 /**
  * Adiciona uma nova missão ou atualiza se já existir com o mesmo ID ou assento.
- * Persiste no localStorage e dispara o evento 'local-storage-update'.
+ * Persiste no localStorage sob azul_active_missions e azul_active_flight,
+ * e dispara o evento 'local-storage-update'.
  */
 export function addMission(mission: Partial<SyncMission> & { assento: string }): SyncMission {
   const current = getMissions();
@@ -197,6 +210,14 @@ export function addMission(mission: Partial<SyncMission> & { assento: string }):
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+      // Sincroniza também dentro da chave azul_active_flight
+      const flightRaw = localStorage.getItem(FLIGHT_STORAGE_KEY);
+      if (flightRaw) {
+        const flightParsed = JSON.parse(flightRaw);
+        flightParsed.missions = updated;
+        localStorage.setItem(FLIGHT_STORAGE_KEY, JSON.stringify(flightParsed));
+      }
     } catch (e) {
       console.error("Erro ao salvar missão no localStorage:", e);
     }
@@ -230,6 +251,14 @@ export function updateMissionStatus(id: string, status: "pendente" | "concluida"
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+      // Sincroniza também dentro da chave azul_active_flight
+      const flightRaw = localStorage.getItem(FLIGHT_STORAGE_KEY);
+      if (flightRaw) {
+        const flightParsed = JSON.parse(flightRaw);
+        flightParsed.missions = updated;
+        localStorage.setItem(FLIGHT_STORAGE_KEY, JSON.stringify(flightParsed));
+      }
     } catch (e) {
       console.error("Erro ao atualizar status da missão no localStorage:", e);
     }

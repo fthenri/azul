@@ -19,6 +19,7 @@ import {
   Clock,
   ArrowRight,
   Plane,
+  Send,
 } from "lucide-react";
 import { AssentoVoo, SimularBordoResponse } from "@/types/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -26,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { addMission as addSyncMission } from "@/lib/sync-storage";
 
 interface PassengerDrawerProps {
   seat: AssentoVoo | null;
@@ -388,6 +390,36 @@ export function PassengerDrawer({
                   Ver no /crew ➔
                 </Link>
               </div>
+
+              {/* Botão de Confirmação e Despacho Imediato da Ação Recomendada */}
+              <Button
+                size="sm"
+                onClick={() => {
+                  addSyncMission({
+                    id: `mis_${seat.assento}`,
+                    assento: seat.assento,
+                    passageiro: cliente.nome || `Assento ${seat.assento}`,
+                    instrucao: simulationResult.instrucao_comissario,
+                    status: "pendente",
+                    tipo: isCritico ? "atrito" : "vip",
+                    persona: cliente.persona || "Cliente Especial",
+                    tier: cliente.tier_fidelidade || "Diamante",
+                    statusBadge: isCritico ? "Alerta de Atrito" : "Fidelização VIP",
+                    gatilho: isCritico
+                      ? `Score de atrito elevado (${cliente.score_atrito_acumulado}) • Risco ${riscoPerc}%`
+                      : `Cliente de Alto Valor • Faixa Pareto ${cliente.faixa_pareto || "Top 10%"}`,
+                    acao: simulationResult.acao_sugerida,
+                    criadaEm: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+                  });
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(new Event("local-storage-update"));
+                  }
+                }}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 h-8.5 cursor-pointer shadow-xs border border-emerald-400"
+              >
+                <Send className="h-3.5 w-3.5" />
+                <span>Aprovar e Sincronizar com a Cabine</span>
+              </Button>
             </div>
           )}
 
