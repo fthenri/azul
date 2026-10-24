@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   ChevronRight,
   Database,
-  Plane,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -71,7 +70,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         {/* Top Branding Header com Logo Oficial da Azul */}
         <div className="flex h-20 shrink-0 items-center justify-between px-5 border-b border-white/10 bg-[#002855] dark:bg-[#050e1b]">
-          <Link href="/executive" className="flex items-center gap-3 group w-full">
+          <Link href="/dashboard" className="flex items-center gap-3 group w-full">
             <div className="relative h-10 w-28 shrink-0 flex items-center">
               <Image
                 src="/logo.png"
@@ -191,12 +190,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <span>Zero Refactoring</span>
           </div>
 
-          <Link
-            href="/"
-            className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-semibold transition-colors"
+          <button
+            type="button"
+            onClick={logout}
+            className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg border border-white/15 bg-white/5 hover:bg-red-500/20 text-white/80 hover:text-red-200 text-xs font-semibold transition-colors"
           >
-            <span>Trocar de Portal</span>
-          </Link>
+            <LogOut className="h-3.5 w-3.5" />
+            <span>Sair do Sistema</span>
+          </button>
         </div>
       </aside>
     </>

@@ -197,16 +197,7 @@ export default function CrewPage() {
 
           {/* Lado Direito: Botão para Trocar de Perfil */}
           <div className="flex items-center">
-            <Link href="/">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white text-xs gap-1.5 h-8 cursor-pointer"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                <span>Trocar Perfil</span>
-              </Button>
-            </Link>
+
 
             <Button
               variant="outline"
