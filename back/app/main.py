@@ -31,6 +31,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # Inicializa cliente DuckDB e registra catálogo de Parquets
         duckdb_client = get_duckdb_client(settings)
         logger.info("Motor analítico DuckDB pronto.")
+
+        # Inicializa repositórios SQLite e tabelas/seeds de baseline de forma idempotente
+        from back.app.infrastructure.persistence.user_store import get_user_store
+        from back.app.infrastructure.persistence.audit_store import get_audit_store
+        get_user_store(settings)
+        get_audit_store(settings)
+        logger.info("Repositórios SQLite inicializados e sincronizados.")
     except Exception as exc:
         logger.error("Aviso de integridade nos caminhos de dados: %s", exc)
         if settings.environment == "prod":

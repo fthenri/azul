@@ -245,7 +245,7 @@ export default function CrewPage() {
                 Azul CrewApp
               </h1>
               <span className="hidden sm:inline text-slate-500">•</span>
-              <p className="text-xs text-slate-300 font-medium flex items-center gap-1.5 flex-wrap">
+              <div className="text-xs text-slate-300 font-medium flex items-center gap-1.5 flex-wrap">
                 <span className="font-semibold text-white">Voo {activeFlight?.id || "AD4231"}</span>
                 <span className="text-slate-500">•</span>
                 <span className="text-slate-400">{activeFlight?.rota || "VCP ➔ REC"}</span>
@@ -266,7 +266,7 @@ export default function CrewPage() {
                     </Badge>
                   </>
                 )}
-              </p>
+              </div>
             </div>
           </div>
 
