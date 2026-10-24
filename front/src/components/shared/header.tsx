@@ -27,6 +27,18 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
         tag: "SHAP + Compliance",
       };
     }
+    if (
+      pathname === "/dashboard/dispatch" ||
+      pathname === "/flight-dispatch" ||
+      pathname === "/dispatch" ||
+      pathname === "/crew-view"
+    ) {
+      return {
+        title: "Despacho de Voo (Mapa)",
+        category: "Simulação de Cabine",
+        tag: "Mapa de Assentos",
+      };
+    }
     return {
       title: "Painel de Valor",
       category: "Visão Executiva & Financeira",

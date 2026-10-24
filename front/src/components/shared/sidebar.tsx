@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   ChevronRight,
   Database,
+  Plane,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       icon: FileText,
       badge: "Audit",
       active: pathname === "/audit-logs",
+    },
+    {
+      href: "/dashboard/dispatch",
+      label: "Despacho de Voo (Mapa)",
+      sublabel: "Simulador de Assentos & Ações",
+      icon: Plane,
+      badge: "Ao Vivo",
+      active:
+        pathname === "/dashboard/dispatch" ||
+        pathname === "/flight-dispatch" ||
+        pathname === "/dispatch" ||
+        pathname === "/crew-view",
     },
   ];
 

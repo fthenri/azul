@@ -49,7 +49,9 @@ export function useCrewFlight() {
       setSimulationResult(data);
 
       // Ponte de Comunicação: Despacha a missão gerada pela IA para a comissária (/crew) via localStorage
-      const activeSeat = selectedSeat?.assento === variables.assento ? selectedSeat : null;
+      const activeSeat =
+        (flightQuery.data?.assentos || []).find((s) => s.assento === variables.assento) ||
+        selectedSeat;
       const passengerName = activeSeat?.dados_cliente?.nome || `Passageiro Assento ${variables.assento}`;
       addOrUpdateMission({
         id: `mis_${variables.assento}_AD4231`,
@@ -94,13 +96,11 @@ export function useCrewFlight() {
     setSelectedSeatState(seat);
     setSimulationResult(null);
 
-    // Conforme especificação: ao selecionar assento crítico ou vip, aciona o motor de bordo
-    if (seat.status === "critico" || seat.status === "vip") {
-      simularBordoMutation.mutate({
-        assento: seat.assento,
-        id_cliente: seat.dados_cliente.id_cliente,
-      });
-    }
+    // Aciona imediatamente a simulação de bordo e despacho da IA para o assento selecionado
+    simularBordoMutation.mutate({
+      assento: seat.assento,
+      id_cliente: seat.dados_cliente?.id_cliente,
+    });
   };
 
   const clearSelection = () => {
