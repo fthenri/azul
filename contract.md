@@ -4,7 +4,7 @@ Este documento define os endpoints expostos pelo back-end (FastAPI + DuckDB) par
 
 ---
 
-## ⚙️ Padrões da API
+## ⚙️ Padrões da API 
 - **Base URL:** `/api/v1`
 - **Content-Type:** `application/json`
 - **Autenticação:** Não exigida para o MVP (contexto de Hackathon).
