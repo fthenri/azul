@@ -25,8 +25,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Momento } from "@/types/api";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
-import { UserAvatar } from "@/components/shared/user-avatar";
-import { CLIENT_INFO_MAP } from "../hooks/use-simulation";
 
 interface MomentsQueueProps {
   momentos?: Momento[];
@@ -42,7 +40,6 @@ function inferTier(momento: Momento): {
   color: string;
   border: string;
   bg: string;
-  glow: string;
 } {
   const p = momento.persona.toLowerCase();
   const clv = momento.clv_previsto;
@@ -53,7 +50,6 @@ function inferTier(momento: Momento): {
       color: "text-sky-200 dark:text-sky-300",
       border: "border-sky-400/50 dark:border-sky-400/60",
       bg: "bg-gradient-to-r from-[#002855] to-[#003B7A] dark:from-sky-950 dark:to-[#002855]",
-      glow: "shadow-[0_0_10px_rgba(56,189,248,0.2)]",
     };
   }
   if (p.includes("premium") || clv >= 5000) {
@@ -62,7 +58,6 @@ function inferTier(momento: Momento): {
       color: "text-blue-100 dark:text-blue-200",
       border: "border-blue-400/40 dark:border-blue-400/50",
       bg: "bg-gradient-to-r from-blue-900 to-blue-800 dark:from-blue-950 dark:to-blue-900",
-      glow: "shadow-[0_0_8px_rgba(59,130,246,0.15)]",
     };
   }
   if (clv >= 3000) {
@@ -71,7 +66,6 @@ function inferTier(momento: Momento): {
       color: "text-amber-100 dark:text-amber-200",
       border: "border-amber-400/40 dark:border-amber-400/50",
       bg: "bg-gradient-to-r from-amber-900 to-amber-800 dark:from-amber-950 dark:to-amber-900",
-      glow: "shadow-[0_0_8px_rgba(245,158,11,0.15)]",
     };
   }
   return {
@@ -79,7 +73,6 @@ function inferTier(momento: Momento): {
     color: "text-slate-700 dark:text-slate-300",
     border: "border-slate-300 dark:border-slate-700",
     bg: "bg-slate-100 dark:bg-slate-800/80",
-    glow: "",
   };
 }
 
@@ -375,12 +368,6 @@ export function MomentsQueue({
               const isBagagem = m.descricao.toLowerCase().includes("bagagem");
               const isCancelado = m.descricao.toLowerCase().includes("cancelamento");
 
-              const passengerName =
-                (m as any).nome ||
-                (m as any).passageiro ||
-                CLIENT_INFO_MAP[m.cliente_id]?.nome ||
-                null;
-
               return (
                 <div
                   key={`${m.id}-p${safeCurrentPage}`}
@@ -415,7 +402,7 @@ export function MomentsQueue({
                         </span>
 
                         <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${tier.bg} ${tier.color} ${tier.border} ${tier.glow}`}
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${tier.bg} ${tier.color} ${tier.border} shadow-xs`}
                         >
                           <Crown className="h-2.5 w-2.5" />
                           <span>{tier.label}</span>
@@ -482,21 +469,13 @@ export function MomentsQueue({
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] pt-1">
-                      <div className="flex items-center gap-2 truncate max-w-[55%]">
-                        {passengerName ? (
-                          <UserAvatar name={passengerName} size="xs" />
-                        ) : (
-                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/10 text-azul-action dark:text-sky-400">
-                            <UserCheck className="h-3 w-3" />
-                          </div>
-                        )}
+                      <div className="flex items-center gap-1.5 truncate max-w-[55%]">
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/10 text-azul-action dark:text-sky-400 shadow-xs">
+                          <UserCheck className="h-3 w-3" />
+                        </div>
                         <div className="truncate">
-                          <span className="font-bold text-foreground truncate block leading-tight">
-                            {passengerName || m.persona}
-                          </span>
-                          <span className="font-mono text-[9px] text-muted-foreground block truncate leading-tight">
-                            {passengerName ? m.persona : `#${m.cliente_id}`}
-                          </span>
+                          <span className="font-bold text-foreground truncate block leading-tight">{m.persona}</span>
+                          <span className="font-mono text-[9px] text-muted-foreground block truncate leading-tight">#{m.cliente_id}</span>
                         </div>
                       </div>
 
