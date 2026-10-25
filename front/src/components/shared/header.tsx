@@ -5,15 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Menu,
-  Shield,
   Search,
   BarChart3,
   Cpu,
   FileText,
   Plane,
   ChevronRight,
-  Sparkles,
-  LogOut,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserAvatar } from "@/components/shared/user-avatar";
@@ -21,28 +18,29 @@ import { useAuth } from "@/lib/auth-context";
 
 interface HeaderProps {
   onOpenMobileMenu: () => void;
+  onToggleSidebar?: () => void;
   isCollapsed?: boolean;
 }
 
-export function Header({ onOpenMobileMenu }: HeaderProps) {
+export function Header({
+  onOpenMobileMenu,
+  onToggleSidebar,
+  isCollapsed = false,
+}: HeaderProps) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const getPageContext = () => {
     if (pathname === "/simulator") {
       return {
         title: "Central de Decisões",
         category: "Simulação & Arbitragem",
-        tag: "Uplift + LLM RAG",
-        icon: Cpu,
       };
     }
     if (pathname === "/audit-logs") {
       return {
         title: "Logs & Explicabilidade",
         category: "Auditoria Regulatória",
-        tag: "SHAP + Compliance",
-        icon: FileText,
       };
     }
     if (
@@ -54,20 +52,15 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
       return {
         title: "Despacho de Voo (Mapa)",
         category: "Simulação de Cabine",
-        tag: "Mapa de Assentos",
-        icon: Plane,
       };
     }
     return {
       title: "Painel de Valor",
       category: "Visão Executiva & Financeira",
-      tag: "Pareto & KPIs",
-      icon: BarChart3,
     };
   };
 
   const context = getPageContext();
-  const PageIcon = context.icon;
 
   const displayUser = user || {
     name: "Carlos Silveira",
@@ -79,42 +72,42 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
       {/* Feixe de Luz Superior em Gradiente (Subtle Highlight Beam - Enterprise Pattern) */}
       <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C8]/40 dark:via-sky-400/80 to-transparent pointer-events-none" />
 
-      <div className="flex h-16 items-center justify-between px-4 sm:px-6 gap-3">
-        {/* Esquerda: Botão Mobile + Breadcrumb Inteligente */}
-        <div className="flex items-center gap-3">
-          {/* Botão Hambúrguer para telas menores */}
+      {/* Header aumentado para 80px (h-20) com espaçamento executivo */}
+      <div className="flex h-20 items-center justify-between px-4 sm:px-8 gap-4">
+        {/* Esquerda: Hambúrguer para Abrir/Fechar Sidebar + Contexto/Breadcrumb */}
+        <div className="flex items-center gap-3.5">
+          {/* Hambúrguer responsável por abrir e fechar/colapsar o sidebar */}
           <button
-            onClick={onOpenMobileMenu}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border text-foreground hover:bg-muted lg:hidden transition-colors cursor-pointer"
-            aria-label="Abrir Menu de Navegação"
+            type="button"
+            onClick={onToggleSidebar || onOpenMobileMenu}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/80 dark:border-white/10 bg-slate-50/80 dark:bg-white/[0.04] text-foreground hover:text-azul-action dark:hover:text-sky-400 hover:bg-muted dark:hover:bg-white/10 transition-all cursor-pointer shadow-xs shrink-0"
+            aria-label={isCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
+            title={isCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
           >
-            <Menu className="h-5 w-5 text-azul-action dark:text-sky-400" />
+            <Menu className="h-5 w-5 text-azul-action dark:text-sky-400 transition-transform duration-200" />
           </button>
 
-          {/* Breadcrumb e Contexto de Página com Ícone Dinâmico */}
-          <div className="flex items-center gap-2.5">
-            <div className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 dark:bg-sky-500/20 text-[#0077C8] dark:text-sky-400 border border-sky-500/20">
-              <PageIcon className="h-4 w-4" />
+          {/* Breadcrumb e Título da Página (sem o ícone prévio do começo) */}
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 text-xs">
+              <Link
+                href="/dashboard"
+                className="font-medium text-slate-500 dark:text-slate-400 hover:text-azul-action dark:hover:text-sky-300 transition-colors"
+              >
+                {context.category}
+              </Link>
+              <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
+              <span className="font-bold text-foreground">
+                {context.title}
+              </span>
             </div>
-
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5 text-xs">
-                <Link
-                  href="/dashboard"
-                  className="font-medium text-slate-500 dark:text-slate-400 hover:text-azul-action dark:hover:text-sky-300 transition-colors"
-                >
-                  {context.category}
-                </Link>
-                <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
-                <span className="font-bold text-foreground">
-                  {context.title}
-                </span>
-              </div>
-            </div>
+            <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline-block">
+              Portal Corporativo de Retenção e Decisão
+            </span>
           </div>
         </div>
 
-        {/* Centro: Barra Rápida de Pesquisa (Simulada / Command Palette Trigger) */}
+        {/* Centro: Barra Rápida de Pesquisa */}
         <div className="hidden md:flex items-center flex-1 max-w-sm mx-4">
           <div className="relative w-full group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-azul-action dark:group-focus-within:text-sky-400 transition-colors">
@@ -127,7 +120,7 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
                 // Micro-feedback para navegação rápida
               }}
               placeholder="Buscar passageiro, PNR ou voo..."
-              className="w-full h-8 pl-8 pr-12 rounded-xl border border-border/80 dark:border-white/10 bg-slate-50/80 dark:bg-white/[0.04] text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-azul-action dark:focus:border-sky-400 focus:ring-1 focus:ring-azul-action/20 transition-all cursor-pointer"
+              className="w-full h-9 pl-8 pr-12 rounded-xl border border-border/80 dark:border-white/10 bg-slate-50/80 dark:bg-white/[0.04] text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-azul-action dark:focus:border-sky-400 focus:ring-1 focus:ring-azul-action/20 transition-all cursor-pointer"
             />
             <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
               <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-border bg-muted text-muted-foreground">
@@ -137,49 +130,23 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
           </div>
         </div>
 
-        {/* Direita: Telemetria, ThemeToggle e Identidade do Usuário */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Micro-tag do Módulo */}
-          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EAF4FC] dark:bg-sky-950/60 border border-[#0077C8]/25 dark:border-sky-500/30 text-[#003B7A] dark:text-sky-300 text-[11px] font-semibold">
-            <Shield className="h-3 w-3 text-azul-action dark:text-sky-400" />
-            <span>{context.tag}</span>
-          </div>
-
-          {/* Status do Backend DuckDB */}
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border/80 dark:border-white/10 bg-muted/40 dark:bg-white/[0.03] text-xs font-medium">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-emerald-400" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-[11px] font-semibold text-foreground">
-              DuckDB Online
-            </span>
-          </div>
-
+        {/* Direita: ThemeToggle e Identidade do Usuário (sem tags 'DuckDB'/'Pareto' e sem botão de exit) */}
+        <div className="flex items-center gap-3 sm:gap-4">
           {/* Botão de Troca de Tema (Claro / Escuro) */}
           <ThemeToggle />
 
-          {/* User Profile Pill centralizado exclusivamente no Header */}
-          <div className="flex items-center gap-2 pl-2 border-l border-border/80 dark:border-white/10">
-            <UserAvatar name={displayUser.name} size="sm" />
+          {/* User Profile Pill centralizado no Header com Shadcn UserAvatar */}
+          <div className="flex items-center gap-3 pl-3 border-l border-border/80 dark:border-white/10">
+            <UserAvatar name={displayUser.name} size="md" />
 
-            <div className="hidden md:flex flex-col text-left">
-              <span className="text-xs font-bold text-foreground leading-tight truncate max-w-[120px]">
-                {displayUser.name.split(" ")[0]}
+            <div className="hidden sm:flex flex-col text-left">
+              <span className="text-sm font-bold text-foreground leading-tight truncate max-w-[140px]">
+                {displayUser.name}
               </span>
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">
                 {displayUser.role === "manager" ? "Gestor CRM" : "Tripulação"}
               </span>
             </div>
-
-            <button
-              type="button"
-              onClick={user ? logout : () => (window.location.href = "/login")}
-              title={user ? "Encerrar sessão" : "Acessar autenticação"}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
           </div>
         </div>
       </div>

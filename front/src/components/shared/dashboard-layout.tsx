@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
@@ -33,6 +33,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       }
       return next;
     });
+  };
+
+  const handleToggleSidebar = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setMobileMenuOpen((prev) => !prev);
+    } else {
+      handleToggleCollapse();
+    }
   };
 
   // Rotas independentes (Gateway na raiz '/' e Azul CrewApp em '/crew' e tela de login):
@@ -78,6 +86,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       >
         <Header
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          onToggleSidebar={handleToggleSidebar}
           isCollapsed={isCollapsed}
         />
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 max-w-7xl w-full mx-auto">

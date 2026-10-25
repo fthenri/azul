@@ -14,8 +14,10 @@ import {
   Plane,
   ChevronsLeft,
   ChevronsRight,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -31,6 +33,7 @@ export function Sidebar({
   onToggleCollapse,
 }: SidebarProps) {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   const navItems = [
     {
@@ -92,7 +95,7 @@ export function Sidebar({
         {/* Top Branding Header com Logo Oficial da Azul */}
         <div
           className={cn(
-            "flex h-16 shrink-0 items-center justify-between border-b transition-all px-4",
+            "flex h-20 shrink-0 items-center justify-between border-b transition-all px-4",
             "border-slate-200/80 dark:border-white/10 bg-slate-50/70 dark:bg-[#050e1b]",
             isCollapsed && "lg:px-2 lg:justify-center"
           )}
@@ -106,12 +109,12 @@ export function Sidebar({
             title="Azul Linhas Aéreas - Motor de Retenção"
           >
             {isCollapsed ? (
-              <div className="relative h-9 w-9 shrink-0 flex items-center justify-center rounded-xl bg-sky-500/10 dark:bg-sky-500/20 border border-sky-400/30">
+              <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-xl bg-sky-500/10 dark:bg-sky-500/20 border border-sky-400/30">
                 <Plane className="h-5 w-5 text-azul-action dark:text-sky-400 -rotate-45" />
               </div>
             ) : (
               <>
-                <div className="relative h-9 w-24 shrink-0 flex items-center">
+                <div className="relative h-10 w-24 shrink-0 flex items-center">
                   <Image
                     src="/logo.png"
                     alt="Azul Linhas Aéreas"
@@ -134,8 +137,9 @@ export function Sidebar({
           </Link>
         </div>
 
-        {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-none">
+        {/* Área Central: Navegação no topo e Governança Analítica descida para a base */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 flex flex-col justify-between scrollbar-none gap-6">
+          {/* Navegação Superior */}
           <div>
             {!isCollapsed && (
               <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400/80">
@@ -161,7 +165,7 @@ export function Sidebar({
                         ? cn(
                             // Active em Light Mode
                             "bg-[#EAF4FC] text-[#003B7A] border border-[#0077C8]/25 font-bold shadow-xs",
-                            // Active em Dark Mode: sem neon glow, discreto e elegante
+                            // Active em Dark Mode: discreto e elegante sem neon glow
                             "dark:bg-sky-500/10 dark:text-white dark:border-sky-500/25",
                             // Indicador lateral discreto
                             "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r-full",
@@ -226,34 +230,36 @@ export function Sidebar({
             </nav>
           </div>
 
-          {/* Seção Governança & Compliance */}
-          {!isCollapsed ? (
-            <div className="rounded-xl border border-slate-200/90 dark:border-white/10 bg-slate-50/80 dark:bg-black/35 p-3 text-[11px] space-y-2 shadow-xs">
-              <div className="flex items-center gap-1.5 text-slate-800 dark:text-white/90 font-semibold text-xs">
-                <ShieldCheck className="h-4 w-4 text-[#0077C8] dark:text-[#38BDF8]" />
-                <span>Governança Analítica</span>
+          {/* Seção Governança & Compliance: Desceu para a base da navegação */}
+          <div className="pt-2">
+            {!isCollapsed ? (
+              <div className="rounded-xl border border-slate-200/90 dark:border-white/10 bg-slate-50/80 dark:bg-black/35 p-3 text-[11px] space-y-2 shadow-xs">
+                <div className="flex items-center gap-1.5 text-slate-800 dark:text-white/90 font-semibold text-xs">
+                  <ShieldCheck className="h-4 w-4 text-[#0077C8] dark:text-[#38BDF8]" />
+                  <span>Governança Analítica</span>
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] leading-relaxed">
+                  Modelagem calibrada ANAC VRA & Regras Azul Fidelidade (Res. 400).
+                </p>
+                <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+                  <Database className="h-3 w-3 text-azul-action dark:text-sky-400" />
+                  <span>Camada Gold (Feature Store)</span>
+                </div>
               </div>
-              <p className="text-slate-500 dark:text-slate-400 text-[10px] leading-relaxed">
-                Modelagem calibrada ANAC VRA & Regras Azul Fidelidade (Res. 400).
-              </p>
-              <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
-                <Database className="h-3 w-3 text-azul-action dark:text-sky-400" />
-                <span>Camada Gold (Feature Store)</span>
+            ) : (
+              <div className="flex justify-center">
+                <div
+                  className="h-8 w-8 rounded-lg bg-sky-500/10 dark:bg-white/[0.04] border border-sky-500/20 flex items-center justify-center text-azul-action dark:text-sky-400"
+                  title="Governança Analítica: ANAC VRA & Res. 400"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex justify-center">
-              <div
-                className="h-8 w-8 rounded-lg bg-sky-500/10 dark:bg-white/[0.04] border border-sky-500/20 flex items-center justify-center text-azul-action dark:text-sky-400"
-                title="Governança Analítica: ANAC VRA & Res. 400"
-              >
-                <ShieldCheck className="h-4 w-4" />
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Footer da Sidebar: Status & Colapso (Perfil centralizado exclusivamente no Header) */}
+        {/* Footer da Sidebar: Status, Colapso & Botão de Exit */}
         <div
           className={cn(
             "p-3.5 border-t space-y-2.5",
@@ -287,7 +293,7 @@ export function Sidebar({
           {/* Botão de Colapso da Sidebar (Desktop) */}
           <div
             className={cn(
-              "hidden lg:flex items-center justify-between pt-1",
+              "hidden lg:flex items-center justify-between pt-0.5",
               isCollapsed && "justify-center"
             )}
           >
@@ -316,6 +322,33 @@ export function Sidebar({
               )}
             </button>
           </div>
+
+          {/* Botão de Exit / Logout Corporativo (Exclusivo na base da Sidebar) */}
+          {!isCollapsed ? (
+            <button
+              type="button"
+              onClick={logout}
+              title="Encerrar sessão corporativa"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-rose-500/25 bg-rose-500/5 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 hover:border-rose-500/40 transition-all duration-200 cursor-pointer text-xs font-semibold group shadow-xs"
+            >
+              <div className="flex items-center gap-2">
+                <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
+                <span>Encerrar Sessão</span>
+              </div>
+              <span className="text-[10px] uppercase font-bold text-rose-500/70 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                Exit
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={logout}
+              title="Encerrar Sessão Corporativa (Exit)"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/25 bg-rose-500/5 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 hover:border-rose-500/40 transition-all duration-200 cursor-pointer mx-auto shadow-xs"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </aside>
     </>
