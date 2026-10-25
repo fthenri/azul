@@ -9,7 +9,7 @@ import { Momento, SimularResponse, ShapResponse } from "@/types/api";
 import { addMission, SyncMission } from "@/lib/sync-storage";
 
 // Mapeamento dos clientes para assentos específicos na cabine do voo canônico AD4231
-const CLIENT_INFO_MAP: Record<string, { nome: string; assento: string; tier: string }> = {
+export const CLIENT_INFO_MAP: Record<string, { nome: string; assento: string; tier: string }> = {
   cli_123: { nome: "Carlos Eduardo Mendes", assento: "1A", tier: "Diamante" },
   cli_456: { nome: "Dra. Fernanda Lima", assento: "2C", tier: "Safira" },
   cli_789: { nome: "Marcelo & Família", assento: "4D", tier: "Safira" },
