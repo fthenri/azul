@@ -82,15 +82,15 @@ export function Sidebar({
       <aside
         className={cn(
           "fixed top-0 bottom-0 left-0 z-50 flex flex-col transition-all duration-300 ease-in-out",
-          "bg-card text-foreground shadow-xs",
+          "bg-card text-foreground shadow-xl",
           isCollapsed ? "w-20" : "w-72",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        {/* Top Header: Logo Azul + MOTOR DE RETENÇÃO (sem hambúrguer interno) */}
+        {/* Top Header: Logo Azul + MOTOR DE RETENÇÃO (sempre branco) */}
         <div
           className={cn(
-            "flex h-20 shrink-0 items-center transition-all px-4 bg-card",
+            "flex h-20 shrink-0 items-center transition-all px-4 bg-white",
             isCollapsed && "justify-center px-2"
           )}
         >
@@ -119,18 +119,18 @@ export function Sidebar({
                   alt="Azul Linhas Aéreas"
                   width={80}
                   height={30}
-                  className="object-contain filter dark:brightness-125"
+                  className="object-contain"
                   priority
                 />
               </div>
 
-              <div className="h-6 w-[1px] bg-slate-300 dark:bg-white/15 mx-0.5" />
+              <div className="h-6 w-[1px] bg-slate-300 mx-0.5" />
 
               <div className="flex flex-col text-left pl-1">
-                <span className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground leading-tight">
+                <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500 leading-tight">
                   MOTOR DE
                 </span>
-                <span className="text-[11px] uppercase font-black tracking-wider text-primary leading-tight">
+                <span className="text-[11px] uppercase font-black tracking-wider text-[#0077C8] leading-tight">
                   RETENÇÃO
                 </span>
               </div>
@@ -163,7 +163,7 @@ export function Sidebar({
                         ? "justify-center p-3 mx-auto"
                         : "justify-between px-3.5 py-3",
                       item.active
-                        ? "bg-secondary text-secondary-foreground font-bold shadow-xs"
+                        ? "border border-secondary text-secondary-foreground font-bold shadow-xl"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                     )}
                   >
@@ -171,7 +171,7 @@ export function Sidebar({
                       <div className="relative flex items-center justify-center">
                         <Icon
                           className={cn(
-                            "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
+                            "h-7 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
                             item.active
                               ? "text-primary"
                               : "text-muted-foreground group-hover:text-primary"
@@ -183,7 +183,7 @@ export function Sidebar({
                         <div className="flex items-center gap-3">
                           <Icon
                             className={cn(
-                              "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
+                              "h-7 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
                               item.active
                                 ? "text-primary"
                                 : "text-muted-foreground group-hover:text-primary"
@@ -307,15 +307,15 @@ export function Sidebar({
             </div>
           )}
 
-          {/* Botão de Exit / Encerrar Sessão (Estilo idêntico à imagem de referência) */}
+          {/* Botão de Exit / Encerrar Sessão */}
           {!isCollapsed ? (
             <button
               type="button"
               onClick={logout}
               title="Encerrar sessão corporativa"
-              className="w-full flex items-center justify-center gap-2.5 h-11 px-4 rounded-xl border border-destructive/30 bg-destructive/10 hover:bg-destructive/15 text-destructive transition-all cursor-pointer text-xs font-semibold shadow-xs group"
+              className="w-full flex items-center justify-center gap-2.5 h-10 px-3.5 rounded-xl  bg-muted/20 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all duration-200 cursor-pointer text-xs font-semibold shadow-sm group active:scale-[0.98]"
             >
-              <LogOut className="h-4 w-4 text-destructive transition-transform duration-200 group-hover:-translate-x-0.5" />
+              <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
               <span>Encerrar Sessão</span>
             </button>
           ) : (
@@ -323,9 +323,9 @@ export function Sidebar({
               type="button"
               onClick={logout}
               title="Encerrar Sessão (Sair)"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-destructive/30 bg-destructive/10 hover:bg-destructive/15 text-destructive transition-all cursor-pointer mx-auto shadow-xs"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted/20 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all duration-200 cursor-pointer mx-auto shadow-sm group active:scale-95"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
             </button>
           )}
         </div>
