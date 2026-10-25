@@ -81,7 +81,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <div
         className={cn(
           "flex min-h-screen flex-col transition-all duration-300 ease-in-out relative z-10",
-          isCollapsed ? "lg:pl-[72px]" : "lg:pl-64"
+          isCollapsed ? "lg:pl-20" : "lg:pl-72"
         )}
       >
         <Header

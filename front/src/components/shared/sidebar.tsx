@@ -12,12 +12,12 @@ import {
   ChevronRight,
   Database,
   Plane,
-  ChevronsLeft,
-  ChevronsRight,
   LogOut,
+  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import { InfoTooltip } from "@/components/shared/info-tooltip";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -83,67 +83,97 @@ export function Sidebar({
       <aside
         className={cn(
           "fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r transition-all duration-300 ease-in-out",
-          // Tema refinado Light / Dark sem sombras neon excessivas
-          "bg-white/95 dark:bg-[#071120]/95 backdrop-blur-2xl text-slate-800 dark:text-white",
-          "border-slate-200/90 dark:border-white/10",
+          // Estilo executivo fiel à imagem de referência: fundo navy escuro e clean
+          "bg-white dark:bg-[#071322] text-slate-800 dark:text-white",
+          "border-slate-200 dark:border-white/10",
           "shadow-[2px_0_12px_rgba(0,59,122,0.04)] dark:shadow-none",
-          isCollapsed ? "lg:w-[72px]" : "lg:w-64",
-          "w-64",
+          isCollapsed ? "w-20" : "w-72",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        {/* Top Branding Header com Logo Oficial da Azul */}
+        {/* Top Header: Logo Azul + MOTOR DE RETENÇÃO + Botão Circular de Toggle */}
         <div
           className={cn(
-            "flex h-20 shrink-0 items-center justify-between border-b transition-all px-4",
-            "border-slate-200/80 dark:border-white/10 bg-slate-50/70 dark:bg-[#050e1b]",
-            isCollapsed && "lg:px-2 lg:justify-center"
+            "flex h-20 shrink-0 items-center border-b transition-all",
+            "border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#050e1b]",
+            isCollapsed ? "px-2.5 justify-between" : "px-4 justify-between"
           )}
         >
-          <Link
-            href="/dashboard"
-            className={cn(
-              "flex items-center gap-2.5 group overflow-hidden transition-transform duration-200 hover:scale-[1.02]",
-              isCollapsed && "lg:justify-center"
-            )}
-            title="Azul Linhas Aéreas - Motor de Retenção"
-          >
-            {isCollapsed ? (
-              <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-xl bg-sky-500/10 dark:bg-sky-500/20 border border-sky-400/30">
-                <Plane className="h-5 w-5 text-azul-action dark:text-sky-400 -rotate-45" />
+          {isCollapsed ? (
+            <div className="flex items-center justify-between w-full">
+              {/* Ícone colorido da bandeira do Brasil da Azul */}
+              <div className="relative h-7 w-7 shrink-0 flex items-center justify-center">
+                <Image
+                  src="/aba.png"
+                  alt="Azul Linhas Aéreas"
+                  width={26}
+                  height={26}
+                  className="object-contain"
+                  priority
+                />
               </div>
-            ) : (
-              <>
-                <div className="relative h-10 w-24 shrink-0 flex items-center">
+
+              {/* Botão circular de expansão com chevron '>' */}
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                title="Expandir barra lateral"
+                className="h-7 w-7 rounded-full bg-slate-100 dark:bg-[#132238] border border-slate-200 dark:border-slate-700/60 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-azul-action dark:hover:text-white hover:border-sky-400/50 transition-all cursor-pointer shadow-xs shrink-0"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Logo Completo Azul com mapa + Separador + Motor de Retenção */}
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 group overflow-hidden transition-transform duration-200 hover:scale-[1.01]"
+                title="Azul Linhas Aéreas - Motor de Retenção"
+              >
+                <div className="relative h-8 w-20 shrink-0 flex items-center">
                   <Image
                     src="/logo.png"
                     alt="Azul Linhas Aéreas"
-                    width={96}
-                    height={34}
+                    width={80}
+                    height={30}
                     className="object-contain filter dark:brightness-125"
                     priority
                   />
                 </div>
-                <div className="flex flex-col border-l border-slate-300 dark:border-white/20 pl-2">
-                  <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500 dark:text-white/80 leading-tight">
-                    Motor de
+
+                <div className="h-6 w-[1px] bg-slate-300 dark:bg-white/15 mx-0.5" />
+
+                <div className="flex flex-col text-left pl-1">
+                  <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 leading-tight">
+                    MOTOR DE
                   </span>
-                  <span className="text-[10px] uppercase font-black tracking-wider text-azul-action dark:text-[#38BDF8] leading-tight">
-                    Retenção
+                  <span className="text-[11px] uppercase font-black tracking-wider text-azul-action dark:text-[#38BDF8] leading-tight">
+                    RETENÇÃO
                   </span>
                 </div>
-              </>
-            )}
-          </Link>
+              </Link>
+
+              {/* Botão circular de recolhimento com ícone de hambúrguer '☰' */}
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                title="Recolher barra lateral"
+                className="h-8 w-8 rounded-full bg-slate-100 dark:bg-[#132238] border border-slate-200 dark:border-slate-700/60 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-azul-action dark:hover:text-white hover:border-sky-400/50 transition-all cursor-pointer shadow-xs shrink-0"
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Área Central: Navegação no topo e Governança Analítica descida para a base */}
+        {/* Área Central: Módulos do Sistema e Seção Governança */}
         <div className="flex-1 overflow-y-auto px-3 py-4 flex flex-col justify-between scrollbar-none gap-6">
           {/* Navegação Superior */}
           <div>
             {!isCollapsed && (
-              <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400/80">
-                Módulos do Sistema
+              <div className="px-2 mb-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400/80">
+                MÓDULOS DO SISTEMA
               </div>
             )}
 
@@ -157,72 +187,86 @@ export function Sidebar({
                     onClick={onClose}
                     title={isCollapsed ? item.label : undefined}
                     className={cn(
-                      "group relative flex items-center rounded-xl text-xs transition-all duration-200 overflow-hidden",
+                      "group relative flex items-center rounded-2xl text-xs transition-all duration-200 overflow-hidden",
                       isCollapsed
-                        ? "justify-center p-3"
-                        : "justify-between px-3.5 py-2.5",
+                        ? "justify-center p-3 mx-auto"
+                        : "justify-between px-3.5 py-3",
                       item.active
                         ? cn(
                             // Active em Light Mode
                             "bg-[#EAF4FC] text-[#003B7A] border border-[#0077C8]/25 font-bold shadow-xs",
-                            // Active em Dark Mode: discreto e elegante sem neon glow
-                            "dark:bg-sky-500/10 dark:text-white dark:border-sky-500/25",
-                            // Indicador lateral discreto
-                            "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r-full",
-                            "before:bg-[#0077C8] dark:before:bg-sky-400"
+                            // Active em Dark Mode: exatamente como na imagem (fundo navy escuro e borda sutil)
+                            "dark:bg-[#0c223c]/80 dark:text-white dark:border-sky-500/30"
                           )
                         : cn(
                             // Inactive em Light Mode
-                            "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80",
+                            "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70",
                             // Inactive em Dark Mode
-                            "dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/[0.05]"
+                            "dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/[0.04]"
                           )
                     )}
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon
-                        className={cn(
-                          "h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110",
-                          item.active
-                            ? "text-[#0077C8] dark:text-sky-400"
-                            : "text-slate-400 dark:text-slate-400 group-hover:text-[#0077C8] dark:group-hover:text-white"
+                    {isCollapsed ? (
+                      <div className="relative flex items-center justify-center">
+                        {item.active && (
+                          <span className="absolute -left-2 top-0 bottom-0 w-1 rounded-full bg-[#0077C8] dark:bg-sky-400" />
                         )}
-                      />
-                      {!isCollapsed && (
-                        <div className="flex flex-col text-left">
-                          <span
+                        <Icon
+                          className={cn(
+                            "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
+                            item.active
+                              ? "text-[#0077C8] dark:text-sky-400"
+                              : "text-slate-400 dark:text-slate-400 group-hover:text-azul-action dark:group-hover:text-white"
+                          )}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3">
+                          {item.active && (
+                            <span className="w-1.5 h-6 rounded-full bg-[#0077C8] dark:bg-sky-400 shrink-0 -ml-1 mr-0.5" />
+                          )}
+                          <Icon
                             className={cn(
-                              "leading-tight font-semibold",
+                              "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
                               item.active
-                                ? "text-[#003B7A] dark:text-white font-bold"
-                                : "text-slate-700 dark:text-slate-300"
+                                ? "text-[#0077C8] dark:text-sky-400"
+                                : "text-slate-400 dark:text-slate-400 group-hover:text-azul-action dark:group-hover:text-white"
                             )}
-                          >
-                            {item.label}
-                          </span>
-                          <span
-                            className={cn(
-                              "text-[10px] font-normal",
-                              item.active
-                                ? "text-[#0077C8] dark:text-sky-300"
-                                : "text-slate-400 dark:text-slate-500"
-                            )}
-                          >
-                            {item.sublabel}
-                          </span>
+                          />
+                          <div className="flex flex-col text-left">
+                            <span
+                              className={cn(
+                                "leading-tight font-bold text-xs",
+                                item.active
+                                  ? "text-[#003B7A] dark:text-white"
+                                  : "text-slate-700 dark:text-slate-200"
+                              )}
+                            >
+                              {item.label}
+                            </span>
+                            <span
+                              className={cn(
+                                "text-[11px] font-normal leading-tight mt-0.5",
+                                item.active
+                                  ? "text-[#0077C8] dark:text-sky-400/90 font-medium"
+                                  : "text-slate-400 dark:text-slate-400"
+                              )}
+                            >
+                              {item.sublabel}
+                            </span>
+                          </div>
                         </div>
-                      )}
-                    </div>
 
-                    {!isCollapsed && (
-                      <ChevronRight
-                        className={cn(
-                          "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
-                          item.active
-                            ? "opacity-100 translate-x-0.5 text-[#0077C8] dark:text-sky-400"
-                            : "opacity-30 group-hover:opacity-100 group-hover:translate-x-0.5"
-                        )}
-                      />
+                        <ChevronRight
+                          className={cn(
+                            "h-4 w-4 shrink-0 transition-transform duration-200",
+                            item.active
+                              ? "text-[#0077C8] dark:text-sky-400"
+                              : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 group-hover:translate-x-0.5"
+                          )}
+                        />
+                      </>
                     )}
                   </Link>
                 );
@@ -230,121 +274,99 @@ export function Sidebar({
             </nav>
           </div>
 
-          {/* Seção Governança & Compliance: Desceu para a base da navegação */}
+          {/* Seção Governança Analítica & Camada Gold (Fiel à Imagem de Referência) */}
           <div className="pt-2">
+            {/* Divisória sutil */}
+            <div className="border-t border-slate-200 dark:border-white/10 mb-3.5" />
+
             {!isCollapsed ? (
-              <div className="rounded-xl border border-slate-200/90 dark:border-white/10 bg-slate-50/80 dark:bg-black/35 p-3 text-[11px] space-y-2 shadow-xs">
-                <div className="flex items-center gap-1.5 text-slate-800 dark:text-white/90 font-semibold text-xs">
-                  <ShieldCheck className="h-4 w-4 text-[#0077C8] dark:text-[#38BDF8]" />
-                  <span>Governança Analítica</span>
+              <div className="space-y-3 px-1">
+                {/* Linha 1: Governança Analítica + Ícone Info */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck className="h-5 w-5 text-azul-action dark:text-sky-400 shrink-0" />
+                    <span className="text-xs font-bold text-slate-800 dark:text-white">
+                      Governança Analítica
+                    </span>
+                  </div>
+                  <InfoTooltip
+                    text="Modelagem calibrada ANAC VRA & Regras Azul Fidelidade (Res. 400)."
+                    side="right"
+                  />
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 text-[10px] leading-relaxed">
-                  Modelagem calibrada ANAC VRA & Regras Azul Fidelidade (Res. 400).
-                </p>
-                <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
-                  <Database className="h-3 w-3 text-azul-action dark:text-sky-400" />
+
+                {/* Linha 2: Camada Gold (Feature Store) */}
+                <div className="flex items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400">
+                  <Database className="h-5 w-5 text-slate-400 dark:text-slate-400 shrink-0" />
                   <span>Camada Gold (Feature Store)</span>
                 </div>
               </div>
             ) : (
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center space-y-4">
                 <div
-                  className="h-8 w-8 rounded-lg bg-sky-500/10 dark:bg-white/[0.04] border border-sky-500/20 flex items-center justify-center text-azul-action dark:text-sky-400"
+                  className="cursor-help"
                   title="Governança Analítica: ANAC VRA & Res. 400"
                 >
-                  <ShieldCheck className="h-4 w-4" />
+                  <ShieldCheck className="h-5 w-5 text-azul-action dark:text-sky-400" />
+                </div>
+                <div title="Camada Gold (Feature Store)">
+                  <Database className="h-5 w-5 text-slate-400" />
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Footer da Sidebar: Status, Colapso & Botão de Exit */}
+        {/* Footer: Dados: DuckDB Gold | v2.4 + Botão Encerrar Sessão */}
         <div
           className={cn(
-            "p-3.5 border-t space-y-2.5",
-            "border-slate-200/90 dark:border-white/10 bg-slate-50/70 dark:bg-[#050e1b]",
-            isCollapsed && "p-2"
+            "p-3.5 border-t space-y-3",
+            "border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#050e1b]",
+            isCollapsed && "p-2.5"
           )}
         >
           {/* Status da Origem dos Dados */}
           {!isCollapsed ? (
             <div className="flex items-center justify-between text-xs px-1">
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                Origem dos Dados:
-              </span>
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                DuckDB Gold
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 dark:text-slate-400 font-medium text-xs">
+                  Dados:
+                </span>
+                <span className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                  DuckDB Gold
+                </span>
+              </div>
+              <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
+                v2.4
               </span>
             </div>
           ) : (
             <div
               className="flex justify-center py-1"
-              title="Origem dos Dados: DuckDB Gold"
+              title="Dados: DuckDB Gold (v2.4)"
             >
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-emerald-400" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-              </span>
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
             </div>
           )}
 
-          {/* Botão de Colapso da Sidebar (Desktop) */}
-          <div
-            className={cn(
-              "hidden lg:flex items-center justify-between pt-0.5",
-              isCollapsed && "justify-center"
-            )}
-          >
-            {!isCollapsed && (
-              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 px-1">
-                v2.4 Enterprise
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              title={
-                isCollapsed
-                  ? "Expandir barra lateral"
-                  : "Colapsar barra lateral"
-              }
-              className={cn(
-                "p-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 hover:text-azul-action dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer",
-                isCollapsed && "mx-auto"
-              )}
-            >
-              {isCollapsed ? (
-                <ChevronsRight className="h-4 w-4" />
-              ) : (
-                <ChevronsLeft className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-
-          {/* Botão de Exit / Logout Corporativo (Exclusivo na base da Sidebar) */}
+          {/* Botão de Exit / Encerrar Sessão (Estilo idêntico à imagem de referência) */}
           {!isCollapsed ? (
             <button
               type="button"
               onClick={logout}
               title="Encerrar sessão corporativa"
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-rose-500/25 bg-rose-500/5 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 hover:border-rose-500/40 transition-all duration-200 cursor-pointer text-xs font-semibold group shadow-xs"
+              className="w-full flex items-center justify-center gap-2.5 h-11 px-4 rounded-xl border border-rose-500/30 dark:border-[#671d2b] bg-rose-500/10 dark:bg-[#220d15]/90 hover:bg-rose-500/15 dark:hover:bg-[#2e101c] text-rose-600 dark:text-[#f87171] transition-all cursor-pointer text-xs font-semibold shadow-xs group"
             >
-              <div className="flex items-center gap-2">
-                <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
-                <span>Encerrar Sessão</span>
-              </div>
-              <span className="text-[10px] uppercase font-bold text-rose-500/70 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
-                Exit
-              </span>
+              <LogOut className="h-4 w-4 text-rose-600 dark:text-[#f87171] transition-transform duration-200 group-hover:-translate-x-0.5" />
+              <span>Encerrar Sessão</span>
             </button>
           ) : (
             <button
               type="button"
               onClick={logout}
-              title="Encerrar Sessão Corporativa (Exit)"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/25 bg-rose-500/5 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 hover:border-rose-500/40 transition-all duration-200 cursor-pointer mx-auto shadow-xs"
+              title="Encerrar Sessão (Sair)"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-500/30 dark:border-[#671d2b] bg-rose-500/10 dark:bg-[#220d15]/90 hover:bg-rose-500/15 dark:hover:bg-[#2e101c] text-rose-600 dark:text-[#f87171] transition-all cursor-pointer mx-auto shadow-xs"
             >
               <LogOut className="h-4 w-4" />
             </button>

@@ -76,11 +76,11 @@ export function Header({
       <div className="flex h-20 items-center justify-between px-4 sm:px-8 gap-4">
         {/* Esquerda: Hambúrguer para Abrir/Fechar Sidebar + Contexto/Breadcrumb */}
         <div className="flex items-center gap-3.5">
-          {/* Hambúrguer responsável por abrir e fechar/colapsar o sidebar */}
+          {/* Hambúrguer responsável por abrir e fechar/colapsar o sidebar (sem bordas) */}
           <button
             type="button"
             onClick={onToggleSidebar || onOpenMobileMenu}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/80 dark:border-white/10 bg-slate-50/80 dark:bg-white/[0.04] text-foreground hover:text-azul-action dark:hover:text-sky-400 hover:bg-muted dark:hover:bg-white/10 transition-all cursor-pointer shadow-xs shrink-0"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-foreground hover:text-azul-action dark:hover:text-sky-400 hover:bg-slate-100/80 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
             aria-label={isCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
             title={isCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
           >
