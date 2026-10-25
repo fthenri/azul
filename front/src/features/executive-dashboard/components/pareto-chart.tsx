@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -85,7 +85,12 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
               </span>
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
                 Curva de Concentração de Valor (Pareto 80/20)
-                <InfoTooltip text="Princípio 80/20 no Transporte Aéreo: Uma fatia reduzida de clientes (Top 20%) é responsável por aproximadamente 80% do faturamento futuro da Azul." />
+                <InfoTooltip
+                  title="Princípio de Pareto (80/20)"
+                  badge="Estratégico"
+                  text="Uma fatia reduzida de clientes (Top 20%) é responsável por aproximadamente 80% do faturamento futuro da Azul."
+                  side="bottom"
+                />
               </h3>
             </div>
             <p className="text-xs text-muted-foreground mt-1">

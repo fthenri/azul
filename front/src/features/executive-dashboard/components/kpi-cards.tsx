@@ -152,7 +152,12 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                   {kpi.title}
-                  <InfoTooltip text={kpi.tooltip} side="bottom" />
+                  <InfoTooltip
+                    text={kpi.tooltip}
+                    title={kpi.title}
+                    badge={isSpecial ? "Oficial" : "Métrica"}
+                    side="bottom"
+                  />
                 </span>
 
                 <div

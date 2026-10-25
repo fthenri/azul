@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -119,7 +119,12 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
               </span>
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
                 Mapeamento Multidimensional: CLV vs Influência
-                <InfoTooltip text="Segmentação 2D: cruza o Poder de Influência do cliente (impacto em reservas em grupo, PNR e rede de contatos) com a estimativa do valor de vida (CLV)." />
+                <InfoTooltip
+                  title="Segmentação 2D de Valor"
+                  badge="Clusterização"
+                  text="Segmentação 2D: cruza o Poder de Influência do cliente (impacto em reservas em grupo, PNR e rede de contatos) com a estimativa do valor de vida (CLV)."
+                  side="bottom"
+                />
               </h3>
             </div>
             <p className="text-xs text-muted-foreground mt-1">

@@ -290,6 +290,8 @@ export function Sidebar({
                     </span>
                   </div>
                   <InfoTooltip
+                    title="Governança Regulatória"
+                    badge="ANAC VRA"
                     text="Modelagem calibrada ANAC VRA & Regras Azul Fidelidade (Res. 400)."
                     side="right"
                   />
