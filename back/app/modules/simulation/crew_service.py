@@ -77,6 +77,254 @@ def gerar_nome_passageiro(id_cliente: str) -> str:
     return f"{first} {last}"
 
 
+TIER_PRIORITY_WEIGHTS = {
+    "Diamante": 100000.0,
+    "Safira": 50000.0,
+    "Topazio": 20000.0,
+    "Basico": 5000.0,
+    "Azul": 5000.0,
+}
+
+PARETO_PRIORITY_WEIGHTS = {
+    "Top 10% Receita": 20000.0,
+    "Top 20% Receita": 10000.0,
+    "Top 50% Receita": 5000.0,
+    "Cauda Longa": 1000.0,
+}
+
+
+def calcular_prioridade_cliente(p: dict[str, Any]) -> float:
+    """Calcula score de prioridade comercial baseado em Tier e CLV para ordenação de cabine."""
+    tier = str(p.get("tier_fidelidade") or "Basico")
+    pareto = str(p.get("faixa_pareto") or "Cauda Longa")
+    clv = float(p.get("clv_previsto") or 0.0)
+    return (
+        TIER_PRIORITY_WEIGHTS.get(tier, 5000.0)
+        + PARETO_PRIORITY_WEIGHTS.get(pareto, 1000.0)
+        + clv
+    )
+
+
+def alocar_assentos_aeronave(
+    passageiros_raw: list[dict[str, Any]],
+    fileiras: int,
+    layout: list[str],
+    codigo_modelo: str = "A320neo",
+) -> list[tuple[str, dict[str, Any]]]:
+    """Aloca passageiros na aeronave calibrando Espaço Azul (1-4), coesão de PNR e assentos vazios orgânicos."""
+    if not passageiros_raw:
+        return []
+
+    espaco_azul_max = 2 if codigo_modelo == "ATR 72-600" else 4
+    is_6_seats = len(layout) == 6
+
+    # 1. Agrupamento por PNR e contagem de tamanho do grupo
+    pnr_groups: dict[str, list[dict[str, Any]]] = {}
+    for p in passageiros_raw:
+        pnr = str(p.get("pnr") or "SOLO")
+        pnr_groups.setdefault(pnr, []).append(p)
+
+    # Ordena passageiros internamente em cada grupo por Tier/CLV
+    for pnr, grp in pnr_groups.items():
+        grp.sort(key=calcular_prioridade_cliente, reverse=True)
+
+    # Função de pontuação do grupo (definida pelo membro de maior prioridade comercial)
+    def score_grupo(grp: list[dict[str, Any]]) -> float:
+        return max(calcular_prioridade_cliente(x) for x in grp)
+
+    def is_vip_grupo(grp: list[dict[str, Any]]) -> bool:
+        return any(
+            str(x.get("tier_fidelidade")) == "Diamante"
+            or str(x.get("faixa_pareto")) in ("Top 10% Receita", "Top 20% Receita")
+            for x in grp
+        )
+
+    # Ordena todos os grupos colocando VIPs primeiro e ordenando por Tier/CLV
+    sorted_groups = sorted(
+        pnr_groups.values(),
+        key=lambda g: (is_vip_grupo(g), score_grupo(g)),
+        reverse=True,
+    )
+
+    # Grid de assentos: grid[row][col] = passageiro ou None
+    grid: dict[int, dict[str, dict[str, Any] | None]] = {
+        r: {c: None for c in layout} for r in range(1, fileiras + 1)
+    }
+
+    # Helper para encontrar blocos estritamente contíguos na mesma fileira
+    def find_contiguous_block(row: int, size: int) -> list[str] | None:
+        if is_6_seats:
+            left = ["A", "B", "C"]
+            right = ["D", "E", "F"]
+            if size == 3:
+                if all(grid[row][c] is None for c in left):
+                    return left
+                if all(grid[row][c] is None for c in right):
+                    return right
+            elif size == 2:
+                # Prioriza pares contíguos de janela ou corredor
+                if grid[row]["A"] is None and grid[row]["B"] is None:
+                    return ["A", "B"]
+                if grid[row]["E"] is None and grid[row]["F"] is None:
+                    return ["E", "F"]
+                if grid[row]["B"] is None and grid[row]["C"] is None:
+                    return ["B", "C"]
+                if grid[row]["D"] is None and grid[row]["E"] is None:
+                    return ["D", "E"]
+            elif size == 4:
+                for cand in [["A", "B", "C", "D"], ["C", "D", "E", "F"], ["B", "C", "D", "E"]]:
+                    if all(grid[row][c] is None for c in cand):
+                        return cand
+            elif size == 1:
+                # Preferência solo: Janela -> Corredor -> Meio
+                for c in ["A", "F", "C", "D", "B", "E"]:
+                    if grid[row][c] is None:
+                        return [c]
+        else:
+            # Layout 2x2 (A, B - C, D)
+            left = ["A", "B"]
+            right = ["C", "D"]
+            if size == 2:
+                if all(grid[row][c] is None for c in left):
+                    return left
+                if all(grid[row][c] is None for c in right):
+                    return right
+            elif size == 1:
+                for c in ["A", "D", "B", "C"]:
+                    if grid[row][c] is None:
+                        return [c]
+            elif size == 4:
+                if all(grid[row][c] is None for c in layout):
+                    return layout
+            elif size == 3:
+                if grid[row]["A"] is None and grid[row]["B"] is None and grid[row]["C"] is None:
+                    return ["A", "B", "C"]
+                if grid[row]["B"] is None and grid[row]["C"] is None and grid[row]["D"] is None:
+                    return ["B", "C", "D"]
+        return None
+
+    # -------------------------------------------------------------------------
+    # REGRA 1: Espaço Azul / Premium (Fileiras 1 a 4)
+    # Aloca grupos VIPs (Diamante / Top 10% Receita) e passageiros de alto CLV
+    # -------------------------------------------------------------------------
+    remaining_groups: list[list[dict[str, Any]]] = []
+
+    for g in sorted_groups:
+        sz = len(g)
+        allocated = False
+        if is_vip_grupo(g):
+            for r in range(1, espaco_azul_max + 1):
+                block = find_contiguous_block(r, sz)
+                if block:
+                    for pax, col in zip(g, block):
+                        grid[r][col] = pax
+                    allocated = True
+                    break
+        if not allocated:
+            remaining_groups.append(g)
+
+    # -------------------------------------------------------------------------
+    # REGRA 2 & 3: Cabine Principal & Coesão de Famílias (PNR)
+    # Grupos (size >= 2) distribuídos organicamente em assentos contíguos
+    # -------------------------------------------------------------------------
+    multi_groups = [g for g in remaining_groups if len(g) > 1]
+    solo_groups = [g for g in remaining_groups if len(g) == 1]
+
+    # Distribui grupos com espaçamento dinâmico proporcional em toda a extensão da cabine principal
+    main_start = espaco_azul_max + 1
+    main_end = max(fileiras - 4, main_start)
+    num_multi = len(multi_groups)
+    if num_multi > 1:
+        stride_rows = [
+            round(main_start + i * (main_end - main_start) / (num_multi - 1))
+            for i in range(num_multi)
+        ]
+    else:
+        stride_rows = [main_start]
+
+    for g, target_r in zip(multi_groups, stride_rows):
+        sz = len(g)
+        chosen_row = target_r
+        block = find_contiguous_block(target_r, sz)
+        if not block:
+            for offset in range(1, fileiras):
+                for candidate_r in (target_r - offset, target_r + offset):
+                    if main_start <= candidate_r <= fileiras - 2:
+                        block = find_contiguous_block(candidate_r, sz)
+                        if block:
+                            chosen_row = candidate_r
+                            break
+                if block:
+                    break
+        if not block:
+            for r in range(main_start, fileiras + 1):
+                block = find_contiguous_block(r, sz)
+                if block:
+                    chosen_row = r
+                    break
+        if block:
+            for pax, col in zip(g, block):
+                grid[chosen_row][col] = pax
+
+    # -------------------------------------------------------------------------
+    # REGRA 2: Alocação Orgânica de Assentos Vazios (Passageiros Solo)
+    # Passageiros solo escolhem Janela e Corredor primeiro.
+    # Assentos vazios sobram organicamente nos assentos do meio ('B' e 'E') e fundo!
+    # -------------------------------------------------------------------------
+    def seat_desirability(r: int, c: str) -> float:
+        score = 0.0
+        # Sobras do Espaço Azul têm altíssima preferência para solo
+        if r <= espaco_azul_max:
+            score += 500.0
+
+        if is_6_seats:
+            if c in ("A", "F"):
+                score += 150.0  # Janela
+            elif c in ("C", "D"):
+                score += 120.0  # Corredor
+            else:
+                score += 15.0   # Assento do meio (B/E) evitado por solo travelers
+        else:
+            if c in ("A", "D"):
+                score += 150.0  # Janela
+            else:
+                score += 120.0  # Corredor
+
+        # Preferência por fileiras dianteiras e médias sobre as últimas fileiras
+        score += (fileiras - r) * 2.5
+        if r >= fileiras - 2:
+            score -= 100.0  # Penalidade para as últimas fileiras (banheiro/galley)
+
+        return score
+
+    available_seats: list[tuple[int, str, float]] = []
+    for r in range(1, fileiras + 1):
+        for c in layout:
+            if grid[r][c] is None:
+                available_seats.append((r, c, seat_desirability(r, c)))
+
+    available_seats.sort(key=lambda item: item[2], reverse=True)
+
+    # Extrai passageiros solo e ordena por prioridade comercial (Tier/CLV)
+    solo_pax_list = [g[0] for g in solo_groups]
+    solo_pax_list.sort(key=calcular_prioridade_cliente, reverse=True)
+
+    for i, pax in enumerate(solo_pax_list):
+        if i < len(available_seats):
+            r, c, _ = available_seats[i]
+            grid[r][c] = pax
+
+    # Coleta resultado final dos passageiros alocados com seus respectivos assentos
+    allocated_result: list[tuple[str, dict[str, Any]]] = []
+    for r in range(1, fileiras + 1):
+        for c in layout:
+            pax = grid[r][c]
+            if pax is not None:
+                allocated_result.append((f"{r}{c}", pax))
+
+    return allocated_result
+
+
 class CrewService:
     """Serviço de aplicação para o Guest Service Tool da Tripulação (Voo ao Vivo)."""
 
@@ -201,65 +449,50 @@ class CrewService:
             pnr = str(r.get("pnr") or "SOLO")
             pnr_counts[pnr] = pnr_counts.get(pnr, 0) + 1
 
-        # 2. Agrupamento por PNR para Alocação Contígua
-        pnr_groups: dict[str, list[dict[str, Any]]] = {}
-        for r in rows:
-            pnr = str(r.get("pnr") or "SOLO")
-            pnr_groups.setdefault(pnr, []).append(r)
+        # 2. Alocação Inteligente com Espaço Azul (1-4), Coesão de PNR e Assentos Vazios Orgânicos
+        allocated_passengers = alocar_assentos_aeronave(
+            passageiros_raw=rows,
+            fileiras=fileiras,
+            layout=layout,
+            codigo_modelo=str(aeronave["codigo"]),
+        )
 
-        # Ordena grupos priorizando grupos com membros de maior Valor em Risco (ocupam Espaço Azul e primeiras fileiras)
-        def score_group(grp: list[dict[str, Any]]) -> float:
-            return max(float(x.get("valor_em_risco") or 0.0) for x in grp)
-
-        sorted_groups = sorted(pnr_groups.values(), key=score_group, reverse=True)
-
-        # Distribuição ordenada de assentos garantindo que membros do mesmo PNR sentem juntos
         assentos_voo: List[AssentoVoo] = []
-        seat_index = 0
-        allocated_passengers: list[tuple[str, dict[str, Any]]] = []
+        for seat_code, p in allocated_passengers:
+            pnr = str(p.get("pnr") or "SOLO")
+            tamanho_grupo = pnr_counts.get(pnr, 1)
+            is_grupo_familiar = tamanho_grupo > 1
 
-        for grp in sorted_groups:
-            for p in grp:
-                if seat_index >= total_assentos_aeronave:
-                    break
-                seat_code = assentos_codigos[seat_index]
-                seat_index += 1
+            risco = float(p.get("risco_evasao") or 0.0)
+            pareto = str(p.get("faixa_pareto") or "Cauda Longa")
+            if risco > 0.60:
+                status = "critico"
+            elif pareto in ("Top 10% Receita", "Top 20% Receita"):
+                status = "vip"
+            else:
+                status = "normal"
 
-                pnr = str(p.get("pnr") or "SOLO")
-                tamanho_grupo = pnr_counts.get(pnr, 1)
-                is_grupo_familiar = tamanho_grupo > 1
+            cliente_dto = AssentoCliente(
+                id_cliente=str(p["id_cliente"]),
+                nome=gerar_nome_passageiro(p["id_cliente"]),
+                tier_fidelidade=str(p.get("tier_fidelidade") or "Azul"),
+                persona=str(p.get("persona") or "Turista Eventual"),
+                clv_previsto=float(p.get("clv_previsto") or 0.0),
+                faixa_pareto=pareto,
+                risco_evasao=risco,
+                score_atrito_acumulado=float(p.get("score_atrito_acumulado") or 0.0),
+                pnr=pnr,
+                tamanho_grupo=tamanho_grupo,
+                is_grupo_familiar=is_grupo_familiar,
+            )
 
-                risco = float(p.get("risco_evasao") or 0.0)
-                pareto = str(p.get("faixa_pareto") or "Cauda Longa")
-                if risco > 0.60:
-                    status = "critico"
-                elif pareto in ("Top 10% Receita", "Top 20% Receita"):
-                    status = "vip"
-                else:
-                    status = "normal"
-
-                cliente_dto = AssentoCliente(
-                    id_cliente=str(p["id_cliente"]),
-                    nome=gerar_nome_passageiro(p["id_cliente"]),
-                    tier_fidelidade=str(p.get("tier_fidelidade") or "Azul"),
-                    persona=str(p.get("persona") or "Turista Eventual"),
-                    clv_previsto=float(p.get("clv_previsto") or 0.0),
-                    faixa_pareto=pareto,
-                    risco_evasao=risco,
-                    score_atrito_acumulado=float(p.get("score_atrito_acumulado") or 0.0),
-                    pnr=pnr,
-                    tamanho_grupo=tamanho_grupo,
-                    is_grupo_familiar=is_grupo_familiar,
+            assentos_voo.append(
+                AssentoVoo(
+                    assento=seat_code,
+                    status=status,
+                    dados_cliente=cliente_dto,
                 )
-
-                assentos_voo.append(
-                    AssentoVoo(
-                        assento=seat_code,
-                        status=status,
-                        dados_cliente=cliente_dto,
-                    )
-                )
-                allocated_passengers.append((seat_code, p))
+            )
 
         # 3. Processamento em Lote (Batch LLM): Seleção dos Top 5 por Valor em Risco
         pax_por_risco = sorted(
