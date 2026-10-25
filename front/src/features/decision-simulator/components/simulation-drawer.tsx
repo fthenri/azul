@@ -50,6 +50,16 @@ interface SimulationDrawerProps {
   lastDispatchedMission: any;
 }
 
+function parseFlightDetails(descricao: string): { voo: string | null; rota: string | null } {
+  const flightMatch = descricao.match(/voo\s+([A-Z0-9]+)/i);
+  const routeMatch = descricao.match(/\(([A-Z]{3})\s*(?:->|➔)\s*([A-Z]{3})\)/i);
+
+  return {
+    voo: flightMatch ? flightMatch[1].toUpperCase() : null,
+    rota: routeMatch ? `${routeMatch[1]} ➔ ${routeMatch[2]}` : null,
+  };
+}
+
 export function SimulationDrawer({
   isOpen,
   onClose,
@@ -126,6 +136,33 @@ export function SimulationDrawer({
     return "Básico";
   })();
 
+  const tierConfig = (() => {
+    switch (tier) {
+      case "Diamante":
+        return {
+          avatarBg: "bg-gradient-to-br from-[#001D40] to-[#003B7A] text-sky-200 ring-2 ring-sky-400/60 shadow-[0_0_14px_rgba(56,189,248,0.3)]",
+          badge: "bg-[#002855] text-sky-200 border-sky-400/50 shadow-xs",
+        };
+      case "Safira":
+        return {
+          avatarBg: "bg-gradient-to-br from-blue-950 to-blue-800 text-blue-200 ring-2 ring-blue-400/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
+          badge: "bg-blue-900 text-blue-200 border-blue-400/40 shadow-xs",
+        };
+      case "Topázio":
+        return {
+          avatarBg: "bg-gradient-to-br from-amber-950 to-amber-800 text-amber-200 ring-2 ring-amber-400/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]",
+          badge: "bg-amber-900 text-amber-200 border-amber-400/40 shadow-xs",
+        };
+      default:
+        return {
+          avatarBg: "bg-slate-800 text-slate-300 ring-1 ring-slate-600",
+          badge: "bg-slate-800 text-slate-300 border-slate-700",
+        };
+    }
+  })();
+
+  const { voo, rota } = parseFlightDetails(selectedMomento.descricao);
+
   const paretoDecil = (() => {
     const clv = selectedMomento.clv_previsto;
     if (clv >= 8000) return "Top 10% Receita";
@@ -171,28 +208,39 @@ export function SimulationDrawer({
           {/* ─────────────────────────────────────────────────────────────
               HEADER DO DRAWER: IDENTIFICAÇÃO + NAVEGAÇÃO ENTRE CASOS
              ───────────────────────────────────────────────────────────── */}
-          <div className="px-6 py-4 border-b border-border/70 dark:border-white/10 bg-muted/30 flex items-center justify-between gap-4 shrink-0">
-            {/* Esquerda: Identificação do Passageiro */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#003B7A] text-white font-black text-sm shadow-xs border border-sky-400/30">
+          <div className="px-6 py-4 border-b border-border/70 dark:border-white/10 bg-muted/40 backdrop-blur-md flex items-center justify-between gap-4 shrink-0">
+            {/* Esquerda: Identificação do Passageiro Estilo VIP Boarding Pass */}
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-black text-sm transition-all ${tierConfig.avatarBg}`}
+              >
                 <User className="h-5 w-5" />
               </div>
 
-              <div className="min-w-0">
+              <div className="min-w-0 space-y-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-base font-black tracking-tight text-foreground truncate">
                     Passageiro #{selectedMomento.cliente_id}
                   </h2>
-                  <Badge className="bg-[#003B7A] dark:bg-sky-950 text-white dark:text-sky-300 border-sky-400/30 text-[10px] font-bold px-2 py-0.5">
-                    <Crown className="h-2.5 w-2.5 mr-1 text-sky-400" />
+                  <Badge className={`text-[10px] font-bold px-2 py-0.5 ${tierConfig.badge}`}>
+                    <Crown className="h-2.5 w-2.5 mr-1" />
                     Tier {tier}
                   </Badge>
+                  {rota && (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-mono font-bold text-[#0077C8] dark:text-sky-300 border-sky-500/30 bg-sky-500/10 flex items-center gap-1"
+                    >
+                      <Plane className="h-2.5 w-2.5" />
+                      <span>{rota}</span>
+                    </Badge>
+                  )}
                   <Badge variant="outline" className="text-[10px] font-mono font-bold text-azul-action dark:text-sky-300 border-sky-500/30 bg-sky-500/5">
                     {paretoDecil}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  Cluster: <span className="font-semibold text-foreground">{selectedMomento.persona}</span> • ID: {selectedMomento.id}
+                <p className="text-xs text-muted-foreground truncate">
+                  Cluster: <span className="font-semibold text-foreground">{selectedMomento.persona}</span> • ID: {selectedMomento.id} {voo ? `• Voo ${voo}` : ""}
                 </p>
               </div>
             </div>
@@ -262,9 +310,10 @@ export function SimulationDrawer({
                 </span>
               </div>
 
-              {/* Grid Amplo de Métricas Financeiras e de Risco */}
+              {/* Grid Amplo de Métricas Financeiras com Feixes de Luz Semânticos */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="p-3.5 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
+                <div className="relative overflow-hidden p-3.5 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
+                  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-sky-500/80 via-sky-400/30 to-transparent" />
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
                     CLV Previsto
                   </span>
@@ -274,7 +323,8 @@ export function SimulationDrawer({
                   <span className="text-[10px] text-muted-foreground block">Ciclo de vida Gold</span>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
+                <div className="relative overflow-hidden p-3.5 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
+                  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/80 via-rose-500/30 to-transparent" />
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
                     Risco de Evasão
                   </span>
@@ -290,7 +340,8 @@ export function SimulationDrawer({
                   <span className="text-[10px] text-muted-foreground block">Score preditivo</span>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
+                <div className="relative overflow-hidden p-3.5 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
+                  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/80 via-rose-500/30 to-transparent" />
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
                     Perda em Risco
                   </span>
@@ -302,7 +353,8 @@ export function SimulationDrawer({
                   <span className="text-[10px] text-muted-foreground block">CLV × Risco Churn</span>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
+                <div className="relative overflow-hidden p-3.5 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
+                  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-500/80 via-amber-500/30 to-transparent" />
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
                     Tipo de Evento
                   </span>
@@ -421,21 +473,29 @@ export function SimulationDrawer({
                     </Badge>
                   </div>
 
-                  {/* Hero da Ação Vencedora */}
+                  {/* Hero da Ação Vencedora (Champion of the Algorithm) */}
                   <div
-                    className={`p-4 sm:p-5 rounded-2xl border shadow-xs ${
+                    className={`p-5 rounded-2xl border shadow-md relative overflow-hidden backdrop-blur-md ${
                       isBloqueada
-                        ? "border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent text-amber-950 dark:text-amber-100"
-                        : "border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent text-emerald-950 dark:text-emerald-100"
+                        ? "border-amber-500/40 bg-gradient-to-br from-card via-card to-amber-500/10 text-amber-950 dark:text-amber-100"
+                        : "border-emerald-500/50 bg-gradient-to-br from-card via-card to-emerald-500/10 dark:to-emerald-950/25 text-emerald-950 dark:text-emerald-100 shadow-emerald-500/5"
                     }`}
                   >
+                    <div
+                      className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${
+                        isBloqueada
+                          ? "from-amber-500/80 via-amber-400/40 to-transparent"
+                          : "from-emerald-500/90 via-sky-400/40 to-transparent"
+                      }`}
+                    />
+
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div className="flex items-start gap-3.5">
                         <div
-                          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm ${
+                          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-md ${
                             isBloqueada
-                              ? "bg-gradient-to-br from-amber-500 to-amber-700"
-                              : "bg-gradient-to-br from-emerald-500 to-emerald-700"
+                              ? "bg-gradient-to-br from-amber-500 to-amber-700 ring-2 ring-amber-400/30"
+                              : "bg-gradient-to-br from-emerald-500 to-emerald-700 ring-2 ring-emerald-400/40 shadow-[0_0_15px_rgba(16,185,129,0.25)]"
                           }`}
                         >
                           {isBloqueada ? (
@@ -444,11 +504,18 @@ export function SimulationDrawer({
                             <Trophy className="h-6 w-6" />
                           )}
                         </div>
-                        <div className="space-y-0.5">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            {isBloqueada ? "Salvaguarda Algorítmica Ativada" : "Ação Arbitrada Vencedora"}
-                          </span>
-                          <h4 className="text-lg font-black text-foreground tracking-tight">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              {isBloqueada ? "Salvaguarda Algorítmica Ativada" : "Ação Arbitrada Vencedora"}
+                            </span>
+                            {!isBloqueada && (
+                              <Badge className="text-[9px] font-bold bg-emerald-600 text-white px-2 py-0.2 shadow-xs">
+                                Max Uplift
+                              </Badge>
+                            )}
+                          </div>
+                          <h4 className="text-xl font-black text-foreground tracking-tight">
                             {simulationResult.decisao_final.acao_vencedora}
                           </h4>
                           <p className="text-xs text-muted-foreground max-w-md leading-relaxed">
@@ -463,7 +530,7 @@ export function SimulationDrawer({
 
                       {/* Métricas da Vencedora */}
                       {!isBloqueada && (
-                        <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-emerald-500/25 shrink-0 self-end sm:self-center shadow-xs">
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-card/90 border border-emerald-500/30 shrink-0 self-end sm:self-center shadow-xs">
                           <div className="text-right">
                             <span className="text-[10px] font-bold uppercase text-muted-foreground">
                               Retorno Líquido
@@ -671,29 +738,46 @@ export function SimulationDrawer({
                     </div>
                   </div>
 
-                  {/* Conteúdo do Canal Selecionado */}
+                  {/* Conteúdo do Canal Selecionado: WhatsApp Hiper-Realista */}
                   {activeChannel === "whatsapp" && (
                     <div className="space-y-3">
-                      <div className="rounded-2xl bg-gradient-to-br from-[#002855] via-[#003B7A] to-[#001D40] text-white p-4 border border-sky-400/20 shadow-md">
-                        <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-2.5 text-xs">
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white font-bold text-[10px]">
+                      <div className="rounded-2xl bg-gradient-to-b from-[#0c2340] via-[#08182b] to-[#040e1a] text-white p-4 border border-sky-400/20 shadow-lg">
+                        {/* WhatsApp Header */}
+                        <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3 text-xs">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0077C8] text-white font-black text-xs ring-2 ring-emerald-400/70 shadow-xs">
                               Az
                             </div>
-                            <span className="font-bold text-white text-xs">Azul Linhas Aéreas Oficial ✓</span>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-white text-xs">Azul Linhas Aéreas Oficial</span>
+                                <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white text-[9px] font-black">
+                                  ✓
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-sky-200/70 block">Conta Comercial Verificada • Canal Prioritário</span>
+                            </div>
                           </div>
-                          <span className="text-[10px] text-sky-200/70">Hoje, há instantes</span>
+                          <span className="text-[10px] font-mono text-sky-200/60 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
+                            Criptografia ponta a ponta
+                          </span>
                         </div>
 
-                        <div className="bg-white/10 rounded-xl p-3.5 border border-white/10 text-xs sm:text-sm leading-relaxed text-sky-50 font-sans">
-                          <p className="whitespace-pre-wrap">
+                        {/* WhatsApp Chat Bubble */}
+                        <div className="relative max-w-[95%] sm:max-w-[88%] bg-[#122e4d] text-sky-50 rounded-2xl rounded-tl-sm p-4 border border-sky-400/20 shadow-md">
+                          <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans">
                             {simulationResult.decisao_final.mensagem_crm || simulationResult.decisao_final.mensagem_llm}
                           </p>
+
+                          <div className="flex items-center justify-end gap-1.5 mt-2.5 pt-1.5 border-t border-white/5 text-[10px] text-sky-200/60 font-mono">
+                            <span>Hoje, 14:32</span>
+                            <span className="text-sky-400 font-bold font-sans">✓✓</span>
+                          </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-2.5 text-[10px] text-sky-200/70">
-                          <span>Conformidade com Resolução ANAC 400</span>
-                          <span>Azul Fidelidade</span>
+                        <div className="flex items-center justify-between pt-3 mt-3 border-t border-white/10 text-[10px] text-sky-200/60">
+                          <span>Conformidade ANAC 400 • Retenção e Fidelização</span>
+                          <span>Azul Fidelidade Hub</span>
                         </div>
                       </div>
 
