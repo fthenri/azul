@@ -6,7 +6,6 @@ import { api, ApiError } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
 import { DEMO_VOO_SIMULADO, getDemoSimularBordo, getDemoVooSimulado } from "@/lib/demo-data";
 import { addOrUpdateMission, setMissionStatus } from "@/lib/missions-storage";
-import { addMission as addSyncMission } from "@/lib/sync-storage";
 import {
   AssentoVoo,
   MetadataAeronave,

@@ -28,7 +28,7 @@ import { useDemoMode } from "@/components/providers/demo-mode-context";
 import { getDemoFlightDetail } from "@/lib/demo-data";
 import { AssentoVoo, VooDetalheResponse } from "@/types/api";
 import { CrewSeatMap, SeatMapRole } from "@/features/crew-view/components/crew-seat-map";
-import { PassengerDrawer } from "@/features/crew-view/components/passenger-drawer";
+import { PassengerDrawer } from "./passenger-drawer";
 import { SeatFilter } from "@/features/crew-view/hooks/use-crew-flight";
 import {
   dispatchBatchFlightAndMissions,
@@ -380,6 +380,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
             <div className="max-h-[calc(100vh-10rem)] flex flex-col">
               <PassengerDrawer
                 seat={selectedSeat}
+                loteAcoes={loteAcoes}
                 simulationResult={null}
                 isSimulating={false}
                 simulationError={null}
@@ -615,6 +616,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
           <div className="w-12 h-1.5 bg-muted rounded-full mx-auto my-2" />
           <PassengerDrawer
             seat={selectedSeat}
+            loteAcoes={loteAcoes}
             simulationResult={null}
             isSimulating={false}
             simulationError={null}

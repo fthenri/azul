@@ -43,8 +43,7 @@ export function middleware(request: NextRequest) {
   const isManagerRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/executive") ||
-    pathname.startsWith("/simulator") ||
-    pathname.startsWith("/audit-logs");
+    pathname.startsWith("/flights");
 
   if (isManagerRoute) {
     if (!token) {

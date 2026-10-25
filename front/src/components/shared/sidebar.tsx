@@ -6,8 +6,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
-  Cpu,
-  FileText,
   ShieldCheck,
   ChevronRight,
   Database,
@@ -34,22 +32,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       icon: BarChart3,
       badge: "KPIs",
       active: pathname === "/dashboard" || pathname === "/executive",
-    },
-    {
-      href: "/simulator",
-      label: "Central de Decisões",
-      sublabel: "Simulador Árbitro & LLM",
-      icon: Cpu,
-      badge: "Uplift",
-      active: pathname === "/simulator",
-    },
-    {
-      href: "/audit-logs",
-      label: "Logs & Explicabilidade",
-      sublabel: "Auditoria & Pesos SHAP",
-      icon: FileText,
-      badge: "Audit",
-      active: pathname === "/audit-logs",
     },
     {
       href: "/dashboard/flights",

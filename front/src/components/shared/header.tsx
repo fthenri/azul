@@ -13,20 +13,6 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
   const pathname = usePathname();
 
   const getPageContext = () => {
-    if (pathname === "/simulator") {
-      return {
-        title: "Central de Decisões",
-        category: "Simulação & Arbitragem",
-        tag: "Uplift + LLM RAG",
-      };
-    }
-    if (pathname === "/audit-logs") {
-      return {
-        title: "Logs & Explicabilidade",
-        category: "Auditoria Regulatória",
-        tag: "SHAP + Compliance",
-      };
-    }
     if (
       pathname?.startsWith("/dashboard/flights") ||
       pathname?.startsWith("/flights") ||
