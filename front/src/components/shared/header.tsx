@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import Link from "next/link";
@@ -16,6 +16,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { UserAvatar } from "@/components/shared/user-avatar";
 import { useAuth } from "@/lib/auth-context";
 
 interface HeaderProps {
@@ -68,14 +69,10 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
   const context = getPageContext();
   const PageIcon = context.icon;
 
-  const userInitials = user?.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join("")
-        .toUpperCase()
-    : "AZ";
+  const displayUser = user || {
+    name: "Carlos Silveira",
+    role: "manager" as const,
+  };
 
   return (
     <header className="sticky top-0 z-30 flex flex-col border-b border-border/80 dark:border-white/10 bg-white/85 dark:bg-[#071120]/85 backdrop-blur-xl shadow-xs transition-colors duration-200">
@@ -162,32 +159,28 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
           {/* Botão de Troca de Tema (Claro / Escuro) */}
           <ThemeToggle />
 
-          {/* User Profile Pill no Header */}
-          {user && (
-            <div className="flex items-center gap-2 pl-2 border-l border-border/80 dark:border-white/10">
-              <div className="h-8 w-8 rounded-xl bg-sky-500/15 dark:bg-sky-500/20 text-[#003B7A] dark:text-sky-300 font-bold text-xs flex items-center justify-center border border-sky-400/25 shrink-0">
-                {userInitials}
-              </div>
+          {/* User Profile Pill centralizado exclusivamente no Header */}
+          <div className="flex items-center gap-2 pl-2 border-l border-border/80 dark:border-white/10">
+            <UserAvatar name={displayUser.name} size="sm" />
 
-              <div className="hidden md:flex flex-col text-left">
-                <span className="text-xs font-bold text-foreground leading-tight truncate max-w-[120px]">
-                  {user.name.split(" ")[0]}
-                </span>
-                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                  {user.role === "manager" ? "Gestor CRM" : "Tripulação"}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={logout}
-                title="Encerrar sessão"
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
+            <div className="hidden md:flex flex-col text-left">
+              <span className="text-xs font-bold text-foreground leading-tight truncate max-w-[120px]">
+                {displayUser.name.split(" ")[0]}
+              </span>
+              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                {displayUser.role === "manager" ? "Gestor CRM" : "Tripulação"}
+              </span>
             </div>
-          )}
+
+            <button
+              type="button"
+              onClick={user ? logout : () => (window.location.href = "/login")}
+              title={user ? "Encerrar sessão" : "Acessar autenticação"}
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </header>

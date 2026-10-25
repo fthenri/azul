@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import Link from "next/link";
@@ -12,12 +12,10 @@ import {
   ChevronRight,
   Database,
   Plane,
-  LogOut,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/auth-context";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -33,7 +31,6 @@ export function Sidebar({
   onToggleCollapse,
 }: SidebarProps) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
 
   const navItems = [
     {
@@ -41,9 +38,6 @@ export function Sidebar({
       label: "Painel de Valor",
       sublabel: "Visão Executiva & ROI",
       icon: BarChart3,
-      badge: "KPIs",
-      badgeLight: "bg-[#0077C8]/10 text-[#003B7A] border-[#0077C8]/25",
-      badgeDark: "dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/40",
       active: pathname === "/dashboard" || pathname === "/executive",
     },
     {
@@ -51,9 +45,6 @@ export function Sidebar({
       label: "Central de Decisões",
       sublabel: "Simulador Árbitro & LLM",
       icon: Cpu,
-      badge: "Uplift",
-      badgeLight: "bg-purple-500/10 text-purple-700 border-purple-500/25",
-      badgeDark: "dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40",
       active: pathname === "/simulator",
     },
     {
@@ -61,9 +52,6 @@ export function Sidebar({
       label: "Logs & Explicabilidade",
       sublabel: "Auditoria & Pesos SHAP",
       icon: FileText,
-      badge: "Audit",
-      badgeLight: "bg-amber-500/10 text-amber-700 border-amber-500/25",
-      badgeDark: "dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40",
       active: pathname === "/audit-logs",
     },
     {
@@ -71,9 +59,6 @@ export function Sidebar({
       label: "Despacho de Voo (Mapa)",
       sublabel: "Simulador de Assentos & Ações",
       icon: Plane,
-      badge: "Ao Vivo",
-      badgeLight: "bg-emerald-500/10 text-emerald-700 border-emerald-500/25",
-      badgeDark: "dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40",
       active:
         pathname === "/dashboard/dispatch" ||
         pathname === "/flight-dispatch" ||
@@ -81,15 +66,6 @@ export function Sidebar({
         pathname === "/crew-view",
     },
   ];
-
-  const userInitials = user?.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join("")
-        .toUpperCase()
-    : "AZ";
 
   return (
     <>
@@ -104,18 +80,15 @@ export function Sidebar({
       <aside
         className={cn(
           "fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r transition-all duration-300 ease-in-out",
-          // Opção 2: Full Dynamic Light/Dark
+          // Tema refinado Light / Dark sem sombras neon excessivas
           "bg-white/95 dark:bg-[#071120]/95 backdrop-blur-2xl text-slate-800 dark:text-white",
           "border-slate-200/90 dark:border-white/10",
-          "shadow-[4px_0_24px_rgba(0,59,122,0.04)] dark:shadow-[4px_0_30px_rgba(0,0,0,0.6)]",
+          "shadow-[2px_0_12px_rgba(0,59,122,0.04)] dark:shadow-none",
           isCollapsed ? "lg:w-[72px]" : "lg:w-64",
           "w-64",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        {/* Feixe Lateral Sutil */}
-        <div className="absolute top-0 right-0 bottom-0 w-[1px] bg-gradient-to-b from-transparent via-sky-400/30 to-transparent pointer-events-none" />
-
         {/* Top Branding Header com Logo Oficial da Azul */}
         <div
           className={cn(
@@ -178,7 +151,7 @@ export function Sidebar({
                     key={item.href}
                     href={item.href}
                     onClick={onClose}
-                    title={isCollapsed ? `${item.label} (${item.badge})` : undefined}
+                    title={isCollapsed ? item.label : undefined}
                     className={cn(
                       "group relative flex items-center rounded-xl text-xs transition-all duration-200 overflow-hidden",
                       isCollapsed
@@ -188,9 +161,9 @@ export function Sidebar({
                         ? cn(
                             // Active em Light Mode
                             "bg-[#EAF4FC] text-[#003B7A] border border-[#0077C8]/25 font-bold shadow-xs",
-                            // Active em Dark Mode (Aero-Navy Glassmorphism refinado)
-                            "dark:bg-sky-500/15 dark:text-white dark:border-sky-500/40 dark:shadow-[0_0_20px_rgba(56,189,248,0.2)]",
-                            // Indicador lateral luminoso
+                            // Active em Dark Mode: sem neon glow, discreto e elegante
+                            "dark:bg-sky-500/10 dark:text-white dark:border-sky-500/25",
+                            // Indicador lateral discreto
                             "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r-full",
                             "before:bg-[#0077C8] dark:before:bg-sky-400"
                           )
@@ -213,16 +186,24 @@ export function Sidebar({
                       />
                       {!isCollapsed && (
                         <div className="flex flex-col text-left">
-                          <span className={cn(
-                            "leading-tight font-semibold",
-                            item.active ? "text-[#003B7A] dark:text-white font-bold" : "text-slate-700 dark:text-slate-300"
-                          )}>
+                          <span
+                            className={cn(
+                              "leading-tight font-semibold",
+                              item.active
+                                ? "text-[#003B7A] dark:text-white font-bold"
+                                : "text-slate-700 dark:text-slate-300"
+                            )}
+                          >
                             {item.label}
                           </span>
-                          <span className={cn(
-                            "text-[10px] font-normal",
-                            item.active ? "text-[#0077C8] dark:text-sky-300" : "text-slate-400 dark:text-slate-500"
-                          )}>
+                          <span
+                            className={cn(
+                              "text-[10px] font-normal",
+                              item.active
+                                ? "text-[#0077C8] dark:text-sky-300"
+                                : "text-slate-400 dark:text-slate-500"
+                            )}
+                          >
                             {item.sublabel}
                           </span>
                         </div>
@@ -230,25 +211,14 @@ export function Sidebar({
                     </div>
 
                     {!isCollapsed && (
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={cn(
-                            "text-[10px] font-bold px-1.5 py-0.5 rounded-md border",
-                            item.badgeLight,
-                            item.badgeDark
-                          )}
-                        >
-                          {item.badge}
-                        </span>
-                        <ChevronRight
-                          className={cn(
-                            "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
-                            item.active
-                              ? "opacity-100 translate-x-0.5 text-[#0077C8] dark:text-sky-400"
-                              : "opacity-30 group-hover:opacity-100 group-hover:translate-x-0.5"
-                          )}
-                        />
-                      </div>
+                      <ChevronRight
+                        className={cn(
+                          "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                          item.active
+                            ? "opacity-100 translate-x-0.5 text-[#0077C8] dark:text-sky-400"
+                            : "opacity-30 group-hover:opacity-100 group-hover:translate-x-0.5"
+                        )}
+                      />
                     )}
                   </Link>
                 );
@@ -283,16 +253,17 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Footer da Sidebar: Perfil, Status & Colapso */}
+        {/* Footer da Sidebar: Status & Colapso (Perfil centralizado exclusivamente no Header) */}
         <div
           className={cn(
-            "p-3.5 border-t space-y-3",
-            "border-slate-200/90 dark:border-white/10 bg-slate-50/70 dark:bg-[#050e1b]"
+            "p-3.5 border-t space-y-2.5",
+            "border-slate-200/90 dark:border-white/10 bg-slate-50/70 dark:bg-[#050e1b]",
+            isCollapsed && "p-2"
           )}
         >
           {/* Status da Origem dos Dados */}
-          {!isCollapsed && (
-            <div className="flex items-center justify-between text-xs">
+          {!isCollapsed ? (
+            <div className="flex items-center justify-between text-xs px-1">
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                 Origem dos Dados:
               </span>
@@ -301,66 +272,38 @@ export function Sidebar({
                 DuckDB Gold
               </span>
             </div>
-          )}
-
-          {/* Card Consolidado de Perfil Autenticado */}
-          {user && (
+          ) : (
             <div
-              className={cn(
-                "rounded-xl border transition-all duration-200",
-                "bg-white dark:bg-black/35 border-slate-200/90 dark:border-white/10 shadow-xs",
-                isCollapsed ? "p-1.5 flex justify-center" : "p-2.5 flex items-center justify-between"
-              )}
+              className="flex justify-center py-1"
+              title="Origem dos Dados: DuckDB Gold"
             >
-              {isCollapsed ? (
-                <button
-                  type="button"
-                  onClick={logout}
-                  title={`${user.name} (${user.role}) - Clique para encerrar sessão`}
-                  className="h-8 w-8 rounded-lg bg-sky-500/15 dark:bg-sky-500/20 text-[#003B7A] dark:text-sky-300 font-bold text-xs flex items-center justify-center hover:bg-rose-500/15 hover:text-rose-600 transition-colors cursor-pointer"
-                >
-                  {userInitials}
-                </button>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2.5 truncate pr-2">
-                    <div className="h-8 w-8 rounded-lg bg-sky-500/15 dark:bg-sky-500/20 text-[#003B7A] dark:text-sky-300 font-bold text-xs flex items-center justify-center shrink-0 border border-sky-400/25">
-                      {userInitials}
-                    </div>
-                    <div className="flex flex-col truncate">
-                      <span className="font-bold text-slate-900 dark:text-white truncate text-xs leading-snug">
-                        {user.name}
-                      </span>
-                      <span className="text-[10px] text-azul-action dark:text-sky-400 font-semibold tracking-wider uppercase">
-                        {user.role === "manager" ? "Gestor CRM" : "Tripulação"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={logout}
-                    title="Encerrar sessão corporativa"
-                    className="p-1.5 rounded-lg border border-transparent hover:border-rose-500/30 bg-transparent hover:bg-rose-500/10 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all cursor-pointer shrink-0"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </button>
-                </>
-              )}
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-emerald-400" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              </span>
             </div>
           )}
 
           {/* Botão de Colapso da Sidebar (Desktop) */}
-          <div className="hidden lg:flex items-center justify-between pt-1">
+          <div
+            className={cn(
+              "hidden lg:flex items-center justify-between pt-1",
+              isCollapsed && "justify-center"
+            )}
+          >
             {!isCollapsed && (
-              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 px-1">
                 v2.4 Enterprise
               </span>
             )}
             <button
               type="button"
               onClick={onToggleCollapse}
-              title={isCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
+              title={
+                isCollapsed
+                  ? "Expandir barra lateral"
+                  : "Colapsar barra lateral"
+              }
               className={cn(
                 "p-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 hover:text-azul-action dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer",
                 isCollapsed && "mx-auto"
