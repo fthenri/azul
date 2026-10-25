@@ -26,25 +26,17 @@ interface PersonasScatterChartProps {
   isLoading: boolean;
 }
 
-const getPersonaColor = (nome: string, isDark: boolean) => {
+const getPersonaColor = (nome: string, _isDark?: boolean) => {
   if (nome.includes("Corporativo")) {
-    return isDark
-      ? { fill: "#38BDF8", stroke: "#0284C7", label: "Gestor Corporativo" }
-      : { fill: "#003B7A", stroke: "#002855", label: "Gestor Corporativo" };
+    return { fill: "hsl(var(--primary))", stroke: "hsl(var(--primary) / 0.8)", label: "Gestor Corporativo" };
   }
   if (nome.includes("Solo")) {
-    return isDark
-      ? { fill: "#00A3FF", stroke: "#0A84FF", label: "Viajante Solo Premium" }
-      : { fill: "#0077C8", stroke: "#005a99", label: "Viajante Solo Premium" };
+    return { fill: "hsl(var(--azul-action))", stroke: "hsl(var(--primary))", label: "Viajante Solo Premium" };
   }
   if (nome.includes("Familiar")) {
-    return isDark
-      ? { fill: "#34D399", stroke: "#059669", label: "Líder Familiar" }
-      : { fill: "#16805D", stroke: "#0f5b42", label: "Líder Familiar" };
+    return { fill: "hsl(var(--azul-success))", stroke: "hsl(var(--azul-success) / 0.8)", label: "Líder Familiar" };
   }
-  return isDark
-    ? { fill: "#FBBF24", stroke: "#D97706", label: "Turista Eventual" }
-    : { fill: "#B96B08", stroke: "#8c5006", label: "Turista Eventual" };
+  return { fill: "hsl(var(--azul-warning))", stroke: "hsl(var(--azul-warning) / 0.8)", label: "Turista Eventual" };
 };
 
 export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartProps) {
@@ -59,7 +51,7 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
 
   if (isLoading) {
     return (
-      <div className="relative rounded-2xl border border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-xl p-6 shadow-sm space-y-4 h-[440px]">
+      <div className="relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-6 shadow-sm space-y-4 h-[440px]">
         <div className="flex justify-between items-center">
           <Skeleton className="h-6 w-56" />
           <Skeleton className="h-5 w-28 rounded-full" />
@@ -72,7 +64,7 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
 
   if (!data || data.length === 0) {
     return (
-      <div className="relative rounded-2xl border border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-xl p-6 shadow-sm h-[440px] flex flex-col justify-between">
+      <div className="relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-6 shadow-sm h-[440px] flex flex-col justify-between">
         <div>
           <h3 className="text-base font-bold text-foreground">Mapeamento de Personas: CLV vs Influência</h3>
           <p className="text-xs text-muted-foreground mt-1">Sem registros no momento.</p>
@@ -105,16 +97,16 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
   const minVolume = Math.min(...data.map((d) => d.tamanho_bolha), 10);
 
   return (
-    <div className="group relative rounded-2xl border border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
+    <div className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
       {/* Feixe Superior Luminous Edge Highlight */}
-      <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C8]/50 dark:via-sky-400/80 to-transparent" />
+      <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
       {/* Header do Gráfico */}
       <div className="p-6 pb-2">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
           <div>
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-sky-500/10 dark:bg-sky-500/15 text-[#0077C8] dark:text-sky-400 border border-sky-500/20">
+              <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                 <Compass className="h-4 w-4" />
               </span>
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
@@ -132,7 +124,7 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
             </p>
           </div>
 
-          <Badge className="w-fit bg-[#EAF4FC] dark:bg-sky-950/60 text-[#003B7A] dark:text-sky-300 border border-[#0077C8]/25 dark:border-sky-500/30 text-[11px] font-semibold py-1 px-3">
+          <Badge className="w-fit bg-secondary text-secondary-foreground border border-primary/20 text-[11px] font-semibold py-1 px-3">
             Matriz 4 Quadrantes
           </Badge>
         </div>
@@ -155,10 +147,10 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
                 domain={[0, 100]}
                 tick={{
                   fontSize: 10,
-                  fill: isDark ? "#94A3B8" : "#5B6E84",
+                  fill: "hsl(var(--muted-foreground))",
                 }}
                 tickLine={false}
-                axisLine={{ stroke: isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0" }}
+                axisLine={{ stroke: "hsl(var(--border))" }}
               />
 
               <YAxis
@@ -168,7 +160,7 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
                 domain={[0, 42000]}
                 tick={{
                   fontSize: 10,
-                  fill: isDark ? "#94A3B8" : "#5B6E84",
+                  fill: "hsl(var(--muted-foreground))",
                 }}
                 tickFormatter={(val) => `R$ ${(val / 1000).toFixed(0)}k`}
                 tickLine={false}
@@ -186,17 +178,17 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
               {/* Linhas de Referência dos Quadrantes Estratégicos */}
               <ReferenceLine
                 x={50}
-                stroke={isDark ? "rgba(56, 189, 248, 0.3)" : "rgba(0, 119, 200, 0.3)"}
+                stroke="hsl(var(--primary) / 0.3)"
                 strokeDasharray="4 4"
               />
               <ReferenceLine
                 y={15000}
-                stroke={isDark ? "rgba(56, 189, 248, 0.3)" : "rgba(0, 119, 200, 0.3)"}
+                stroke="hsl(var(--primary) / 0.3)"
                 strokeDasharray="4 4"
               />
 
               <Tooltip
-                cursor={{ strokeDasharray: "3 3", stroke: isDark ? "#38BDF8" : "#0077C8" }}
+                cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--primary))" }}
                 content={({ active, payload }) => {
                   if (!active || !payload || !payload.length) return null;
                   const item = payload[0].payload as PersonaData & {
@@ -205,12 +197,12 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
                   };
 
                   return (
-                    <div className="rounded-xl border border-border/80 dark:border-white/15 bg-white/95 dark:bg-[#071120]/95 backdrop-blur-xl p-3.5 shadow-xl text-xs space-y-2 min-w-[220px]">
-                      <div className="flex items-center justify-between border-b border-border dark:border-white/10 pb-1.5">
-                        <span className="font-bold text-[#003B7A] dark:text-sky-300 text-sm">
+                    <div className="rounded-xl border border-border/80 bg-popover/95 backdrop-blur-xl p-3.5 shadow-xl text-xs space-y-2 min-w-[220px]">
+                      <div className="flex items-center justify-between border-b border-border pb-1.5">
+                        <span className="font-bold text-foreground text-sm">
                           {item.persona}
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-azul-action dark:text-sky-400 font-semibold">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
                           Cluster Gold
                         </span>
                       </div>
@@ -237,7 +229,7 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
                           </span>
                         </div>
 
-                        <div className="flex justify-between items-center pt-1 border-t border-border/50 dark:border-white/5">
+                        <div className="flex justify-between items-center pt-1 border-t border-border/50">
                           <span className="text-muted-foreground">Risco de Evasão:</span>
                           <span className="font-bold text-amber-600 dark:text-amber-400">
                             {formatPercent(item.risco_evasao_medio)}
@@ -270,7 +262,7 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
       </div>
 
       {/* Legenda dos 4 Clusters */}
-      <div className="px-6 py-3 bg-muted/40 dark:bg-white/[0.02] border-t border-border/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="px-6 py-3 bg-muted/40 border-t border-border/60 flex flex-wrap items-center justify-between gap-3 text-xs">
         {[
           { name: "Gestor Corporativo", conf: getPersonaColor("Corporativo", isDark) },
           { name: "Viajante Solo Premium", conf: getPersonaColor("Solo", isDark) },

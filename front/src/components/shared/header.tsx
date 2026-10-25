@@ -71,13 +71,13 @@ export function Header({
   return (
     <header
       className={cn(
-        "fixed top-0 right-0 left-0 z-30 flex flex-col border-b border-border/80 dark:border-white/10",
-        "bg-white/90 dark:bg-[#071120]/90 backdrop-blur-xl shadow-xs transition-all duration-300 ease-in-out",
+        "fixed top-0 right-0 left-0 z-30 flex flex-col border-b border-border/80",
+        "bg-card/90 backdrop-blur-xl shadow-xs transition-all duration-300 ease-in-out",
         isCollapsed ? "lg:left-20" : "lg:left-72"
       )}
     >
       {/* Feixe de Luz Superior em Gradiente (Subtle Highlight Beam - Enterprise Pattern) */}
-      <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C8]/40 dark:via-sky-400/80 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary/30 to-transparent pointer-events-none" />
 
       {/* Header aumentado para 80px (h-20) com espaçamento executivo */}
       <div className="flex h-20 items-center justify-between px-4 sm:px-8 gap-4">
@@ -87,11 +87,11 @@ export function Header({
           <button
             type="button"
             onClick={onToggleSidebar || onOpenMobileMenu}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-foreground hover:text-azul-action dark:hover:text-sky-400 hover:bg-slate-100/80 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-foreground hover:text-primary hover:bg-muted transition-colors cursor-pointer shrink-0"
             aria-label={isCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
             title={isCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
           >
-            <Menu className="h-5 w-5 text-azul-action dark:text-sky-400 transition-transform duration-200" />
+            <Menu className="h-5 w-5 text-primary transition-transform duration-200" />
           </button>
 
           {/* Breadcrumb e Título da Página (sem o ícone prévio do começo) */}
@@ -99,7 +99,7 @@ export function Header({
             <div className="flex items-center gap-1.5 text-xs">
               <Link
                 href="/dashboard"
-                className="font-medium text-slate-500 dark:text-slate-400 hover:text-azul-action dark:hover:text-sky-300 transition-colors"
+                className="font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 {context.category}
               </Link>

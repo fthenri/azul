@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import Link from "next/link";
@@ -37,13 +37,13 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
     if (clv >= 25000) {
       return {
         label: "Tier Diamante (Alto Valor)",
-        badgeClass: "bg-sky-500/15 text-[#003B7A] dark:text-sky-300 border-sky-500/30",
+        badgeClass: "bg-primary/10 text-primary border-primary/20",
       };
     }
     if (clv >= 7000) {
       return {
         label: "Tier Safira (Médio-Alto)",
-        badgeClass: "bg-blue-500/10 text-[#0077C8] dark:text-blue-300 border-blue-500/30",
+        badgeClass: "bg-secondary text-secondary-foreground border-border",
       };
     }
     return {
@@ -78,16 +78,16 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
   };
 
   return (
-    <div className="group relative rounded-2xl border border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
+    <div className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
       {/* Feixe Superior Luminous Edge Highlight */}
-      <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C8]/50 dark:via-sky-400/80 to-transparent" />
+      <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
       {/* Header da Tabela */}
       <div className="p-6 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
           <div>
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-sky-500/10 dark:bg-sky-500/15 text-[#0077C8] dark:text-sky-400 border border-sky-500/20">
+              <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                 <Users className="h-4 w-4" />
               </span>
               <h3 className="text-base font-bold text-foreground">
@@ -99,7 +99,7 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
             </p>
           </div>
 
-          <Badge className="w-fit bg-[#EAF4FC] dark:bg-sky-950/60 text-[#003B7A] dark:text-sky-300 border border-[#0077C8]/25 dark:border-sky-500/30 text-[11px] font-semibold py-1 px-3">
+          <Badge className="w-fit bg-secondary text-secondary-foreground border border-primary/20 text-[11px] font-semibold py-1 px-3">
             {data.length} Clusters Ativos
           </Badge>
         </div>
@@ -107,9 +107,9 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
 
       {/* Conteúdo da Tabela */}
       <div className="px-6 pb-6 pt-0">
-        <div className="overflow-x-auto rounded-xl border border-border/70 dark:border-white/10">
+        <div className="overflow-x-auto rounded-xl border border-border/70">
           <table className="w-full text-left text-xs">
-            <thead className="bg-secondary/60 dark:bg-white/[0.03] text-secondary-foreground uppercase text-[10px] font-bold tracking-wider border-b border-border/70 dark:border-white/10">
+            <thead className="bg-secondary/60 text-secondary-foreground uppercase text-[10px] font-bold tracking-wider border-b border-border/70">
               <tr>
                 <th className="py-3 px-4">Persona & Perfil</th>
                 <th className="py-3 px-4">Faixa de Valor (CLV)</th>
@@ -150,7 +150,7 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
                     {/* Faixa de Valor */}
                     <td className="py-3.5 px-4">
                       <div className="space-y-1">
-                        <div className="font-black text-sm text-[#003B7A] dark:text-sky-300">
+                        <div className="font-black text-sm text-foreground">
                           {formatCurrency(item.clv_medio)}
                         </div>
                         <span
@@ -204,7 +204,7 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
                     {/* Diretriz Estratégica */}
                     <td className="py-3.5 px-4">
                       {item.clv_medio >= 20000 ? (
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0077C8] dark:text-sky-400">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
                           <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                           <span>Blindagem Imediata: Upgrades & RAG Dedicado</span>
                         </div>

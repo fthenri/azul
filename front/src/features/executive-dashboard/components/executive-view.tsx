@@ -43,16 +43,16 @@ export function ExecutiveView() {
       {/* ─────────────────────────────────────────────────────────────
           ELEMENTO ATMOSFÉRICO DE PROFUNDIDADE (AERO GLOW SUTIL)
          ───────────────────────────────────────────────────────────── */}
-      <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-full max-w-5xl h-64 bg-sky-500/5 dark:bg-sky-500/10 blur-[120px] pointer-events-none -z-10 rounded-full" />
+      <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-full max-w-5xl h-64 bg-sky-500/5 dark:bg-white/[0.02] blur-[120px] pointer-events-none -z-10 rounded-full" />
 
       {/* ─────────────────────────────────────────────────────────────
           HEADER DA TELA EXECUTIVA
          ───────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between pb-2 border-b border-border/60 dark:border-white/10">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between pb-2 border-b border-border/60">
         <div>
           {/* Micro-badge de Ecossistema */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/25 text-azul-action dark:text-sky-300 text-[11px] font-semibold tracking-wide shadow-xs mb-2">
-            <Sparkles className="h-3 w-3 text-azul-action dark:text-sky-400" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-semibold tracking-wide shadow-xs mb-2">
+            <Sparkles className="h-3 w-3 text-primary" />
             <span>Ecossistema Azul Fidelidade • Cockpit B2B</span>
           </div>
 
@@ -60,7 +60,7 @@ export function ExecutiveView() {
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
               Painel de Valor & Retenção
             </h1>
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md font-semibold text-[11px] bg-[#EAF4FC] dark:bg-sky-950/70 text-[#003B7A] dark:text-sky-300 border border-[#0077C8]/25 dark:border-sky-500/30">
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md font-semibold text-[11px] bg-secondary text-secondary-foreground border border-primary/25">
               Visão Executiva
             </span>
           </div>
@@ -73,7 +73,7 @@ export function ExecutiveView() {
         {/* Controles de Atualização & Status do Motor */}
         <div className="flex items-center gap-2.5 flex-wrap">
           {/* Status do Motor DuckDB */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card/80 dark:bg-[#071120]/80 border border-border/80 dark:border-white/10 backdrop-blur-md text-xs shadow-xs">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card/80 border border-border/80 backdrop-blur-md text-xs shadow-xs">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -89,9 +89,9 @@ export function ExecutiveView() {
             size="sm"
             onClick={refetchAll}
             disabled={isLoading}
-            className="h-9 px-3.5 rounded-xl border-border/80 dark:border-white/15 bg-card/80 dark:bg-[#071120]/80 hover:bg-muted dark:hover:bg-white/10 text-foreground font-semibold text-xs shadow-xs transition-all duration-200 flex items-center gap-2 cursor-pointer"
+            className="h-9 px-3.5 rounded-xl border-border/80 bg-card/80 hover:bg-muted text-foreground font-semibold text-xs shadow-xs transition-all duration-200 flex items-center gap-2 cursor-pointer"
           >
-            <RefreshCw className={`h-3.5 w-3.5 text-azul-action dark:text-sky-400 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 text-primary ${isLoading ? "animate-spin" : ""}`} />
             <span>Atualizar Dados</span>
           </Button>
         </div>
@@ -168,9 +168,9 @@ export function ExecutiveView() {
       {/* ─────────────────────────────────────────────────────────────
           FOOTER COMPLIANCE & INTEGRIDADE DO DATA LAKE
          ───────────────────────────────────────────────────────────── */}
-      <div className="pt-4 pb-2 border-t border-border/60 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+      <div className="pt-4 pb-2 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
-          <Database className="h-4 w-4 text-azul-action dark:text-sky-400" />
+          <Database className="h-4 w-4 text-primary" />
           <span>
             Arquitetura Medallion: Camadas Silver e Gold processadas via DuckDB In-Process
           </span>
@@ -178,7 +178,7 @@ export function ExecutiveView() {
         <div className="flex items-center gap-3 text-[11px]">
           <span>Políticas de Retenção Ativas</span>
           <span>•</span>
-          <span className="font-mono text-azul-action dark:text-sky-400">Azul v2.4 Enterprise</span>
+          <span className="font-mono text-primary">Azul v2.4 Enterprise</span>
         </div>
       </div>
     </div>

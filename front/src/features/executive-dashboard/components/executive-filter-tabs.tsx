@@ -93,14 +93,14 @@ export function ExecutiveFilterTabs({
         ref={containerRef}
         className={cn(
           "relative flex items-center p-1.5 rounded-2xl overflow-x-auto scrollbar-none",
-          "border border-slate-200/90 dark:border-white/10",
-          "bg-slate-100/80 dark:bg-[#071322]/90 backdrop-blur-xl shadow-none"
+          "border border-border/80",
+          "bg-muted/60 backdrop-blur-xl shadow-none"
         )}
       >
         {/* ─────────────────────────────────────────────────────────────
             TRILHO CONTÍNUO QUE INTERLIGA TODOS OS BOTÕES (SUTIL E SEM GLOW)
            ───────────────────────────────────────────────────────────── */}
-        <div className="absolute inset-x-5 top-1/2 -translate-y-1/2 h-[1px] bg-slate-200 dark:bg-white/10 pointer-events-none" />
+        <div className="absolute inset-x-5 top-1/2 -translate-y-1/2 h-[1px] bg-border/60 pointer-events-none" />
 
         {/* ─────────────────────────────────────────────────────────────
             PÍLULA DESLIZANTE ATIVA (DESLIZA ENTRE OS BOTÕES SEM GLOW)
@@ -108,9 +108,8 @@ export function ExecutiveFilterTabs({
         <div
           className={cn(
             "absolute top-1.5 bottom-1.5 rounded-xl pointer-events-none z-10",
-            // Estilo visual limpo, nítido e sem sombras neon
-            "bg-white dark:bg-[#0c223c]",
-            "border border-slate-200/90 dark:border-sky-500/30",
+            "bg-card",
+            "border border-border",
             "shadow-xs"
           )}
           style={{
@@ -134,7 +133,7 @@ export function ExecutiveFilterTabs({
               <React.Fragment key={tab.id}>
                 {/* Nó conector sutil no trilho entre os botões */}
                 {idx > 0 && (
-                  <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-white/15 shrink-0 -mx-0.5 pointer-events-none z-0" />
+                  <span className="h-1 w-1 rounded-full bg-border shrink-0 -mx-0.5 pointer-events-none z-0" />
                 )}
 
                 <button
@@ -146,18 +145,18 @@ export function ExecutiveFilterTabs({
                   className={cn(
                     "relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap",
                     "transition-colors duration-200 cursor-pointer select-none outline-none",
-                    "focus-visible:ring-1 focus-visible:ring-sky-400",
+                    "focus-visible:ring-1 focus-visible:ring-primary",
                     isActive
-                      ? "text-[#003B7A] dark:text-white font-bold"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/[0.04]"
+                      ? "text-foreground font-bold"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/80"
                   )}
                 >
                   <Icon
                     className={cn(
                       "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
                       isActive
-                        ? "text-[#0077C8] dark:text-sky-400"
-                        : "text-slate-400 dark:text-slate-400"
+                        ? "text-primary"
+                        : "text-muted-foreground"
                     )}
                   />
 
@@ -168,8 +167,8 @@ export function ExecutiveFilterTabs({
                       className={cn(
                         "text-[9px] font-bold px-1.5 py-0.2 rounded-full border transition-colors leading-tight",
                         isActive
-                          ? "bg-[#0077C8]/10 text-[#003B7A] border-[#0077C8]/25 dark:bg-sky-400/15 dark:text-sky-300 dark:border-sky-400/30"
-                          : "bg-slate-200/60 text-slate-500 border-slate-300/60 dark:bg-white/[0.04] dark:text-slate-400 dark:border-white/10"
+                          ? "bg-primary/10 text-primary border-primary/20"
+                          : "bg-muted text-muted-foreground border-border/60"
                       )}
                     >
                       {tab.badge}

@@ -101,7 +101,7 @@ export function ShapChart({
             {decisaoId && (
               <Badge
                 variant="outline"
-                className="font-mono text-xs w-fit bg-[#EAF4FC] dark:bg-[#003B7A]/30 text-[#003B7A] dark:text-[#38BDF8] border-[#0077C8]/40"
+                className="font-mono text-xs w-fit bg-secondary text-secondary-foreground border-border"
               >
                 {decisaoId.startsWith("dec_") ? `Decisão: ${decisaoId}` : `Alvo: ${decisaoId}`}
               </Badge>
@@ -122,11 +122,11 @@ export function ShapChart({
                 {formatPercent(data.risco_base)}
               </span>
             </div>
-            <div className="rounded-lg bg-[#EAF4FC] dark:bg-[#003B7A]/20 p-2.5 border border-[#0077C8]/30">
-              <span className="text-[#003B7A] dark:text-[#38BDF8] block text-[10px] uppercase font-bold">
+            <div className="rounded-lg bg-primary/10 p-2.5 border border-primary/20">
+              <span className="text-primary block text-[10px] uppercase font-bold">
                 Risco Ponderado Final
               </span>
-              <span className="text-base font-bold text-[#0077C8] dark:text-[#38BDF8]">
+              <span className="text-base font-bold text-primary">
                 {formatPercent(riscoFinalEstimado)}
               </span>
             </div>
@@ -135,7 +135,7 @@ export function ShapChart({
           {hideHeader && decisaoId && (
             <Badge
               variant="outline"
-              className="font-mono text-xs self-start sm:self-center bg-[#EAF4FC] dark:bg-[#003B7A]/30 text-[#003B7A] dark:text-[#38BDF8] border-[#0077C8]/40"
+              className="font-mono text-xs self-start sm:self-center bg-secondary text-secondary-foreground border-border"
             >
               {decisaoId.startsWith("dec_") ? `Decisão: ${decisaoId}` : `Alvo: ${decisaoId}`}
             </Badge>
@@ -166,7 +166,7 @@ export function ShapChart({
                 className="text-foreground"
                 tickLine={false}
               />
-              <ReferenceLine x={0} stroke="#94a3b8" strokeWidth={1.5} />
+              <ReferenceLine x={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
               <Tooltip
                 content={({ active, payload }) => {
                   if (!active || !payload || !payload.length) return null;
@@ -177,7 +177,7 @@ export function ShapChart({
                       <p className="font-bold text-foreground">{item.variavel}</p>
                       <p
                         className={`font-semibold ${
-                          isAumenta ? "text-[#C43D4B]" : "text-[#16805D]"
+                          isAumenta ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
                         }`}
                       >
                         Impacto no Risco: {item.impacto_raw > 0 ? "+" : ""}
@@ -196,7 +196,7 @@ export function ShapChart({
                 {chartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={entry.impacto_raw > 0 ? "#C43D4B" : "#16805D"}
+                    fill={entry.impacto_raw > 0 ? "hsl(var(--destructive))" : "hsl(var(--azul-success))"}
                   />
                 ))}
               </Bar>
@@ -206,11 +206,11 @@ export function ShapChart({
 
         <div className="flex flex-wrap items-center justify-center gap-6 pt-2 border-t border-border text-[11px] text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-[#C43D4B]" />
+            <span className="h-3 w-3 rounded-sm bg-rose-500" />
             <span>Eleva o Risco de Churn (Fator de Atrito)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-[#16805D]" />
+            <span className="h-3 w-3 rounded-sm bg-emerald-500" />
             <span>Reduz o Risco de Churn (Fator Protetor)</span>
           </div>
         </div>

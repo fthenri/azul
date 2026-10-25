@@ -139,22 +139,22 @@ export function CrewView() {
   return (
     <div className="space-y-6">
       {/* Flight Control & Context Header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between p-5 rounded-2xl bg-gradient-to-r from-[#002855] via-[#003B7A] to-[#0077C8] text-white shadow-md">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between p-5 rounded-2xl bg-card border border-border shadow-xs text-foreground">
         <div className="flex items-start sm:items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-white/10 backdrop-blur-xs border border-white/20 flex items-center justify-center shrink-0">
-            <Plane className="h-6 w-6 text-[#38BDF8]" />
+          <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+            <Plane className="h-6 w-6 text-primary" />
           </div>
 
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-xs uppercase tracking-widest text-[#38BDF8] font-bold">
+              <span className="font-mono text-xs uppercase tracking-widest text-primary font-bold">
                 Voo AD 4231 • Ao Vivo
               </span>
-              <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 text-[10px] font-semibold">
+              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] font-semibold">
                 Cruzeiro • FL360
               </Badge>
               {metadata && (
-                <Badge className="bg-white/15 text-white border-white/25 text-[10px] font-mono">
+                <Badge variant="outline" className="text-[10px] font-mono">
                   {metadata.codigo}
                 </Badge>
               )}
@@ -162,14 +162,14 @@ export function CrewView() {
             <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-0.5">
               VCP (Campinas) ➔ REC (Recife)
             </h1>
-            <p className="text-xs text-white/75 flex items-center gap-2 mt-1">
+            <p className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
               <span>
                 {metadata
                   ? `${metadata.modelo} (${metadata.fileiras} Fileiras • ${metadata.total_assentos} Passageiros • Layout ${metadata.layout.length === 6 ? "3x3" : "2x2"})`
                   : "Carregando configuração da aeronave..."}
               </span>
               <span>•</span>
-              <span className="flex items-center gap-1 text-[#38BDF8]">
+              <span className="flex items-center gap-1 text-primary">
                 <Sparkles className="h-3 w-3" />
                 Azul CrewApp • Copiloto de Cabine
               </span>
@@ -183,12 +183,12 @@ export function CrewView() {
             size="sm"
             onClick={handleDispatchFlight}
             className={cn(
-              "font-bold text-xs gap-1.5 h-9 shadow-md transition-all cursor-pointer border",
+              "font-bold text-xs gap-1.5 h-9 shadow-xs transition-all cursor-pointer border",
               isDispatchedSuccess
-                ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400 ring-2 ring-emerald-400/40"
+                ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500"
                 : isDispatched
-                ? "bg-emerald-600/90 hover:bg-emerald-500 text-white border-emerald-400"
-                : "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400 ring-2 ring-emerald-400/40 animate-pulse"
+                ? "bg-emerald-600/90 hover:bg-emerald-500 text-white border-emerald-500"
+                : "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500"
             )}
           >
             {isDispatchedSuccess ? (
@@ -214,9 +214,9 @@ export function CrewView() {
             <Button
               variant="outline"
               size="sm"
-              className="border-white/20 bg-[#38BDF8]/20 hover:bg-[#38BDF8]/30 text-white text-xs gap-1.5 h-9 font-semibold"
+              className="border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary text-xs gap-1.5 h-9 font-semibold"
             >
-              <Smartphone className="h-3.5 w-3.5 text-[#38BDF8]" />
+              <Smartphone className="h-3.5 w-3.5 text-primary" />
               <span>Abrir App da Comissária (/crew)</span>
             </Button>
           </Link>
@@ -225,7 +225,7 @@ export function CrewView() {
             size="sm"
             onClick={() => refetchFlight()}
             disabled={isLoadingFlight}
-            className="border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs gap-1.5 h-9"
+            className="border-border bg-card hover:bg-muted text-foreground text-xs gap-1.5 h-9"
           >
             <RefreshCw className={cn("h-3.5 w-3.5", isLoadingFlight && "animate-spin")} />
             <span>Novo Sorteio / Atualizar</span>
@@ -240,7 +240,7 @@ export function CrewView() {
             <span className="text-xs font-semibold uppercase tracking-wider">
               Total a Bordo
             </span>
-            <Users className="h-4 w-4 text-[#0077C8] dark:text-[#38BDF8]" />
+            <Users className="h-4 w-4 text-primary" />
           </div>
           <div className="text-2xl font-black text-foreground">
             {totalAssentos}
@@ -299,7 +299,7 @@ export function CrewView() {
       </div>
 
       {/* Barra de Filtro Rápido e Legenda de Cores */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-card border border-border">
         {/* Filtros */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs font-bold text-muted-foreground mr-1">
@@ -309,7 +309,7 @@ export function CrewView() {
             variant={filter === "todos" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter("todos")}
-            className={cn("h-7 text-xs px-2.5", filter === "todos" && "bg-[#0077C8]")}
+            className={cn("h-7 text-xs px-2.5", filter === "todos" && "bg-primary text-primary-foreground")}
           >
             Todos ({totalAssentos})
           </Button>
@@ -317,7 +317,7 @@ export function CrewView() {
             variant={filter === "atencao" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter("atencao")}
-            className={cn("h-7 text-xs px-2.5 gap-1", filter === "atencao" && "bg-[#002855] text-white")}
+            className={cn("h-7 text-xs px-2.5 gap-1", filter === "atencao" && "bg-primary text-primary-foreground")}
           >
             <Sparkles className="h-3 w-3 text-amber-400" />
             <span>Prioridades ({totalCriticos + totalVips})</span>
@@ -353,7 +353,7 @@ export function CrewView() {
             <span>VIP (Top Pareto)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-slate-300 dark:bg-slate-700" />
+            <span className="h-3 w-3 rounded-sm bg-muted-foreground/30" />
             <span>Normal</span>
           </div>
         </div>
@@ -375,8 +375,8 @@ export function CrewView() {
         {/* Coluna do Mapa de Assentos da Aeronave */}
         <div className="lg:col-span-7 flex flex-col items-center">
           {isLoadingFlight ? (
-            <div className="w-full max-w-xl h-[600px] rounded-3xl border border-dashed border-border flex flex-col items-center justify-center p-8 text-center bg-slate-50/50 dark:bg-slate-900/30 animate-pulse">
-              <Compass className="h-8 w-8 text-[#0077C8] animate-spin mb-3" />
+            <div className="w-full max-w-xl h-[600px] rounded-3xl border border-dashed border-border flex flex-col items-center justify-center p-8 text-center bg-card/50 animate-pulse">
+              <Compass className="h-8 w-8 text-primary animate-spin mb-3" />
               <p className="text-sm font-semibold text-foreground">
                 Sorteando passageiros da Camada Gold e alocando na cabine...
               </p>

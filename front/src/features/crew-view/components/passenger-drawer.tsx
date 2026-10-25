@@ -159,7 +159,7 @@ export function PassengerDrawer({
               <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                 <span className="font-medium text-foreground">{cliente.id_cliente}</span>
                 <span>•</span>
-                <span>Tier: <strong className="text-[#0077C8] dark:text-[#38BDF8]">{cliente.tier_fidelidade}</strong></span>
+                <span>Tier: <strong className="text-primary">{cliente.tier_fidelidade}</strong></span>
                 <span>•</span>
                 <span>{cliente.persona}</span>
               </p>
@@ -238,7 +238,7 @@ export function PassengerDrawer({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#0077C8] dark:text-[#38BDF8]" />
+              <Sparkles className="h-4 w-4 text-primary" />
               <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
                 Recomendação de Bordo (Árbitro & Uplift)
               </h4>
@@ -258,9 +258,9 @@ export function PassengerDrawer({
 
           {/* Estado de Carregamento */}
           {isSimulating && (
-            <div className="p-6 rounded-2xl border border-sky-200 dark:border-sky-900/50 bg-sky-50/50 dark:bg-sky-950/20 text-center space-y-3 animate-pulse">
+            <div className="p-6 rounded-2xl border border-primary/20 bg-primary/5 text-center space-y-3 animate-pulse">
               <div className="flex justify-center">
-                <div className="h-8 w-8 rounded-full border-2 border-[#0077C8] border-t-transparent animate-spin" />
+                <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
               </div>
               <p className="text-xs font-semibold text-foreground">
                 Árbitro de Bordo calculando Uplift & gerando instrução tática...
@@ -289,10 +289,10 @@ export function PassengerDrawer({
               {(() => {
                 const IconAcao = getActionIcon(simulationResult.acao_sugerida);
                 return (
-                  <div className="p-4 rounded-2xl border border-[#0077C8]/40 dark:border-[#38BDF8]/30 bg-gradient-to-br from-blue-50/80 to-white dark:from-slate-900 dark:to-[#071324] shadow-xs space-y-3">
+                  <div className="p-4 rounded-2xl border border-primary/30 bg-card shadow-xs space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-[#0077C8] text-white flex items-center justify-center">
+                        <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
                           <IconAcao className="h-4 w-4" />
                         </div>
                         <div>
@@ -443,7 +443,7 @@ export function PassengerDrawer({
       </CardContent>
 
       {/* Footer do Dossiê: Botões de Ação */}
-      <div className="p-4 border-t border-border bg-slate-50/70 dark:bg-slate-900/60 shrink-0 flex items-center justify-between gap-3">
+      <div className="p-4 border-t border-border bg-card shrink-0 flex items-center justify-between gap-3">
         <Button
           variant="outline"
           size="sm"
@@ -460,7 +460,7 @@ export function PassengerDrawer({
             "text-xs gap-1.5 font-bold transition-colors cursor-pointer",
             isAttended
               ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-              : "bg-[#0077C8] hover:bg-[#005a99] text-white"
+              : "bg-primary hover:bg-primary/90 text-primary-foreground"
           )}
         >
           {isAttended ? (

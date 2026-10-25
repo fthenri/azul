@@ -65,7 +65,7 @@ export function DecisionDetailDrawer({
                 <span className="text-muted-foreground block text-[10px] uppercase font-bold">
                   Cliente Alvo
                 </span>
-                <span className="font-mono font-bold text-azul-navy dark:text-[#38BDF8] break-all">
+                <span className="font-mono font-bold text-primary break-all">
                   {decisao.cliente_id}
                 </span>
               </div>
@@ -107,9 +107,9 @@ export function DecisionDetailDrawer({
 
             {/* Bloqueio se houver */}
             {isBloqueada && (
-              <div className="rounded-lg border border-[#B96B08]/30 bg-[#B96B08]/10 p-3 text-[#B96B08]">
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-amber-700 dark:text-amber-300">
                 <div className="flex items-center gap-1.5 font-bold text-xs mb-1">
-                  <AlertTriangle className="h-4 w-4 text-[#B96B08]" />
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   <span>Justificativa do Bloqueio:</span>
                 </div>
                 <p className="text-xs font-medium">{decisao.motivo_bloqueio}</p>
@@ -122,13 +122,13 @@ export function DecisionDetailDrawer({
                 Linhagem & Versões de Modelos (MLOps)
               </span>
               <div className="flex flex-wrap gap-2 font-mono text-[11px]">
-                <span className="rounded bg-[#EAF4FC] dark:bg-[#003B7A]/30 px-2.5 py-1 text-[#003B7A] dark:text-[#38BDF8] border border-[#0077C8]/20 font-semibold">
+                <span className="rounded bg-secondary text-secondary-foreground px-2.5 py-1 border border-border font-semibold">
                   CLV: <strong>{decisao.versao_modelos?.clv || "v1.2"}</strong>
                 </span>
-                <span className="rounded bg-[#EAF4FC] dark:bg-[#003B7A]/30 px-2.5 py-1 text-[#003B7A] dark:text-[#38BDF8] border border-[#0077C8]/20 font-semibold">
+                <span className="rounded bg-secondary text-secondary-foreground px-2.5 py-1 border border-border font-semibold">
                   Churn: <strong>{decisao.versao_modelos?.churn || "v2.0"}</strong>
                 </span>
-                <span className="rounded bg-[#EAF4FC] dark:bg-[#003B7A]/30 px-2.5 py-1 text-[#003B7A] dark:text-[#38BDF8] border border-[#0077C8]/20 font-semibold">
+                <span className="rounded bg-secondary text-secondary-foreground px-2.5 py-1 border border-border font-semibold">
                   LLM: <strong>{decisao.versao_modelos?.llm || "gpt-4o-mini-rag"}</strong>
                 </span>
               </div>

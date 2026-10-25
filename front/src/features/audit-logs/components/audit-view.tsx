@@ -25,14 +25,14 @@ export function AuditView() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-[#003B7A] sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
               Logs & Auditoria
             </h1>
-            <span className="rounded bg-[#EAF4FC] text-[#003B7A] border border-[#0077C8]/20 text-[11px] font-bold px-2.5 py-0.5">
+            <span className="rounded bg-secondary text-secondary-foreground border border-primary/20 text-[11px] font-bold px-2.5 py-0.5">
               Auditoria Regulatória
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-[#5B6E84] mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Rastreabilidade completa de decisões executadas, bloqueios do árbitro e conformidade operacional
           </p>
         </div>
@@ -43,7 +43,7 @@ export function AuditView() {
             size="sm"
             onClick={() => refetchDecisoes()}
             disabled={isLoadingDecisoes}
-            className="flex items-center gap-2 border-[#E2E8F0] text-[#003B7A] hover:bg-[#EAF4FC]"
+            className="flex items-center gap-2 border-border text-foreground hover:bg-muted"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isLoadingDecisoes ? "animate-spin" : ""}`} />
             <span>Atualizar Logs</span>

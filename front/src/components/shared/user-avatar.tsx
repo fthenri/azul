@@ -62,7 +62,7 @@ export function UserAvatar({
       <AvatarFallback
         className={cn(
           "rounded-full font-bold tracking-wide transition-colors",
-          "bg-sky-500/15 text-[#003B7A] dark:bg-sky-500/20 dark:text-sky-300"
+          "bg-primary/10 text-primary border border-primary/20"
         )}
       >
         {initials}

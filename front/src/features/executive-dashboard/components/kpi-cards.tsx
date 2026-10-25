@@ -78,9 +78,8 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
       type: "common",
       description: "Receita adicional de ancillaries, upgrades e fidelidade",
       icon: TrendingUp,
-      iconColor: "text-[#0077C8] dark:text-sky-400",
-      iconBg:
-        "bg-sky-500/10 dark:bg-sky-500/15 border-sky-500/20 dark:border-sky-500/30",
+      iconColor: "text-primary",
+      iconBg: "bg-primary/10 border-primary/20",
       tooltip:
         "Receita incremental medida entre o valor monetário expandido e a base transacional histórica de passageiros de alto valor.",
       metricPill: "Ancillaries + Upgrades",
@@ -105,11 +104,10 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
       badgeText: "Alta Eficiência",
       description: "Retorno líquido alcançado para cada R$ 1,00 investido",
       icon: Award,
-      iconColor: "text-white",
-      iconBg:
-        "bg-gradient-to-r from-[#00A3FF] to-[#0077C8] shadow-[0_2px_12px_rgba(0,163,255,0.4)]",
-      highlightBeam: "via-sky-400 dark:via-sky-300",
-      accentGlow: "from-[#00A3FF]/20 to-transparent",
+      iconColor: "text-primary-foreground",
+      iconBg: "bg-primary shadow-xs",
+      highlightBeam: "via-primary",
+      accentGlow: "from-primary/20 to-transparent",
       tooltip:
         "Fórmula Matemática Oficial: (Valor Protegido + Valor Gerado) ÷ Custo Total. Comprova o multiplicador de retorno sobre investimento do motor analítico.",
       metricPill: "Supera CAC em 18x",
@@ -127,8 +125,8 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
             key={kpi.title}
             className={`group relative rounded-2xl border transition-all duration-300 overflow-hidden ${
               isSpecial
-                ? "border-sky-400/40 dark:border-sky-400/40 bg-gradient-to-b from-[#003B7A]/5 via-white to-white dark:from-[#071324]/90 dark:via-[#071120]/80 dark:to-[#040915]/90 shadow-[0_4px_22px_rgba(0,119,200,0.12)] dark:shadow-[0_10px_35px_rgba(0,163,255,0.15)] hover:shadow-[0_8px_32px_rgba(0,163,255,0.25)] ring-1 ring-sky-400/20"
-                : "border-border/70 dark:border-white/10 bg-white/70 dark:bg-[#071120]/70 backdrop-blur-xl shadow-xs hover:border-slate-300 dark:hover:border-white/20 hover:shadow-sm"
+                ? "border-emerald-500/40 bg-gradient-to-br from-card via-card to-emerald-500/5 shadow-md hover:border-emerald-500/60"
+                : "border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:border-primary/30 hover:shadow-sm"
             }`}
           >
             {/* Faixa de Luz Superior em Gradiente: APENAS para KPIs especiais (comuns não levam) */}
@@ -173,7 +171,7 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
                   <span
                     className={`text-2xl sm:text-[27px] font-black tracking-tight ${
                       isSpecial
-                        ? "text-[#003B7A] dark:text-sky-300 drop-shadow-[0_2px_12px_rgba(56,189,248,0.25)]"
+                        ? "text-primary"
                         : "text-foreground"
                     }`}
                   >
@@ -181,7 +179,7 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
                   </span>
 
                   {isSpecial && kpi.badgeText && (
-                    <Badge className="bg-gradient-to-r from-[#00A3FF] to-[#0077C8] hover:from-[#38BDF8] hover:to-[#0284C7] text-white border-0 text-[10px] font-bold px-2 py-0.5 shadow-sm inline-flex items-center gap-1">
+                    <Badge className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 shadow-xs inline-flex items-center gap-1">
                       <Sparkles className="h-2.5 w-2.5" />
                       <span>{kpi.badgeText}</span>
                     </Badge>
@@ -194,12 +192,12 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
               </div>
 
               {/* Rodapé / Micro-pill de Indicador */}
-              <div className="pt-2 border-t border-border/60 dark:border-white/5 flex items-center justify-between text-[11px]">
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-muted/60 dark:bg-white/[0.04] px-2 py-0.5 rounded-md border border-border/40 dark:border-white/10">
+              <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px]">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md border border-border/40">
                   {kpi.metricPill}
                 </span>
 
-                <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-azul-action dark:text-sky-400 group-hover:translate-x-0.5 transition-transform">
+                <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-primary group-hover:translate-x-0.5 transition-transform">
                   <span>Auditar</span>
                   <ArrowUpRight className="h-3 w-3" />
                 </span>

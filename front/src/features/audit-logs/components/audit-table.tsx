@@ -70,7 +70,7 @@ export function AuditTable({
         accessorKey: "decisao_id",
         header: "ID Decisão",
         cell: ({ row }) => (
-          <span className="font-mono text-xs font-bold text-[#003B7A]">
+          <span className="font-mono text-xs font-bold text-primary">
             {row.original.decisao_id}
           </span>
         ),
@@ -79,7 +79,7 @@ export function AuditTable({
         accessorKey: "cliente_id",
         header: "Cliente",
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-[#5B6E84]">
+          <span className="font-mono text-xs text-muted-foreground">
             {row.original.cliente_id}
           </span>
         ),
@@ -89,14 +89,14 @@ export function AuditTable({
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 font-bold uppercase text-[11px] text-[#003B7A] hover:text-[#0077C8]"
+            className="flex items-center gap-1 font-bold uppercase text-[11px] text-foreground hover:text-primary"
           >
             <span>Data / Hora</span>
             <ArrowUpDown className="h-3 w-3" />
           </button>
         ),
         cell: ({ row }) => (
-          <span className="text-xs text-[#5B6E84] whitespace-nowrap">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
             {formatDateTime(row.original.data_decisao)}
           </span>
         ),
@@ -124,11 +124,11 @@ export function AuditTable({
           const isBloqueada = !!row.original.motivo_bloqueio;
           return (
             <div className="flex flex-col">
-              <span className="font-bold text-xs text-[#243447]">
+              <span className="font-bold text-xs text-foreground">
                 {row.original.acao_executada}
               </span>
               {isBloqueada && (
-                <span className="text-[10px] text-[#B96B08] font-semibold line-clamp-1">
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold line-clamp-1">
                   {row.original.motivo_bloqueio}
                 </span>
               )}
@@ -141,14 +141,14 @@ export function AuditTable({
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 font-bold uppercase text-[11px] text-[#003B7A] hover:text-[#0077C8] ml-auto"
+            className="flex items-center gap-1 font-bold uppercase text-[11px] text-foreground hover:text-primary ml-auto"
           >
             <span>Custo Realizado</span>
             <ArrowUpDown className="h-3 w-3" />
           </button>
         ),
         cell: ({ row }) => (
-          <div className="text-right font-bold text-xs text-[#243447]">
+          <div className="text-right font-bold text-xs text-foreground">
             {formatCurrency(row.original.custo_realizado)}
           </div>
         ),
@@ -161,13 +161,13 @@ export function AuditTable({
           return (
             <div className="flex justify-center">
               {isBloqueada ? (
-                <span className="inline-flex items-center gap-1 text-[11px] text-[#B96B08] font-semibold">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#B96B08]" />
+                <span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 font-semibold">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                   <span className="hidden sm:inline">Bloqueado</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[11px] text-[#16805D] font-semibold">
-                  <CheckCircle className="h-3.5 w-3.5 shrink-0 text-[#16805D]" />
+                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <CheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                   <span className="hidden sm:inline">Executado</span>
                 </span>
               )}
@@ -186,9 +186,9 @@ export function AuditTable({
               e.stopPropagation();
               onSelectDecisao(row.original);
             }}
-            className="h-7 px-2 text-xs text-[#0077C8] hover:text-[#003B7A] hover:bg-[#EAF4FC]"
+            className="h-7 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
           >
-            <Eye className="h-3.5 w-3.5 mr-1 text-[#0077C8]" />
+            <Eye className="h-3.5 w-3.5 mr-1 text-primary" />
             <span>Detalhes</span>
           </Button>
         ),

@@ -274,8 +274,8 @@ export function CrewSeatMap({
       );
     } else if (seat.status === "vip") {
       statusStyles = cn(
-        "bg-amber-50/90 text-amber-950 border-amber-400 hover:bg-amber-100/90 dark:bg-[#002855] dark:text-amber-200 dark:border-amber-400/80 dark:hover:bg-[#003B7A] shadow-xs",
-        isSelected && "ring-2 ring-amber-400 ring-offset-2 dark:ring-offset-slate-950"
+        "bg-amber-50/90 text-amber-950 border-amber-400 hover:bg-amber-100/90 dark:bg-amber-950/40 dark:text-amber-100 dark:border-amber-500/60 dark:hover:bg-amber-900/50 shadow-xs",
+        isSelected && "ring-2 ring-amber-400 ring-offset-2 dark:ring-offset-background"
       );
       indicatorIcon = (
         <Crown className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
@@ -283,7 +283,7 @@ export function CrewSeatMap({
     } else {
       statusStyles = cn(
         "bg-slate-100/90 text-slate-700 border-slate-200 hover:bg-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700/60",
-        isSelected && "ring-2 ring-[#0077C8] ring-offset-2 dark:ring-offset-slate-950"
+        isSelected && "ring-2 ring-primary ring-offset-2 dark:ring-offset-background"
       );
       indicatorIcon = (
         <User className="h-2.5 w-2.5 text-slate-400 dark:text-slate-500 shrink-0" />
@@ -330,7 +330,7 @@ export function CrewSeatMap({
               {Math.round(seat.dados_cliente.risco_evasao * 100)}%
             </span>
           ) : isEspacoAzul ? (
-            <span className="text-[7px] text-[#0077C8] dark:text-[#38BDF8] font-bold">
+            <span className="text-[7px] text-primary font-bold">
               ESP
             </span>
           ) : null}
@@ -371,7 +371,7 @@ export function CrewSeatMap({
       {/* Fuselagem Dinâmica da Aeronave */}
       <div
         className={cn(
-          "relative w-full bg-white dark:bg-[#071324] border border-border rounded-3xl p-4 sm:p-6 shadow-sm overflow-hidden transition-all duration-200",
+          "relative w-full bg-card border border-border rounded-3xl p-4 sm:p-6 shadow-sm overflow-hidden transition-all duration-200",
           is6Seats ? "max-w-xl" : "max-w-md sm:max-w-lg"
         )}
       >
@@ -431,9 +431,9 @@ export function CrewSeatMap({
         </div>
 
         {/* Separador Espaço Azul */}
-        <div className="mb-3 px-2 py-1 rounded-md bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/60 flex items-center justify-between text-[11px] text-[#002855] dark:text-blue-200 font-semibold">
+        <div className="mb-3 px-2 py-1 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-between text-[11px] text-primary font-semibold">
           <div className="flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-[#0077C8] dark:text-[#38BDF8]" />
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
             <span>Espaço Azul Premium (Fileiras 1 a {espacoAzulLimit}) - Prioridade de Bordo</span>
           </div>
           <span className="text-[10px] opacity-75 uppercase tracking-wide">

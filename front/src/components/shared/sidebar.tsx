@@ -82,10 +82,7 @@ export function Sidebar({
       <aside
         className={cn(
           "fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r transition-all duration-300 ease-in-out",
-          // Estilo executivo fiel à imagem de referência: fundo navy escuro e clean
-          "bg-white dark:bg-[#071322] text-slate-800 dark:text-white",
-          "border-slate-200 dark:border-white/10",
-          "shadow-[2px_0_12px_rgba(0,59,122,0.04)] dark:shadow-none",
+          "bg-card text-foreground border-border shadow-xs",
           isCollapsed ? "w-20" : "w-72",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
@@ -94,7 +91,7 @@ export function Sidebar({
         <div
           className={cn(
             "flex h-20 shrink-0 items-center border-b transition-all px-4",
-            "border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#050e1b]",
+            "border-border bg-card",
             isCollapsed && "justify-center px-2"
           )}
         >
@@ -131,10 +128,10 @@ export function Sidebar({
               <div className="h-6 w-[1px] bg-slate-300 dark:bg-white/15 mx-0.5" />
 
               <div className="flex flex-col text-left pl-1">
-                <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 leading-tight">
+                <span className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground leading-tight">
                   MOTOR DE
                 </span>
-                <span className="text-[11px] uppercase font-black tracking-wider text-azul-action dark:text-[#38BDF8] leading-tight">
+                <span className="text-[11px] uppercase font-black tracking-wider text-primary leading-tight">
                   RETENÇÃO
                 </span>
               </div>
@@ -167,31 +164,21 @@ export function Sidebar({
                         ? "justify-center p-3 mx-auto"
                         : "justify-between px-3.5 py-3",
                       item.active
-                        ? cn(
-                            // Active em Light Mode
-                            "bg-[#EAF4FC] text-[#003B7A] border border-[#0077C8]/25 font-bold shadow-xs",
-                            // Active em Dark Mode: exatamente como na imagem (fundo navy escuro e borda sutil)
-                            "dark:bg-[#0c223c]/80 dark:text-white dark:border-sky-500/30"
-                          )
-                        : cn(
-                            // Inactive em Light Mode
-                            "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70",
-                            // Inactive em Dark Mode
-                            "dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/[0.04]"
-                          )
+                        ? "bg-secondary text-secondary-foreground border border-border font-bold shadow-xs"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                     )}
                   >
                     {isCollapsed ? (
                       <div className="relative flex items-center justify-center">
                         {item.active && (
-                          <span className="absolute -left-2 top-0 bottom-0 w-1 rounded-full bg-[#0077C8] dark:bg-sky-400" />
+                          <span className="absolute -left-2 top-0 bottom-0 w-1 rounded-full bg-primary" />
                         )}
                         <Icon
                           className={cn(
                             "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
                             item.active
-                              ? "text-[#0077C8] dark:text-sky-400"
-                              : "text-slate-400 dark:text-slate-400 group-hover:text-azul-action dark:group-hover:text-white"
+                              ? "text-primary"
+                              : "text-muted-foreground group-hover:text-primary"
                           )}
                         />
                       </div>
@@ -199,14 +186,14 @@ export function Sidebar({
                       <>
                         <div className="flex items-center gap-3">
                           {item.active && (
-                            <span className="w-1.5 h-6 rounded-full bg-[#0077C8] dark:bg-sky-400 shrink-0 -ml-1 mr-0.5" />
+                            <span className="w-1.5 h-6 rounded-full bg-primary shrink-0 -ml-1 mr-0.5" />
                           )}
                           <Icon
                             className={cn(
                               "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
                               item.active
-                                ? "text-[#0077C8] dark:text-sky-400"
-                                : "text-slate-400 dark:text-slate-400 group-hover:text-azul-action dark:group-hover:text-white"
+                                ? "text-primary"
+                                : "text-muted-foreground group-hover:text-primary"
                             )}
                           />
                           <div className="flex flex-col text-left">
@@ -214,8 +201,8 @@ export function Sidebar({
                               className={cn(
                                 "leading-tight font-bold text-xs",
                                 item.active
-                                  ? "text-[#003B7A] dark:text-white"
-                                  : "text-slate-700 dark:text-slate-200"
+                                  ? "text-foreground font-black"
+                                  : "text-foreground/80"
                               )}
                             >
                               {item.label}
@@ -224,8 +211,8 @@ export function Sidebar({
                               className={cn(
                                 "text-[11px] font-normal leading-tight mt-0.5",
                                 item.active
-                                  ? "text-[#0077C8] dark:text-sky-400/90 font-medium"
-                                  : "text-slate-400 dark:text-slate-400"
+                                  ? "text-primary font-medium"
+                                  : "text-muted-foreground"
                               )}
                             >
                               {item.sublabel}
@@ -237,8 +224,8 @@ export function Sidebar({
                           className={cn(
                             "h-4 w-4 shrink-0 transition-transform duration-200",
                             item.active
-                              ? "text-[#0077C8] dark:text-sky-400"
-                              : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 group-hover:translate-x-0.5"
+                              ? "text-primary"
+                              : "text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5"
                           )}
                         />
                       </>
@@ -298,7 +285,7 @@ export function Sidebar({
         <div
           className={cn(
             "p-3.5 border-t space-y-3",
-            "border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#050e1b]",
+            "border-border bg-card",
             isCollapsed && "p-2.5"
           )}
         >
@@ -306,7 +293,7 @@ export function Sidebar({
           {!isCollapsed ? (
             <div className="flex items-center justify-between text-xs px-1">
               <div className="flex items-center gap-2">
-                <span className="text-slate-500 dark:text-slate-400 font-medium text-xs">
+                <span className="text-muted-foreground font-medium text-xs">
                   Dados:
                 </span>
                 <span className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400 text-xs">
@@ -314,7 +301,7 @@ export function Sidebar({
                   DuckDB Gold
                 </span>
               </div>
-              <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
+              <span className="text-xs font-mono text-muted-foreground">
                 v2.4
               </span>
             </div>
@@ -333,9 +320,9 @@ export function Sidebar({
               type="button"
               onClick={logout}
               title="Encerrar sessão corporativa"
-              className="w-full flex items-center justify-center gap-2.5 h-11 px-4 rounded-xl border border-rose-500/30 dark:border-[#671d2b] bg-rose-500/10 dark:bg-[#220d15]/90 hover:bg-rose-500/15 dark:hover:bg-[#2e101c] text-rose-600 dark:text-[#f87171] transition-all cursor-pointer text-xs font-semibold shadow-xs group"
+              className="w-full flex items-center justify-center gap-2.5 h-11 px-4 rounded-xl border border-destructive/30 bg-destructive/10 hover:bg-destructive/15 text-destructive transition-all cursor-pointer text-xs font-semibold shadow-xs group"
             >
-              <LogOut className="h-4 w-4 text-rose-600 dark:text-[#f87171] transition-transform duration-200 group-hover:-translate-x-0.5" />
+              <LogOut className="h-4 w-4 text-destructive transition-transform duration-200 group-hover:-translate-x-0.5" />
               <span>Encerrar Sessão</span>
             </button>
           ) : (
@@ -343,7 +330,7 @@ export function Sidebar({
               type="button"
               onClick={logout}
               title="Encerrar Sessão (Sair)"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-500/30 dark:border-[#671d2b] bg-rose-500/10 dark:bg-[#220d15]/90 hover:bg-rose-500/15 dark:hover:bg-[#2e101c] text-rose-600 dark:text-[#f87171] transition-all cursor-pointer mx-auto shadow-xs"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-destructive/30 bg-destructive/10 hover:bg-destructive/15 text-destructive transition-all cursor-pointer mx-auto shadow-xs"
             >
               <LogOut className="h-4 w-4" />
             </button>

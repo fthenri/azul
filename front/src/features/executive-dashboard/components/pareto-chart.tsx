@@ -37,7 +37,7 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
 
   if (isLoading) {
     return (
-      <div className="relative rounded-2xl border border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-xl p-6 shadow-sm space-y-4 h-[440px]">
+      <div className="relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-6 shadow-sm space-y-4 h-[440px]">
         <div className="flex justify-between items-center">
           <Skeleton className="h-6 w-52" />
           <Skeleton className="h-5 w-24 rounded-full" />
@@ -50,7 +50,7 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="relative rounded-2xl border border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-xl p-6 shadow-sm h-[440px] flex flex-col justify-between">
+      <div className="relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-6 shadow-sm h-[440px] flex flex-col justify-between">
         <div>
           <h3 className="text-base font-bold text-foreground">Curva de Concentração de Valor (Pareto)</h3>
           <p className="text-xs text-muted-foreground mt-1">Sem dados disponíveis no momento.</p>
@@ -71,16 +71,16 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
   const top20Pct = top20 ? Math.round(top20.percentual_acumulado * 100) : 80;
 
   return (
-    <div className="group relative rounded-2xl border border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
+    <div className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
       {/* Feixe Superior Luminous Edge Highlight */}
-      <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C8]/50 dark:via-sky-400/80 to-transparent" />
+      <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
       {/* Header do Gráfico */}
       <div className="p-6 pb-2">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
           <div>
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-sky-500/10 dark:bg-sky-500/15 text-[#0077C8] dark:text-sky-400 border border-sky-500/20">
+              <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                 <TrendingUp className="h-4 w-4" />
               </span>
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
@@ -98,7 +98,7 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
             </p>
           </div>
 
-          <Badge className="w-fit bg-[#EAF4FC] dark:bg-sky-950/60 text-[#003B7A] dark:text-sky-300 border border-[#0077C8]/25 dark:border-sky-500/30 text-[11px] font-semibold py-1 px-3">
+          <Badge className="w-fit bg-secondary text-secondary-foreground border border-primary/20 text-[11px] font-semibold py-1 px-3">
             Top 20% = {top20Pct}% Receita
           </Badge>
         </div>
@@ -113,33 +113,27 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
               margin={{ top: 12, right: 15, left: 10, bottom: 8 }}
             >
               <defs>
-                <linearGradient id="paretoBarLight" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#0077C8" stopOpacity={0.9} />
-                  <stop offset="100%" stopColor="#003B7A" stopOpacity={0.95} />
-                </linearGradient>
-
-                <linearGradient id="paretoBarDark" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#00A3FF" stopOpacity={0.85} />
-                  <stop offset="60%" stopColor="#0284C7" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#071E3D" stopOpacity={0.7} />
+                <linearGradient id="paretoBarGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.85} />
+                  <stop offset="100%" stopColor="hsl(var(--primary) / 0.4)" stopOpacity={0.8} />
                 </linearGradient>
               </defs>
 
               <CartesianGrid
                 strokeDasharray="3 3"
                 vertical={false}
-                stroke={isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(226, 232, 240, 0.9)"}
+                stroke="hsl(var(--border) / 0.6)"
               />
 
               <XAxis
                 dataKey="decil_clientes"
                 tick={{
                   fontSize: 11,
-                  fill: isDark ? "#94A3B8" : "#5B6E84",
+                  fill: "hsl(var(--muted-foreground))",
                   fontWeight: 500,
                 }}
                 tickLine={false}
-                axisLine={{ stroke: isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0" }}
+                axisLine={{ stroke: "hsl(var(--border))" }}
               />
 
               <YAxis
@@ -147,7 +141,7 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
                 orientation="left"
                 tick={{
                   fontSize: 10,
-                  fill: isDark ? "#94A3B8" : "#5B6E84",
+                  fill: "hsl(var(--muted-foreground))",
                 }}
                 tickFormatter={(val) => `R$ ${(val / 1000000).toFixed(1)}M`}
                 tickLine={false}
@@ -161,7 +155,7 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
                 domain={[0, 100]}
                 tick={{
                   fontSize: 10,
-                  fill: isDark ? "#94A3B8" : "#5B6E84",
+                  fill: "hsl(var(--muted-foreground))",
                 }}
                 tickFormatter={(val) => `${val}%`}
                 tickLine={false}
@@ -174,10 +168,10 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
                   if (!active || !payload || !payload.length) return null;
                   const item = payload[0].payload as ParetoData & { percentual_pct: number };
                   return (
-                    <div className="rounded-xl border border-border/80 dark:border-white/15 bg-white/95 dark:bg-[#071120]/95 backdrop-blur-xl p-3.5 shadow-xl text-xs space-y-1.5 min-w-[210px]">
-                      <div className="flex items-center justify-between border-b border-border dark:border-white/10 pb-1.5">
+                    <div className="rounded-xl border border-border/80 bg-popover/95 backdrop-blur-xl p-3.5 shadow-xl text-xs space-y-1.5 min-w-[210px]">
+                      <div className="flex items-center justify-between border-b border-border pb-1.5">
                         <span className="font-bold text-foreground text-sm flex items-center gap-1.5">
-                          <Layers className="h-3.5 w-3.5 text-azul-action" />
+                          <Layers className="h-3.5 w-3.5 text-primary" />
                           {label}
                         </span>
                         <span className="text-[10px] font-mono text-muted-foreground uppercase">
@@ -188,14 +182,14 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
                       <div className="space-y-1 pt-1">
                         <div className="flex justify-between items-center text-xs">
                           <span className="text-muted-foreground">Valor Acumulado:</span>
-                          <span className="font-bold text-[#003B7A] dark:text-sky-300">
+                          <span className="font-bold text-foreground">
                             {formatCurrency(item.valor_acumulado)}
                           </span>
                         </div>
 
                         <div className="flex justify-between items-center text-xs">
                           <span className="text-muted-foreground">% Carteira Total:</span>
-                          <span className="font-bold text-azul-action dark:text-sky-400">
+                          <span className="font-bold text-primary">
                             {formatPercent(item.percentual_acumulado)}
                           </span>
                         </div>
@@ -218,7 +212,7 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
                 yAxisId="left"
                 dataKey="valor_acumulado"
                 name="Valor Acumulado (R$)"
-                fill={isDark ? "url(#paretoBarDark)" : "url(#paretoBarLight)"}
+                fill="url(#paretoBarGrad)"
                 radius={[6, 6, 0, 0]}
                 barSize={26}
                 isAnimationActive={false}
@@ -229,18 +223,18 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
                 type="monotone"
                 dataKey="percentual_pct"
                 name="% Acumulado"
-                stroke={isDark ? "#38BDF8" : "#0077C8"}
+                stroke="hsl(var(--primary))"
                 strokeWidth={2.8}
                 dot={{
                   r: 3.5,
-                  fill: isDark ? "#38BDF8" : "#0077C8",
-                  stroke: isDark ? "#071120" : "#FFFFFF",
+                  fill: "hsl(var(--primary))",
+                  stroke: "hsl(var(--card))",
                   strokeWidth: 2,
                 }}
                 activeDot={{
                   r: 6,
-                  fill: isDark ? "#00A3FF" : "#003B7A",
-                  stroke: "#FFFFFF",
+                  fill: "hsl(var(--primary))",
+                  stroke: "hsl(var(--card))",
                   strokeWidth: 2,
                 }}
                 isAnimationActive={false}
@@ -251,12 +245,12 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
       </div>
 
       {/* Rodapé Informativo Rápido */}
-      <div className="px-6 py-3 bg-muted/40 dark:bg-white/[0.02] border-t border-border/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+      <div className="px-6 py-3 bg-muted/40 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>Foco Estratégico: 80% do valor retido com 20% do orçamento.</span>
         </div>
-        <span className="font-mono text-[11px] text-azul-action dark:text-sky-400">
+        <span className="font-mono text-[11px] text-primary">
           Curva 80/20 Homologada
         </span>
       </div>

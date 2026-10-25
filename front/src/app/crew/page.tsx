@@ -294,8 +294,8 @@ export default function CrewPage() {
         {!isFlightDispatched ? (
           <div className="flex-1 flex flex-col items-center justify-center min-h-[500px] p-6 text-center animate-in fade-in duration-300">
             <div className="max-w-md w-full p-8 rounded-3xl border-2 border-dashed border-border bg-card/60 backdrop-blur-xs space-y-4 shadow-sm text-center">
-              <div className="h-16 w-16 rounded-2xl bg-[#002855]/10 dark:bg-[#38BDF8]/10 text-[#0077C8] dark:text-[#38BDF8] mx-auto flex items-center justify-center">
-                <Plane className="h-8 w-8 text-[#0077C8] dark:text-[#38BDF8] animate-pulse" />
+              <div className="h-16 w-16 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center">
+                <Plane className="h-8 w-8 text-primary animate-pulse" />
               </div>
               <div className="space-y-2">
                 <h2 className="text-lg sm:text-xl font-bold text-foreground">
@@ -328,18 +328,18 @@ export default function CrewPage() {
         ) : (
           <>
             {/* Banner Operacional do Copiloto de Cabine */}
-        <div className="rounded-2xl bg-gradient-to-r from-[#002855] via-[#003B7A] to-[#0077C8] text-white p-5 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="rounded-2xl bg-card border border-border text-foreground p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#38BDF8]" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#38BDF8]">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-xs font-bold uppercase tracking-wider text-primary">
                 Copiloto de Cabine em Tempo Real
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black">
               Missões Táticas da Tripulação
             </h2>
-            <p className="text-xs sm:text-sm text-white/80 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
               As missões prescritivas geradas pela IA e despachadas pelo Gestor na Central de Decisões chegam instantaneamente a esta tela. Realize a abordagem de bordo e confirme a conclusão.
             </p>
           </div>
@@ -475,7 +475,7 @@ export default function CrewPage() {
             {/* EMPTY STATE OBRIGATÓRIO (Se array de missões estiver vazio, NENHUM card deve aparecer) */}
             {missions.length === 0 ? (
               <div className="rounded-2xl border-2 border-dashed border-border bg-card/60 p-12 text-center text-muted-foreground space-y-3 animate-in fade-in duration-200">
-                <div className="h-14 w-14 rounded-2xl bg-[#002855]/10 dark:bg-[#38BDF8]/10 text-[#0077C8] dark:text-[#38BDF8] mx-auto flex items-center justify-center">
+                <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center">
                   <Radio className="h-7 w-7 animate-pulse" />
                 </div>
                 <h3 className="font-bold text-foreground text-base sm:text-lg">
@@ -577,7 +577,7 @@ export default function CrewPage() {
                                   </h3>
                                   <p className="text-xs text-muted-foreground mt-0.5 font-medium">
                                     {missao.persona || "Passageiro Especial"} •{" "}
-                                    <span className="font-semibold text-azul-sky dark:text-[#38BDF8]">
+                                    <span className="font-semibold text-primary">
                                       {missao.tier || "Diamante"}
                                     </span>
                                   </p>
@@ -621,21 +621,21 @@ export default function CrewPage() {
                                 "rounded-xl p-3 text-xs leading-relaxed border transition-colors flex-1",
                                 isDone
                                   ? "bg-muted/40 border-border text-muted-foreground/80"
-                                  : "bg-[#EAF4FC] dark:bg-[#003B7A]/20 border-[#0077C8]/25 text-foreground"
+                                  : "bg-primary/5 border-primary/20 text-foreground"
                               )}
                             >
-                              <div className="flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider text-azul-sky dark:text-[#38BDF8] mb-1.5">
+                              <div className="flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider text-primary mb-1.5">
                                 <Sparkles className="h-3.5 w-3.5" />
                                 <span>Instrução da IA (Copiloto de Bordo)</span>
                               </div>
-                              <p className="italic text-xs text-[#243447] dark:text-slate-200">
+                              <p className="italic text-xs text-foreground/90">
                                 &quot;{missao.instrucao}&quot;
                               </p>
                             </div>
 
                             {/* Ação Recomendada & Conclusão */}
                             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-                              <span className="font-semibold text-azul-navy dark:text-slate-200">
+                              <span className="font-semibold text-foreground">
                                 Ação: <strong>{missao.acao || "Abordagem com Cortesia"}</strong>
                               </span>
                               {isDone && missao.concluidaEm && (
@@ -675,8 +675,8 @@ export default function CrewPage() {
                                   className={cn(
                                     "w-full h-9 text-xs font-bold gap-1.5 transition-all shadow-xs cursor-pointer",
                                     isAtrito
-                                      ? "bg-[#0077C8] hover:bg-[#005B99] text-white"
-                                      : "bg-azul-navy hover:bg-[#002855] text-white"
+                                      ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                                      : "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
                                   )}
                                 >
                                   <CheckCircle2 className="h-4 w-4" />
@@ -702,7 +702,7 @@ export default function CrewPage() {
           <div className="space-y-6">
             {missions.length === 0 ? (
               <div className="rounded-2xl border-2 border-dashed border-border bg-card/60 p-10 text-center text-muted-foreground space-y-2">
-                <Radio className="h-8 w-8 text-[#0077C8] dark:text-[#38BDF8] mx-auto animate-pulse" />
+                <Radio className="h-8 w-8 text-primary mx-auto animate-pulse" />
                 <h3 className="font-bold text-foreground text-sm">
                   Nenhuma missão despachada para este voo. Aguardando torre de controle/gestor.
                 </h3>
@@ -795,7 +795,7 @@ export default function CrewPage() {
                   </h3>
                   <p className="text-xs text-muted-foreground font-medium mt-0.5">
                     {selectedMissionModal.persona || "Passageiro Especial"} •{" "}
-                    <span className="font-semibold text-azul-sky dark:text-[#38BDF8]">
+                    <span className="font-semibold text-primary">
                       {selectedMissionModal.tier || "Diamante"}
                     </span>
                   </p>
@@ -841,12 +841,12 @@ export default function CrewPage() {
               </div>
             )}
 
-            <div className="rounded-xl p-4 text-xs leading-relaxed border bg-[#EAF4FC] dark:bg-[#003B7A]/25 border-[#0077C8]/30 space-y-2">
-              <div className="flex items-center gap-1.5 font-bold text-[11px] uppercase tracking-wider text-azul-sky dark:text-[#38BDF8]">
+            <div className="rounded-xl p-4 text-xs leading-relaxed border bg-primary/5 border-primary/20 space-y-2">
+              <div className="flex items-center gap-1.5 font-bold text-[11px] uppercase tracking-wider text-primary">
                 <Sparkles className="h-4 w-4" />
                 <span>Instrução da IA (Copiloto de Bordo)</span>
               </div>
-              <p className="italic text-sm text-[#243447] dark:text-slate-100">
+              <p className="italic text-sm text-foreground/90">
                 &quot;{selectedMissionModal.instrucao}&quot;
               </p>
             </div>

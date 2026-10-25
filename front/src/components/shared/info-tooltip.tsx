@@ -60,7 +60,7 @@ export function InfoTooltip({
       role="button"
       tabIndex={0}
       className={cn(
-        "inline-flex items-center justify-center rounded-md p-0.5 text-muted-foreground/75 hover:text-azul-action dark:hover:text-sky-400 hover:bg-sky-500/10 transition-colors cursor-help focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-400 shrink-0 select-none",
+        "inline-flex items-center justify-center rounded-md p-0.5 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-help focus:outline-none focus-visible:ring-1 focus-visible:ring-primary shrink-0 select-none",
         className
       )}
       aria-label={title || "Informações adicionais"}
@@ -89,14 +89,14 @@ export function InfoTooltip({
           )}
         >
           {(title || badge) && (
-            <div className="flex items-center justify-between gap-2 pb-1 border-b border-slate-200/60 dark:border-white/10">
+            <div className="flex items-center justify-between gap-2 pb-1 border-b border-border/60">
               {title && (
-                <span className="font-bold text-slate-900 dark:text-white text-xs leading-tight">
+                <span className="font-bold text-foreground text-xs leading-tight">
                   {title}
                 </span>
               )}
               {badge && (
-                <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-sky-500/10 text-azul-action dark:text-sky-300 border border-sky-500/20">
+                <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
                   {badge}
                 </span>
               )}
@@ -104,7 +104,7 @@ export function InfoTooltip({
           )}
 
           {text && (
-            <p className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
+            <p className="text-muted-foreground text-[11px] leading-relaxed">
               {text}
             </p>
           )}
