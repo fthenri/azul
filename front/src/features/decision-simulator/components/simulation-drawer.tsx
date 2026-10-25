@@ -34,6 +34,8 @@ import { Button } from "@/components/ui/button";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { ShapChart } from "@/features/audit-logs/components/shap-chart";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
+import { UserAvatar } from "@/components/shared/user-avatar";
+import { CLIENT_INFO_MAP } from "../hooks/use-simulation";
 
 interface SimulationDrawerProps {
   isOpen: boolean;
@@ -163,6 +165,14 @@ export function SimulationDrawer({
 
   const { voo, rota } = parseFlightDetails(selectedMomento.descricao);
 
+  const passengerName =
+    (selectedMomento as any).nome ||
+    (selectedMomento as any).passageiro ||
+    CLIENT_INFO_MAP[selectedMomento.cliente_id]?.nome ||
+    (lastDispatchedMission?.passageiro && lastDispatchedMission?.assento && selectedMomento.cliente_id
+      ? lastDispatchedMission.passageiro
+      : null);
+
   const paretoDecil = (() => {
     const clv = selectedMomento.clv_previsto;
     if (clv >= 8000) return "Top 10% Receita";
@@ -211,16 +221,20 @@ export function SimulationDrawer({
           <div className="px-6 py-4 border-b border-border/70 dark:border-white/10 bg-muted/40 backdrop-blur-md flex items-center justify-between gap-4 shrink-0">
             {/* Esquerda: Identificação do Passageiro Estilo VIP Boarding Pass */}
             <div className="flex items-center gap-3.5 min-w-0">
-              <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-black text-sm transition-all ${tierConfig.avatarBg}`}
-              >
-                <User className="h-5 w-5" />
-              </div>
+              {passengerName ? (
+                <UserAvatar name={passengerName} size="md" className="h-11 w-11 rounded-2xl" />
+              ) : (
+                <div
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-black text-sm transition-all ${tierConfig.avatarBg}`}
+                >
+                  <User className="h-5 w-5" />
+                </div>
+              )}
 
               <div className="min-w-0 space-y-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-base font-black tracking-tight text-foreground truncate">
-                    Passageiro #{selectedMomento.cliente_id}
+                    {passengerName || `Passageiro #${selectedMomento.cliente_id}`}
                   </h2>
                   <Badge className={`text-[10px] font-bold px-2 py-0.5 ${tierConfig.badge}`}>
                     <Crown className="h-2.5 w-2.5 mr-1" />
@@ -240,7 +254,7 @@ export function SimulationDrawer({
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
-                  Cluster: <span className="font-semibold text-foreground">{selectedMomento.persona}</span> • ID: {selectedMomento.id} {voo ? `• Voo ${voo}` : ""}
+                  {passengerName ? `Passageiro #${selectedMomento.cliente_id} • ` : ""}Cluster: <span className="font-semibold text-foreground">{selectedMomento.persona}</span> • ID: {selectedMomento.id} {voo ? `• Voo ${voo}` : ""}
                 </p>
               </div>
             </div>
@@ -376,14 +390,14 @@ export function SimulationDrawer({
                 </p>
               </div>
 
-              {/* Botão Primário de Disparo */}
+              {/* Botão Primário de Disparo Minimalista */}
               <div>
                 <Button
                   onClick={() => onSimulate(selectedMomento.id)}
                   disabled={isSimulating}
-                  className="w-full h-11 rounded-xl bg-gradient-to-r from-[#003B7A] via-[#00529B] to-[#0077C8] hover:from-[#002855] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full h-10 rounded-xl bg-[#003B7A] hover:bg-[#002855] dark:bg-sky-600 dark:hover:bg-sky-700 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
                 >
-                  <Play className={`h-4 w-4 fill-white ${isSimulating ? "animate-pulse" : ""}`} />
+                  <Play className={`h-3.5 w-3.5 fill-white ${isSimulating ? "animate-pulse" : ""}`} />
                   <span>
                     {isSimulating
                       ? "Calculando Árbitro de Uplift & Agente LLM..."
@@ -738,44 +752,44 @@ export function SimulationDrawer({
                     </div>
                   </div>
 
-                  {/* Conteúdo do Canal Selecionado: WhatsApp Hiper-Realista */}
+                  {/* Conteúdo do Canal Selecionado: WhatsApp Limpo Sem Gradiente */}
                   {activeChannel === "whatsapp" && (
                     <div className="space-y-3">
-                      <div className="rounded-2xl bg-gradient-to-b from-[#0c2340] via-[#08182b] to-[#040e1a] text-white p-4 border border-sky-400/20 shadow-lg">
-                        {/* WhatsApp Header */}
-                        <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3 text-xs">
+                      <div className="rounded-2xl bg-card border border-border/80 dark:border-white/10 p-4 space-y-3 shadow-xs">
+                        {/* WhatsApp Header Sem Gradiente */}
+                        <div className="flex items-center justify-between pb-3 border-b border-border/60 text-xs">
                           <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0077C8] text-white font-black text-xs ring-2 ring-emerald-400/70 shadow-xs">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0077C8] text-white font-black text-xs ring-2 ring-emerald-500/40 shadow-xs">
                               Az
                             </div>
                             <div>
                               <div className="flex items-center gap-1.5">
-                                <span className="font-bold text-white text-xs">Azul Linhas Aéreas Oficial</span>
+                                <span className="font-bold text-foreground text-xs">Azul Linhas Aéreas Oficial</span>
                                 <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white text-[9px] font-black">
                                   ✓
                                 </span>
                               </div>
-                              <span className="text-[10px] text-sky-200/70 block">Conta Comercial Verificada • Canal Prioritário</span>
+                              <span className="text-[10px] text-muted-foreground block">Conta Comercial Verificada • Canal Prioritário</span>
                             </div>
                           </div>
-                          <span className="text-[10px] font-mono text-sky-200/60 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
+                          <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full border border-border/50">
                             Criptografia ponta a ponta
                           </span>
                         </div>
 
                         {/* WhatsApp Chat Bubble */}
-                        <div className="relative max-w-[95%] sm:max-w-[88%] bg-[#122e4d] text-sky-50 rounded-2xl rounded-tl-sm p-4 border border-sky-400/20 shadow-md">
+                        <div className="relative max-w-[95%] sm:max-w-[88%] bg-sky-50/80 dark:bg-sky-950/40 text-foreground rounded-2xl rounded-tl-sm p-4 border border-sky-400/20 shadow-xs">
                           <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans">
                             {simulationResult.decisao_final.mensagem_crm || simulationResult.decisao_final.mensagem_llm}
                           </p>
 
-                          <div className="flex items-center justify-end gap-1.5 mt-2.5 pt-1.5 border-t border-white/5 text-[10px] text-sky-200/60 font-mono">
+                          <div className="flex items-center justify-end gap-1.5 mt-2.5 pt-1.5 border-t border-border/40 text-[10px] text-muted-foreground font-mono">
                             <span>Hoje, 14:32</span>
-                            <span className="text-sky-400 font-bold font-sans">✓✓</span>
+                            <span className="text-sky-600 dark:text-sky-400 font-bold font-sans">✓✓</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-3 mt-3 border-t border-white/10 text-[10px] text-sky-200/60">
+                        <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/60 text-[10px] text-muted-foreground">
                           <span>Conformidade ANAC 400 • Retenção e Fidelização</span>
                           <span>Azul Fidelidade Hub</span>
                         </div>
