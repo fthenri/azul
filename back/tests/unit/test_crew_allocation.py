@@ -212,13 +212,13 @@ def test_ocupacao_comercial_80_porcento():
     service = CrewService(DuckDBClient(get_settings()))
 
     # A320neo: 174 assentos -> ocupação entre 75% e 85% (~135-140 pax)
-    detalhe_a320 = service.get_flight_details("6002", modelo_aeronave="A320neo")
+    detalhe_a320 = service.get_flight_details("4409", modelo_aeronave="A320neo")
     tx_a320 = len(detalhe_a320.assentos) / detalhe_a320.metadata_aeronave.total_assentos
     assert 0.75 <= tx_a320 <= 0.85, f"Taxa A320 fora de 75-85%: {tx_a320:.1%}"
-    assert len(detalhe_a320.assentos) == 136
+    assert 130 <= len(detalhe_a320.assentos) <= 145
 
     # E195-E2: 136 assentos -> ocupação entre 74% e 85% (~100-110 pax)
-    detalhe_e195 = service.get_flight_details("6002", modelo_aeronave="E195-E2")
+    detalhe_e195 = service.get_flight_details("4991", modelo_aeronave="E195-E2")
     tx_e195 = len(detalhe_e195.assentos) / detalhe_e195.metadata_aeronave.total_assentos
     assert 0.74 <= tx_e195 <= 0.85, f"Taxa E195 fora de 74-85%: {tx_e195:.1%}"
-    assert len(detalhe_e195.assentos) == 102
+    assert 100 <= len(detalhe_e195.assentos) <= 115

@@ -372,9 +372,9 @@ export function FlightsGrid() {
                     </TableCell>
 
                     <TableCell className="text-xs font-mono text-muted-foreground">
-                      {flight.atraso_medio_minutos > 0 ? (
+                      {flight.atraso_medio_minutos >= 5 ? (
                         <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                          +{flight.atraso_medio_minutos} min
+                          +{Math.round(flight.atraso_medio_minutos)} min
                         </span>
                       ) : (
                         <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
@@ -386,7 +386,14 @@ export function FlightsGrid() {
                     <TableCell>
                       <Badge
                         variant="outline"
-                        className="text-[10px] uppercase font-bold tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        className={cn(
+                          "text-[10px] uppercase font-bold tracking-wider",
+                          flight.status_operacional === "A EMBARCAR"
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800"
+                            : flight.status_operacional === "PROGRAMADO"
+                            ? "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-300 dark:border-sky-800"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        )}
                       >
                         {flight.status_operacional}
                       </Badge>

@@ -374,7 +374,8 @@ class CrewService:
 
     def list_scheduled_flights(self, limit: int = 50) -> ListaVoosResponse:
         """Lista os voos comerciais da malha aérea real consolidando métricas analíticas."""
-        sql = f"""
+        # Prioriza voos da malha ativa programada (Horizonte D0) com status operacional acionável
+        sql_active = f"""
         SELECT 
             v.numero_voo,
             v.origem,
@@ -383,18 +384,44 @@ class CrewService:
             MIN(v.partida_real) AS partida_real,
             COUNT(DISTINCT v.id_cliente) AS total_passageiros,
             COUNT(DISTINCT v.pnr) AS total_pnrs,
-            SUM(CASE WHEN e.risco_evasao > 0.60 THEN 1 ELSE 0 END) AS passageiros_criticos,
+            SUM(CASE WHEN COALESCE(e.risco_evasao, 0) > 0.60 THEN 1 ELSE 0 END) AS passageiros_criticos,
             SUM(CASE WHEN c.faixa_pareto IN ('Top 10% Receita', 'Top 20% Receita') THEN 1 ELSE 0 END) AS passageiros_vip,
-            ROUND(AVG(COALESCE(v.atraso_enfrentado_minutos, 0)), 1) AS atraso_medio_minutos,
-            MIN(COALESCE(v.situacao_voo, 'REALIZADO')) AS status_operacional
+            CAST(ROUND(AVG(COALESCE(v.atraso_enfrentado_minutos, 0))) AS INTEGER) AS atraso_medio_minutos,
+            MAX(COALESCE(v.situacao_voo, 'PROGRAMADO')) AS status_operacional
         FROM silver_viagens v
         LEFT JOIN gold_clv c ON v.id_cliente = c.id_cliente
         LEFT JOIN gold_evasao e ON v.id_cliente = e.id_cliente
+        WHERE v.situacao_voo IN ('A EMBARCAR', 'PROGRAMADO', 'EM EMBARQUE')
         GROUP BY v.numero_voo, v.origem, v.destino
-        ORDER BY total_passageiros DESC
+        ORDER BY 
+            MIN(v.partida_prevista) ASC,
+            total_passageiros DESC
         LIMIT {limit}
         """
-        rows = self.duckdb_client.query(sql)
+        rows = self.duckdb_client.query(sql_active)
+        if not rows:
+            sql_fallback = f"""
+            SELECT 
+                v.numero_voo,
+                v.origem,
+                v.destino,
+                MIN(v.partida_prevista) AS partida_prevista,
+                MIN(v.partida_real) AS partida_real,
+                COUNT(DISTINCT v.id_cliente) AS total_passageiros,
+                COUNT(DISTINCT v.pnr) AS total_pnrs,
+                SUM(CASE WHEN COALESCE(e.risco_evasao, 0) > 0.60 THEN 1 ELSE 0 END) AS passageiros_criticos,
+                SUM(CASE WHEN c.faixa_pareto IN ('Top 10% Receita', 'Top 20% Receita') THEN 1 ELSE 0 END) AS passageiros_vip,
+                CAST(ROUND(AVG(COALESCE(v.atraso_enfrentado_minutos, 0))) AS INTEGER) AS atraso_medio_minutos,
+                MAX(COALESCE(v.situacao_voo, 'PROGRAMADO')) AS status_operacional
+            FROM silver_viagens v
+            LEFT JOIN gold_clv c ON v.id_cliente = c.id_cliente
+            LEFT JOIN gold_evasao e ON v.id_cliente = e.id_cliente
+            GROUP BY v.numero_voo, v.origem, v.destino
+            ORDER BY total_passageiros DESC
+            LIMIT {limit}
+            """
+            rows = self.duckdb_client.query(sql_fallback)
+
         voos: List[VooMalhaResumo] = []
         for r in rows:
             num = str(r["numero_voo"])
@@ -407,9 +434,9 @@ class CrewService:
                     rota=f"{origem} ➔ {destino}",
                     origem=origem,
                     destino=destino,
-                    partida_prevista=str(r.get("partida_prevista") or "2026-08-01 12:00:00"),
+                    partida_prevista=str(r.get("partida_prevista") or "2026-08-11 12:00:00"),
                     partida_real=str(r.get("partida_real")) if r.get("partida_real") else None,
-                    status_operacional=str(r.get("status_operacional") or "REALIZADO"),
+                    status_operacional=str(r.get("status_operacional") or "PROGRAMADO"),
                     total_passageiros=int(r.get("total_passageiros") or 0),
                     total_pnrs=int(r.get("total_pnrs") or 0),
                     passageiros_criticos=int(r.get("passageiros_criticos") or 0),
@@ -427,7 +454,7 @@ class CrewService:
         """Recupera os passageiros reais de um voo com alocação inteligente por PNR e ações de bordo em lote."""
         flight_clean = str(flight_id).upper().replace("AD", "").replace(" ", "").strip()
         if not flight_clean:
-            flight_clean = "6002"
+            flight_clean = "4409"
 
         sql_passengers = """
         SELECT 
@@ -438,7 +465,7 @@ class CrewService:
             v.destino,
             v.partida_prevista,
             v.partida_real,
-            COALESCE(v.situacao_voo, 'REALIZADO') AS status_operacional,
+            COALESCE(v.situacao_voo, 'PROGRAMADO') AS status_operacional,
             s.tier_fidelidade,
             p.persona,
             ROUND(c.clv_previsto, 2) AS clv_previsto,
@@ -452,25 +479,35 @@ class CrewService:
         JOIN gold_personas p ON v.id_cliente = p.id_cliente
         JOIN silver_clientes s ON v.id_cliente = s.id_cliente
         WHERE v.numero_voo = ?
+          AND v.situacao_voo IN ('A EMBARCAR', 'PROGRAMADO', 'EM EMBARQUE')
         ORDER BY valor_em_risco DESC
         """
         rows = self.duckdb_client.query(sql_passengers, [flight_clean])
         if not rows:
-            # Fallback para o voo 6002 se o voo solicitado não tiver passageiros
-            flight_clean = "6002"
-            rows = self.duckdb_client.query(sql_passengers, [flight_clean])
+            # Fallback sem o filtro de situação se consultado voo sem status ativo
+            sql_fallback = sql_passengers.replace(
+                "  AND v.situacao_voo IN ('A EMBARCAR', 'PROGRAMADO', 'EM EMBARQUE')",
+                "",
+            )
+            rows = self.duckdb_client.query(sql_fallback, [flight_clean])
+            if not rows:
+                flight_clean = "4409"
+                rows = self.duckdb_client.query(sql_passengers, [flight_clean])
 
         first_row = rows[0] if rows else {}
-        origem = str(first_row.get("origem") or "SBSP")
-        destino = str(first_row.get("destino") or "SBFI")
-        partida = str(first_row.get("partida_prevista") or "2026-08-01 12:05:00")
-        status_op = str(first_row.get("status_operacional") or "REALIZADO")
+        origem = str(first_row.get("origem") or "SBPJ")
+        destino = str(first_row.get("destino") or "SBCF")
+        partida = str(first_row.get("partida_prevista") or "2026-08-11 14:30:00")
+        status_op = str(first_row.get("status_operacional") or "A EMBARCAR")
 
-        # Seleciona aeronave (A320neo como padrão para malha principal)
+        # Seleciona aeronave adequada ao voo
         if modelo_aeronave and modelo_aeronave in FROTA_AZUL:
             aeronave = FROTA_AZUL[modelo_aeronave]
         else:
-            aeronave = FROTA_AZUL["A320neo"]
+            if flight_clean in ("4991", "2666", "4147"):
+                aeronave = FROTA_AZUL["E195-E2"]
+            else:
+                aeronave = FROTA_AZUL["A320neo"]
 
         fileiras = int(aeronave["fileiras"])
         layout = list(aeronave["layout"])
@@ -479,52 +516,9 @@ class CrewService:
         ]
         total_assentos_aeronave = len(assentos_codigos)
 
-        # Meta de ocupação comercial realista entre 75% e 85% (média ~78-80%)
-        # Ex: A320neo (174 assentos) -> ~136 passageiros (78.1%)
-        #     E195-E2 (136 assentos) -> ~102 passageiros (75.0%)
-        #     ATR 72-600 (72 assentos) -> ~56 passageiros (77.8%)
-        fator_ocupacao = 0.78 if total_assentos_aeronave > 150 else 0.75
-        meta_passageiros = round(total_assentos_aeronave * fator_ocupacao)
-
-        if len(rows) < meta_passageiros:
-            needed = meta_passageiros - len(rows)
-            sql_additional = """
-            SELECT 
-                s.id_cliente,
-                'SOLO' AS pnr,
-                ? AS numero_voo,
-                ? AS origem,
-                ? AS destino,
-                ? AS partida_prevista,
-                NULL AS partida_real,
-                'CONFIRMADO' AS status_operacional,
-                s.tier_fidelidade,
-                p.persona,
-                ROUND(c.clv_previsto, 2) AS clv_previsto,
-                c.faixa_pareto,
-                ROUND(e.risco_evasao, 4) AS risco_evasao,
-                ROUND(e.score_atrito_acumulado, 2) AS score_atrito_acumulado,
-                ROUND(COALESCE(c.clv_previsto, 0) * COALESCE(e.risco_evasao, 0), 2) AS valor_em_risco
-            FROM silver_clientes s
-            JOIN gold_clv c ON s.id_cliente = c.id_cliente
-            JOIN gold_evasao e ON s.id_cliente = e.id_cliente
-            JOIN gold_personas p ON s.id_cliente = p.id_cliente
-            WHERE s.id_cliente NOT IN (SELECT id_cliente FROM silver_viagens WHERE numero_voo = ?)
-            ORDER BY hash(s.id_cliente || ?)
-            LIMIT ?
-            """
-            supp = self.duckdb_client.query(
-                sql_additional,
-                [flight_clean, origem, destino, partida, flight_clean, flight_clean, needed],
-            )
-            for idx, p in enumerate(supp):
-                if idx % 8 in (0, 1):
-                    p["pnr"] = f"GRP_FAM_{flight_clean}_{idx // 8}"
-                elif idx % 15 in (0, 1, 2):
-                    p["pnr"] = f"GRP_TRIO_{flight_clean}_{idx // 15}"
-            rows.extend(supp)
-        elif len(rows) > meta_passageiros:
-            rows = rows[:meta_passageiros]
+        # Se houver mais passageiros que a capacidade máxima física do avião, ajusta ao limite
+        if len(rows) > total_assentos_aeronave:
+            rows = rows[:total_assentos_aeronave]
 
         # 1. Contagem de grupos por PNR (desconsiderando 'SOLO')
         pnr_counts: dict[str, int] = {}

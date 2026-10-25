@@ -41,7 +41,7 @@ def build_gold_clv(
     df_trips = pd.read_parquet(viagens_silver_path)
 
     df_realized = df_trips[
-        df_trips["situacao_voo"].astype(str).str.strip().str.upper() != "CANCELADO"
+        df_trips["situacao_voo"].astype(str).str.strip().str.upper() == "REALIZADO"
     ].copy()
     df_realized["_dt_partida_real"] = pd.to_datetime(
         df_realized["partida_real"],

@@ -62,7 +62,13 @@ def build_gold_evasion(
 
     logger.info("Lendo tabelas de clientes e viagens da Camada Silver...")
     df_clients = pd.read_parquet(clientes_silver_path)
-    df_trips = pd.read_parquet(viagens_silver_path).copy()
+    df_trips_all = pd.read_parquet(viagens_silver_path).copy()
+
+    # Considera apenas viagens históricas concluídas ou canceladas no passado para cálculo de atrito acumulado
+    # Voos ativos programados ('PROGRAMADO', 'A EMBARCAR') ainda não ocorreram e não geram atrito prévio
+    df_trips = df_trips_all[
+        df_trips_all["situacao_voo"].astype(str).str.strip().str.upper().isin(["REALIZADO", "CANCELADO"])
+    ].copy()
 
     dt_evento = pd.to_datetime(df_trips["partida_prevista"], errors="coerce")
     dt_real = pd.to_datetime(df_trips["partida_real"], errors="coerce")

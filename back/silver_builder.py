@@ -498,7 +498,7 @@ def generate_silver_trips(
     )
     atraso_series = np.where(
         positive_delay_mask,
-        np.round(atraso_series * delay_gaussian_noise, 1),
+        np.round(atraso_series * delay_gaussian_noise, 0).astype(np.float64),
         atraso_series,
     )
 
@@ -534,7 +534,7 @@ def generate_silver_trips(
     mild_delay_prob = np_rng.random(n_trips_sat) < 0.03
     sat_delay_noise = np.where(
         mild_delay_prob,
-        np.round(np_rng.uniform(3.0, 12.0, size=n_trips_sat), 1),
+        np.round(np_rng.uniform(5.0, 15.0, size=n_trips_sat), 0).astype(np.float64),
         0.0,
     )
     atraso_series[is_satisfeito] = sat_delay_noise
@@ -549,7 +549,7 @@ def generate_silver_trips(
             "partida_prevista": pd.Series(partida_prevista_series, dtype="string"),
             "partida_real": pd.Series(partida_real_series, dtype="string"),
             "situacao_voo": pd.Series(situacao_series, dtype="string"),
-            "atraso_enfrentado_minutos": atraso_series,
+            "atraso_enfrentado_minutos": np.round(atraso_series, 0).astype(np.float64),
             "teve_bagagem_extraviada": teve_bagagem_extraviada.astype(bool),
             "falha_app_checkin": falha_app_checkin.astype(bool),
         }
@@ -581,6 +581,251 @@ def generate_silver_trips(
         df_trips["id_cliente"].nunique(),
     )
     return df_trips
+
+
+def generate_active_scheduled_flights(
+    df_historical_trips: pd.DataFrame,
+    df_clients: pd.DataFrame,
+    anac_tarifas_bronze_path: Path | None = None,
+    seed: int = DEFAULT_SEED,
+) -> pd.DataFrame:
+    """Gera nativamente no DuckDB a malha programada ativa (Horizonte D0) com manifestos
+    completos (100 a 140 pax/voo), PNRs realistas e injeção de causa-e-efeito de atritos passados."""
+    logger.info("Iniciando geração nativa da Malha Programada Ativa (Horizonte D0)...")
+    np_rng = np.random.default_rng(seed=seed + 1042)
+
+    active_flight_configs = [
+        {
+            "numero_voo": "4409",
+            "origem": "SBPJ",
+            "destino": "SBCF",
+            "partida_prevista": "2026-08-11 14:30:00",
+            "situacao_voo": "A EMBARCAR",
+            "total_passageiros": 136,  # A320neo: 174 assentos -> 78.1% ocupação
+            "atraso_estimado": 0.0,
+        },
+        {
+            "numero_voo": "6002",
+            "origem": "SBSP",
+            "destino": "SBFI",
+            "partida_prevista": "2026-08-11 15:45:00",
+            "situacao_voo": "A EMBARCAR",
+            "total_passageiros": 138,
+            "atraso_estimado": 0.0,
+        },
+        {
+            "numero_voo": "2624",
+            "origem": "SBKP",
+            "destino": "SBPA",
+            "partida_prevista": "2026-08-11 16:15:00",
+            "situacao_voo": "PROGRAMADO",
+            "total_passageiros": 132,
+            "atraso_estimado": 15.0,
+        },
+        {
+            "numero_voo": "4066",
+            "origem": "SBCF",
+            "destino": "SBEG",
+            "partida_prevista": "2026-08-11 17:00:00",
+            "situacao_voo": "PROGRAMADO",
+            "total_passageiros": 135,
+            "atraso_estimado": 0.0,
+        },
+        {
+            "numero_voo": "4991",
+            "origem": "SBCX",
+            "destino": "SBKP",
+            "partida_prevista": "2026-08-11 17:45:00",
+            "situacao_voo": "PROGRAMADO",
+            "total_passageiros": 106,  # E195-E2: 136 assentos -> 77.9% ocupação
+            "atraso_estimado": 0.0,
+        },
+        {
+            "numero_voo": "2666",
+            "origem": "SBRJ",
+            "destino": "SBKP",
+            "partida_prevista": "2026-08-11 18:30:00",
+            "situacao_voo": "PROGRAMADO",
+            "total_passageiros": 104,
+            "atraso_estimado": 30.0,
+        },
+        {
+            "numero_voo": "5024",
+            "origem": "SBRF",
+            "destino": "SBGL",
+            "partida_prevista": "2026-08-11 19:15:00",
+            "situacao_voo": "PROGRAMADO",
+            "total_passageiros": 134,
+            "atraso_estimado": 0.0,
+        },
+        {
+            "numero_voo": "4147",
+            "origem": "SBKP",
+            "destino": "SBCT",
+            "partida_prevista": "2026-08-11 20:00:00",
+            "situacao_voo": "PROGRAMADO",
+            "total_passageiros": 105,
+            "atraso_estimado": 0.0,
+        },
+    ]
+
+    # Carrega tarifas médias ANAC para precificação fiel
+    tarifas_anac_dict: dict[tuple[str, str], float] = {}
+    if anac_tarifas_bronze_path and anac_tarifas_bronze_path.exists():
+        try:
+            df_anac = pd.read_parquet(anac_tarifas_bronze_path)
+            for _, row in df_anac.iterrows():
+                orig = str(row["origem"]).strip().upper()
+                dest = str(row["destino"]).strip().upper()
+                tarifas_anac_dict[(orig, dest)] = float(row.get("tarifa_media_anac", 650.0))
+        except Exception as e:
+            logger.warning("Falha ao carregar tarifas ANAC para malha ativa: %s", e)
+
+    # Identifica clientes com histórico de atrito severo no horizonte passado (Causa e Efeito)
+    atrito_mask = (
+        (df_historical_trips["situacao_voo"] == "CANCELADO")
+        | (df_historical_trips["atraso_enfrentado_minutos"] >= 45.0)
+        | (df_historical_trips["teve_bagagem_extraviada"] == True)
+        | (df_historical_trips["falha_app_checkin"] == True)
+    )
+    clientes_atritados_ranking = (
+        df_historical_trips[atrito_mask]
+        .groupby("id_cliente")
+        .size()
+        .sort_values(ascending=False)
+        .index.tolist()
+    )
+
+    client_tier_map = dict(zip(df_clients["id_cliente"], df_clients["tier_fidelidade"]))
+
+    # Separa VIPs (Diamante / Safira) com atrito severo
+    vips_atritados = [
+        cid for cid in clientes_atritados_ranking 
+        if client_tier_map.get(cid) in ("Diamante", "Safira")
+    ]
+    # Outros clientes com atrito (Topázio / Básico)
+    outros_atritados = [
+        cid for cid in clientes_atritados_ranking 
+        if cid not in vips_atritados
+    ]
+    # VIPs satisfeitos (para termos clientes VIP felizes sem risco na cabine)
+    vips_satisfeitos = [
+        cid for cid, tier in client_tier_map.items() 
+        if tier in ("Diamante", "Safira") and cid not in clientes_atritados_ranking
+    ]
+    # Clientes gerais
+    clientes_gerais = [
+        cid for cid in df_clients["id_cliente"].tolist()
+        if cid not in vips_atritados and cid not in vips_satisfeitos and cid not in outros_atritados
+    ]
+
+    allocated_clients_in_active: set[str] = set()
+    rows_active: list[dict[str, Any]] = []
+
+    for f_cfg in active_flight_configs:
+        num_voo = str(f_cfg["numero_voo"])
+        origem = str(f_cfg["origem"])
+        destino = str(f_cfg["destino"])
+        partida = str(f_cfg["partida_prevista"])
+        situacao = str(f_cfg["situacao_voo"])
+        atraso = float(f_cfg["atraso_estimado"])
+        total_pax = int(f_cfg["total_passageiros"])
+
+        tarifa_base = tarifas_anac_dict.get((origem, destino), 650.0)
+
+        # A. Injeção de Causa e Efeito: 8 a 12 VIPs com atrito severo
+        pool_vips_atrito = [c for c in vips_atritados if c not in allocated_clients_in_active]
+        qtd_vips_atrito = min(len(pool_vips_atrito), int(np_rng.integers(8, 14)))
+        chosen_vips_atrito = pool_vips_atrito[:qtd_vips_atrito]
+        allocated_clients_in_active.update(chosen_vips_atrito)
+
+        # B. VIPs Satisfeitos: 18 a 26 VIPs sem atrito
+        pool_vips_sat = [c for c in vips_satisfeitos if c not in allocated_clients_in_active]
+        qtd_vips_sat = min(len(pool_vips_sat), int(np_rng.integers(18, 26)))
+        chosen_vips_sat = pool_vips_sat[:qtd_vips_sat]
+        allocated_clients_in_active.update(chosen_vips_sat)
+
+        # C. Clientes gerais com atrito: 8 a 15
+        pool_outros_atrito = [c for c in outros_atritados if c not in allocated_clients_in_active]
+        qtd_outros_atrito = min(len(pool_outros_atrito), int(np_rng.integers(8, 15)))
+        chosen_outros_atrito = pool_outros_atrito[:qtd_outros_atrito]
+        allocated_clients_in_active.update(chosen_outros_atrito)
+
+        # D. Clientes Gerais para fechar a lotação exata do avião
+        already_chosen = chosen_vips_atrito + chosen_vips_sat + chosen_outros_atrito
+        pax_restantes = total_pax - len(already_chosen)
+
+        pool_gerais = [c for c in clientes_gerais if c not in allocated_clients_in_active]
+        if len(pool_gerais) < pax_restantes:
+            pool_gerais = clientes_gerais
+
+        chosen_gerais = list(np_rng.choice(pool_gerais, size=pax_restantes, replace=False))
+        allocated_clients_in_active.update(chosen_gerais)
+
+        all_flight_clients = already_chosen + chosen_gerais
+        np_rng.shuffle(all_flight_clients)
+
+        # Agrupamento estruturado por PNR (Tamanhos: 1=50%, 2=26%, 3=14%, 4=10%)
+        pnr_groups: list[list[str]] = []
+        c_idx = 0
+        while c_idx < len(all_flight_clients):
+            rem = len(all_flight_clients) - c_idx
+            if rem >= 4:
+                g_size = int(np_rng.choice([1, 2, 3, 4], p=[0.50, 0.26, 0.14, 0.10]))
+            elif rem >= 3:
+                g_size = int(np_rng.choice([1, 2, 3], p=[0.55, 0.30, 0.15]))
+            elif rem >= 2:
+                g_size = int(np_rng.choice([1, 2], p=[0.60, 0.40]))
+            else:
+                g_size = 1
+
+            pnr_groups.append(all_flight_clients[c_idx : c_idx + g_size])
+            c_idx += g_size
+
+        pnr_chars = np_rng.choice(PNR_ALPHABET, size=(len(pnr_groups) * 2, 6))
+        pnr_codes = pd.unique(np.array(["".join(r) for r in pnr_chars]))[: len(pnr_groups)]
+
+        for g_i, grp in enumerate(pnr_groups):
+            pnr_code = str(pnr_codes[g_i])
+            for cid in grp:
+                tarifa_paga = round(tarifa_base * float(np_rng.uniform(0.92, 1.18)), 2)
+                rows_active.append({
+                    "id_cliente": cid,
+                    "pnr": pnr_code,
+                    "numero_voo": num_voo,
+                    "origem": origem,
+                    "destino": destino,
+                    "partida_prevista": partida,
+                    "partida_real": "",  # NULL para voo programado
+                    "situacao_voo": situacao,  # 'A EMBARCAR' ou 'PROGRAMADO'
+                    "atraso_enfrentado_minutos": float(atraso),  # 0.0, 15.0, 30.0 (inteiro)
+                    "teve_bagagem_extraviada": False,
+                    "falha_app_checkin": False,
+                    "valor_pago_tarifa": tarifa_paga,
+                })
+
+    df_active = pd.DataFrame(rows_active)
+    # Garante tipagem idêntica
+    df_active["id_cliente"] = df_active["id_cliente"].astype("string")
+    df_active["pnr"] = df_active["pnr"].astype("string")
+    df_active["numero_voo"] = df_active["numero_voo"].astype("string")
+    df_active["origem"] = df_active["origem"].astype("string")
+    df_active["destino"] = df_active["destino"].astype("string")
+    df_active["partida_prevista"] = df_active["partida_prevista"].astype("string")
+    df_active["partida_real"] = df_active["partida_real"].astype("string")
+    df_active["situacao_voo"] = df_active["situacao_voo"].astype("string")
+    df_active["atraso_enfrentado_minutos"] = df_active["atraso_enfrentado_minutos"].astype(np.float64)
+    df_active["teve_bagagem_extraviada"] = df_active["teve_bagagem_extraviada"].astype(bool)
+    df_active["falha_app_checkin"] = df_active["falha_app_checkin"].astype(bool)
+    df_active["valor_pago_tarifa"] = df_active["valor_pago_tarifa"].astype(np.float64)
+
+    logger.info(
+        "Malha Programada Ativa gerada nativamente: %d passagens em %d voos (média: ~%d pax/voo).",
+        len(df_active),
+        df_active["numero_voo"].nunique(),
+        round(len(df_active) / max(1, df_active["numero_voo"].nunique())),
+    )
+    return df_active
 
 
 def enrich_trips_with_fares(
@@ -756,18 +1001,29 @@ def run_silver_pipeline() -> dict[str, Path]:
         bronze_parquet_path=bronze_parquet_path,
         max_flights=MAX_CHRONOLOGICAL_FLIGHTS,
     )
-    df_trips = generate_silver_trips(
+    df_trips_historical = generate_silver_trips(
         df_flights=df_flights,
         df_clients=df_clients_full,
         seed=DEFAULT_SEED,
         anac_tarifas_bronze_path=bronze_tarifas_path,
     )
-    df_trips = enrich_trips_with_fares(
-        df_trips=df_trips,
+    df_trips_historical = enrich_trips_with_fares(
+        df_trips=df_trips_historical,
         bronze_tarifas_path=bronze_tarifas_path,
         airline_code=TARGET_AIRLINE_CODE,
         seed=DEFAULT_SEED,
     )
+
+    # 3. Geração Nativa da Malha Programada Ativa (Horizonte D0) com Injeção de Causa e Efeito
+    df_trips_active = generate_active_scheduled_flights(
+        df_historical_trips=df_trips_historical,
+        df_clients=df_clients_full,
+        anac_tarifas_bronze_path=bronze_tarifas_path,
+        seed=DEFAULT_SEED,
+    )
+
+    # Consolidação unificada de viagens: Histórico (Passado) + Malha Ativa Programada (Hoje)
+    df_trips = pd.concat([df_trips_historical, df_trips_active], ignore_index=True)
 
     client_cols = [
         "id_cliente",
