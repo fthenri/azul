@@ -20,6 +20,8 @@ import {
   ShieldCheck,
   Check,
   Eye,
+  User,
+  X,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
@@ -49,6 +51,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
 
   // Estados locais
   const [selectedSeat, setSelectedSeat] = useState<AssentoVoo | null>(null);
+  const [activeLeftTab, setActiveLeftTab] = useState<"lote" | "dossie">("lote");
   const [filter, setFilter] = useState<SeatFilter>("todos");
   const [attendedSeats, setAttendedSeats] = useState<Set<string>>(new Set());
   const [isSyncSuccess, setIsSyncSuccess] = useState(false);
@@ -126,10 +129,12 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
   // Clique de inspeção pura no assento (SEM disparar mutação nem sincronização automática)
   const handleSelectSeat = (seat: AssentoVoo) => {
     setSelectedSeat(seat);
+    setActiveLeftTab("dossie");
   };
 
   const handleCloseDrawer = () => {
     setSelectedSeat(null);
+    setActiveLeftTab("lote");
   };
 
   const handleMarkAttended = (assento: string) => {
@@ -314,140 +319,212 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
 
       {/* Grid Principal: Lote de Ações Recomendadas (Batch) + Mapa de Cabine */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Coluna Esquerda/Topo: Card de Ações em Lote (Batch) (5 cols no desktop) */}
-        <div className="lg:col-span-5 space-y-4">
-          <Card className="border-border shadow-sm overflow-hidden">
-            <CardHeader className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-900/60 border-b border-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-[#0077C8]/10 text-[#0077C8] dark:text-[#38BDF8] flex items-center justify-center shrink-0">
-                    <Sparkles className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-sm font-bold text-foreground">
-                      5 Ações Recomendadas pela IA
-                    </CardTitle>
-                    <p className="text-[11px] text-muted-foreground">
-                      Priorização matemática por Valor em Risco (CLV × Evasão)
-                    </p>
-                  </div>
-                </div>
+        {/* Coluna Esquerda/Topo: Painel de Decisão (Lote de Ações da IA ou Dossiê do Passageiro) */}
+        <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-4">
+          {/* Seletor de visualização quando há passageiro selecionado */}
+          {selectedSeat && (
+            <div className="flex items-center justify-between p-1.5 bg-slate-100 dark:bg-slate-900 rounded-xl border border-border">
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant={activeLeftTab === "lote" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveLeftTab("lote")}
+                  className={cn(
+                    "text-xs h-8 gap-1.5 cursor-pointer",
+                    activeLeftTab === "lote"
+                      ? "bg-[#0077C8] text-white shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>5 Ações da IA</span>
+                </Button>
 
-                <Badge variant="outline" className="bg-[#0077C8]/10 text-[#0077C8] dark:text-[#38BDF8] border-[#0077C8]/20 font-mono text-[10px]">
-                  Batch Único
-                </Badge>
+                <Button
+                  type="button"
+                  variant={activeLeftTab === "dossie" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveLeftTab("dossie")}
+                  className={cn(
+                    "text-xs h-8 gap-1.5 cursor-pointer",
+                    activeLeftTab === "dossie"
+                      ? "bg-[#0077C8] text-white shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <User className="h-3.5 w-3.5" />
+                  <span>Assento {selectedSeat.assento}</span>
+                  {selectedSeat.dados_cliente?.is_grupo_familiar && (
+                    <Badge variant="outline" className="text-[9px] py-0 px-1 bg-sky-500/10 text-sky-600 dark:text-sky-300 border-sky-300 dark:border-sky-800 font-mono">
+                      PNR: {selectedSeat.dados_cliente.pnr}
+                    </Badge>
+                  )}
+                </Button>
               </div>
 
-              {/* Resumo Macro Financeiro do Lote */}
-              {loteAcoes?.resumo && (
-                <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border/60">
-                  <div className="p-2 rounded-lg bg-background border border-border">
-                    <span className="text-[9px] font-semibold text-muted-foreground uppercase block">
-                      Custo Total
-                    </span>
-                    <span className="text-xs font-bold text-foreground block mt-0.5">
-                      {formatCurrency(loteAcoes.resumo.custo_total)}
-                    </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleCloseDrawer}
+                title="Fechar dossiê e voltar ao lote de ações"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* Renderização Condicional: Dossiê do Passageiro OU Lote de Ações */}
+          {selectedSeat && activeLeftTab === "dossie" ? (
+            <div className="max-h-[calc(100vh-10rem)] flex flex-col">
+              <PassengerDrawer
+                seat={selectedSeat}
+                simulationResult={null}
+                isSimulating={false}
+                simulationError={null}
+                onClose={handleCloseDrawer}
+                onRerun={() => {}}
+                onMarkAttended={handleMarkAttended}
+                isAttended={attendedSeats.has(selectedSeat.assento)}
+              />
+            </div>
+          ) : (
+            <Card className="border-border shadow-sm overflow-hidden">
+              <CardHeader className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-900/60 border-b border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-[#0077C8]/10 text-[#0077C8] dark:text-[#38BDF8] flex items-center justify-center shrink-0">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-bold text-foreground">
+                        5 Ações Recomendadas pela IA
+                      </CardTitle>
+                      <p className="text-[11px] text-muted-foreground">
+                        Priorização matemática por Valor em Risco (CLV × Evasão)
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="p-2 rounded-lg bg-background border border-border">
-                    <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase block">
-                      Retorno Líquido
-                    </span>
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5">
-                      {formatCurrency(loteAcoes.resumo.retorno_liquido_total)}
-                    </span>
-                  </div>
-
-                  <div className="p-2 rounded-lg bg-background border border-border">
-                    <span className="text-[9px] font-semibold text-sky-600 dark:text-sky-400 uppercase block">
-                      ROI Estimado
-                    </span>
-                    <span className="text-xs font-bold text-sky-600 dark:text-sky-400 block mt-0.5">
-                      {loteAcoes.resumo.roi_projetado}x
-                    </span>
-                  </div>
+                  <Badge variant="outline" className="bg-[#0077C8]/10 text-[#0077C8] dark:text-[#38BDF8] border-[#0077C8]/20 font-mono text-[10px]">
+                    Batch Único
+                  </Badge>
                 </div>
-              )}
-            </CardHeader>
 
-            <CardContent className="p-4 space-y-3">
-              {loteAcoes?.acoes.map((acao, idx) => {
-                const isCritico = acao.tipo === "atrito";
-                return (
-                  <div
-                    key={acao.id_missao || idx}
-                    className={cn(
-                      "p-3 rounded-xl border text-xs space-y-2 transition-all hover:shadow-xs",
-                      isCritico
-                        ? "bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50"
-                        : "bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50"
-                    )}
-                  >
-                    {/* Header do Card de Ação */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="h-6 w-8 rounded-md bg-foreground text-background font-mono font-black text-center leading-6 shrink-0 text-xs">
-                          {acao.assento}
-                        </span>
+                {/* Resumo Macro Financeiro do Lote */}
+                {loteAcoes?.resumo && (
+                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border/60">
+                    <div className="p-2 rounded-lg bg-background border border-border">
+                      <span className="text-[9px] font-semibold text-muted-foreground uppercase block">
+                        Custo Total
+                      </span>
+                      <span className="text-xs font-bold text-foreground block mt-0.5">
+                        {formatCurrency(loteAcoes.resumo.custo_total)}
+                      </span>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-background border border-border">
+                      <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase block">
+                        Retorno Líquido
+                      </span>
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5">
+                        {formatCurrency(loteAcoes.resumo.retorno_liquido_total)}
+                      </span>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-background border border-border">
+                      <span className="text-[9px] font-semibold text-sky-600 dark:text-sky-400 uppercase block">
+                        ROI Estimado
+                      </span>
+                      <span className="text-xs font-bold text-sky-600 dark:text-sky-400 block mt-0.5">
+                        {loteAcoes.resumo.roi_projetado}x
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </CardHeader>
+
+              <CardContent className="p-4 space-y-3">
+                {loteAcoes?.acoes.map((acao, idx) => {
+                  const isCritico = acao.tipo === "atrito";
+                  const matchingSeat = seats.find((s) => s.assento === acao.assento);
+                  return (
+                    <div
+                      key={acao.id_missao || idx}
+                      onClick={() => matchingSeat && handleSelectSeat(matchingSeat)}
+                      className={cn(
+                        "p-3 rounded-xl border text-xs space-y-2 transition-all hover:shadow-xs cursor-pointer hover:border-primary/50",
+                        isCritico
+                          ? "bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50"
+                          : "bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50"
+                      )}
+                    >
+                      {/* Header do Card de Ação */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="h-6 w-8 rounded-md bg-foreground text-background font-mono font-black text-center leading-6 shrink-0 text-xs">
+                            {acao.assento}
+                          </span>
+                          <div>
+                            <div className="font-bold text-foreground flex items-center gap-1.5">
+                              <span>{acao.passageiro}</span>
+                              <span className="text-[10px] text-muted-foreground font-mono">
+                                (PNR: {acao.pnr})
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <span className="font-semibold text-primary">{acao.tier}</span>
+                              <span>•</span>
+                              <span>{acao.persona}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Badge
+                          variant={isCritico ? "destructive" : "default"}
+                          className={cn(
+                            "text-[9px] py-0 px-1.5 shrink-0",
+                            !isCritico && "bg-amber-500 hover:bg-amber-600 text-white"
+                          )}
+                        >
+                          {acao.status_badge}
+                        </Badge>
+                      </div>
+
+                      {/* Ação Prescrita pelo Árbitro */}
+                      <div className="flex items-center justify-between text-[11px] bg-background/80 p-2 rounded-lg border border-border/60">
                         <div>
-                          <div className="font-bold text-foreground flex items-center gap-1.5">
-                            <span>{acao.passageiro}</span>
-                            <span className="text-[10px] text-muted-foreground font-mono">
-                              (PNR: {acao.pnr})
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <span className="font-semibold text-primary">{acao.tier}</span>
-                            <span>•</span>
-                            <span>{acao.persona}</span>
-                          </div>
+                          <span className="text-muted-foreground text-[10px] block">Ação do Árbitro:</span>
+                          <strong className="text-foreground">{acao.acao_sugerida}</strong>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-muted-foreground block">Retorno Líquido:</span>
+                          <strong className="text-emerald-600 dark:text-emerald-400">
+                            {formatCurrency(acao.retorno_liquido)}
+                          </strong>
                         </div>
                       </div>
 
-                      <Badge
-                        variant={isCritico ? "destructive" : "default"}
-                        className={cn(
-                          "text-[9px] py-0 px-1.5 shrink-0",
-                          !isCritico && "bg-amber-500 hover:bg-amber-600 text-white"
-                        )}
-                      >
-                        {acao.status_badge}
-                      </Badge>
-                    </div>
-
-                    {/* Ação Prescrita pelo Árbitro */}
-                    <div className="flex items-center justify-between text-[11px] bg-background/80 p-2 rounded-lg border border-border/60">
-                      <div>
-                        <span className="text-muted-foreground text-[10px] block">Ação do Árbitro:</span>
-                        <strong className="text-foreground">{acao.acao_sugerida}</strong>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-muted-foreground block">Retorno Líquido:</span>
-                        <strong className="text-emerald-600 dark:text-emerald-400">
-                          {formatCurrency(acao.retorno_liquido)}
-                        </strong>
+                      {/* Instrução Tática Gerada pela IA */}
+                      <div className="text-[11px] text-muted-foreground leading-relaxed bg-background/50 p-2 rounded-lg border border-dashed border-border/80 flex items-start gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-[#0077C8] dark:text-[#38BDF8] shrink-0 mt-0.5" />
+                        <span>{acao.instrucao_comissario}</span>
                       </div>
                     </div>
+                  );
+                })}
 
-                    {/* Instrução Tática Gerada pela IA */}
-                    <div className="text-[11px] text-muted-foreground leading-relaxed bg-background/50 p-2 rounded-lg border border-dashed border-border/80 flex items-start gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-[#0077C8] dark:text-[#38BDF8] shrink-0 mt-0.5" />
-                      <span>{acao.instrucao_comissario}</span>
-                    </div>
-                  </div>
-                );
-              })}
-
-              <Button
-                onClick={handleBatchApproveAndSync}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 h-9 cursor-pointer mt-2 shadow-xs"
-              >
-                <Send className="h-3.5 w-3.5" />
-                <span>Aprovar Todo o Lote e Sincronizar</span>
-              </Button>
-            </CardContent>
-          </Card>
+                <Button
+                  onClick={handleBatchApproveAndSync}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 h-9 cursor-pointer mt-2 shadow-xs"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  <span>Aprovar Todo o Lote e Sincronizar</span>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Coluna Direita: Mapa de Assentos com Agrupamento por PNR (7 cols no desktop) */}
@@ -532,9 +609,10 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
         </div>
       </div>
 
-      {/* Drawer Lateral de Inspeção de Passageiro (Apenas leitura/consulta ao clicar no assento) */}
+      {/* Drawer Mobile (apenas em telas pequenas < lg, estilo bottom sheet para não cobrir a cabine horizontalmente) */}
       {selectedSeat && (
-        <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-background shadow-2xl border-l border-border animate-in slide-in-from-right duration-200">
+        <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 max-h-[80vh] bg-background border-t border-border shadow-2xl rounded-t-2xl overflow-y-auto animate-in slide-in-from-bottom duration-200 p-2">
+          <div className="w-12 h-1.5 bg-muted rounded-full mx-auto my-2" />
           <PassengerDrawer
             seat={selectedSeat}
             simulationResult={null}
