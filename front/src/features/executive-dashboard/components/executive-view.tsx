@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import {
@@ -18,6 +18,7 @@ import { ParetoChart } from "./pareto-chart";
 import { PersonasScatterChart } from "./personas-scatter-chart";
 import { PersonaMatrix } from "./persona-matrix";
 import { ParetoRoiAnalysis } from "./pareto-roi-analysis";
+import { ExecutiveFilterTabs, TabType } from "./executive-filter-tabs";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -128,56 +129,13 @@ export function ExecutiveView() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SELETOR DE ABAS / FILTROS VISUAIS
+          SELETOR DE ABAS / FILTROS VISUAIS RECONSTRUÍDO
+          (Com trilho interligador e animação fluida que corre entre os botões)
          ───────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        <button
-          onClick={() => setActiveTab("all")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
-            activeTab === "all"
-              ? "bg-[#003B7A] dark:bg-sky-500 text-white dark:text-slate-950 shadow-sm"
-              : "bg-card/70 dark:bg-white/[0.04] text-muted-foreground hover:text-foreground border border-border/60 dark:border-white/10"
-          }`}
-        >
-          Visão Geral Completa
-        </button>
-
-        <button
-          onClick={() => setActiveTab("pareto")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-            activeTab === "pareto"
-              ? "bg-[#003B7A] dark:bg-sky-500 text-white dark:text-slate-950 shadow-sm"
-              : "bg-card/70 dark:bg-white/[0.04] text-muted-foreground hover:text-foreground border border-border/60 dark:border-white/10"
-          }`}
-        >
-          <Layers className="h-3.5 w-3.5" />
-          <span>Curva de Concentração (Pareto)</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("personas")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-            activeTab === "personas"
-              ? "bg-[#003B7A] dark:bg-sky-500 text-white dark:text-slate-950 shadow-sm"
-              : "bg-card/70 dark:bg-white/[0.04] text-muted-foreground hover:text-foreground border border-border/60 dark:border-white/10"
-          }`}
-        >
-          <Users className="h-3.5 w-3.5" />
-          <span>Matriz de Personas</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("roi")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-            activeTab === "roi"
-              ? "bg-[#003B7A] dark:bg-sky-500 text-white dark:text-slate-950 shadow-sm"
-              : "bg-card/70 dark:bg-white/[0.04] text-muted-foreground hover:text-foreground border border-border/60 dark:border-white/10"
-          }`}
-        >
-          <Zap className="h-3.5 w-3.5" />
-          <span>Análise de ROI (Top 20%)</span>
-        </button>
-      </div>
+      <ExecutiveFilterTabs
+        activeTab={activeTab}
+        onChange={(tab) => setActiveTab(tab)}
+      />
 
       {/* ─────────────────────────────────────────────────────────────
           2. GRÁFICOS: PARETO 80/20 & SCATTER PLOT PERSONAS
