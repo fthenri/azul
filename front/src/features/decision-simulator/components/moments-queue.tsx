@@ -49,7 +49,7 @@ function inferTier(momento: Momento): {
       label: "Diamante",
       color: "text-sky-200 dark:text-sky-300",
       border: "border-sky-400/50 dark:border-sky-400/60",
-      bg: "bg-gradient-to-r from-[#002855] to-[#003B7A] dark:from-sky-950 dark:to-[#002855]",
+      bg: "bg-gradient-to-r from-azul-navy-dark to-azul-navy dark:from-sky-950 dark:to-azul-navy-dark",
     };
   }
   if (p.includes("premium") || clv >= 5000) {
@@ -202,10 +202,10 @@ export function MomentsQueue({
       {/* ─────────────────────────────────────────────────────────────
           BARRA DE COMANDO DA FILA (BUSCA, FILTROS E FOCO RÁPIDO)
          ───────────────────────────────────────────────────────────── */}
-      <Card className="rounded-2xl border border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-md shadow-xs p-4 space-y-3.5">
+      <Card className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-md shadow-xs p-4 space-y-3.5">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-400/20 text-[#0077C8] dark:text-sky-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
               <Zap className="h-4 w-4" />
             </div>
             <div>
@@ -215,7 +215,7 @@ export function MomentsQueue({
                 </CardTitle>
                 <Badge
                   variant="outline"
-                  className="text-xs font-bold text-azul-action dark:text-sky-300 border-sky-500/25 bg-sky-500/10"
+                  className="text-xs font-bold text-primary border-primary/25 bg-primary/10"
                 >
                   {filteredMomentos.length} de {momentos.length} casos
                 </Badge>
@@ -235,7 +235,7 @@ export function MomentsQueue({
                 placeholder="Buscar por cliente, voo, persona ou PNR..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-background/80 border border-border/80 dark:border-white/10 placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
+                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-background/80 border border-border/80 placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
               />
             </div>
 
@@ -244,7 +244,7 @@ export function MomentsQueue({
               variant="outline"
               size="sm"
               onClick={handleSelectMostCritical}
-              className="h-8 px-3 text-xs font-bold text-[#0077C8] dark:text-sky-400 bg-sky-500/5 hover:bg-sky-500/15 border-sky-400/25 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+              className="h-8 px-3 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/15 border-primary/25 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               <Sparkles className="h-3.5 w-3.5" />
               <span>Simular Caso Mais Crítico</span>
@@ -259,7 +259,7 @@ export function MomentsQueue({
             onClick={() => setActiveFilter("all")}
             className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
               activeFilter === "all"
-                ? "bg-[#003B7A] dark:bg-sky-500 text-white shadow-xs"
+                ? "bg-primary text-primary-foreground shadow-xs"
                 : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
@@ -375,8 +375,8 @@ export function MomentsQueue({
                   style={{ animationDelay: `${(idx % itemsPerPage) * 35}ms` }}
                   className={`group relative p-4 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col justify-between hover:shadow-xl hover:-translate-y-1 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 fill-mode-both ${
                     isSelected
-                      ? "border-sky-500 bg-sky-500/[0.06] dark:bg-sky-500/[0.12] shadow-md ring-2 ring-sky-500/40"
-                      : "border-border/80 dark:border-white/10 bg-card/85 dark:bg-[#071120]/85 backdrop-blur-md hover:border-sky-400/50 hover:shadow-sky-500/5"
+                      ? "border-primary bg-primary/[0.08] dark:bg-primary/[0.15] shadow-md ring-2 ring-primary/40"
+                      : "border-border/80 bg-card/85 backdrop-blur-md hover:border-primary/50 hover:shadow-primary/5"
                   }`}
                 >
                   {/* Linha 1: Badges de Tipo, Tier e Voo */}
@@ -435,7 +435,7 @@ export function MomentsQueue({
                   </div>
 
                   {/* Linha 3: Barra Visual de Risco e Footer */}
-                  <div className="space-y-2 pt-2.5 border-t border-dashed border-border/70 dark:border-white/10">
+                  <div className="space-y-2 pt-2.5 border-t border-dashed border-border/70">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[10px]">
                         <span className="text-muted-foreground font-medium">Risco de Churn:</span>
@@ -489,8 +489,8 @@ export function MomentsQueue({
                         <div
                           className={`flex h-7 w-7 items-center justify-center rounded-xl transition-all duration-200 shrink-0 ${
                             isSelected
-                              ? "bg-[#0077C8] text-white shadow-xs"
-                              : "bg-muted text-muted-foreground group-hover:bg-sky-500/15 group-hover:text-[#0077C8] dark:group-hover:text-sky-300 group-hover:translate-x-0.5"
+                              ? "bg-primary text-primary-foreground shadow-xs"
+                              : "bg-muted text-muted-foreground group-hover:bg-primary/15 group-hover:text-primary group-hover:translate-x-0.5"
                           }`}
                         >
                           <ChevronRight className="h-4 w-4" />
@@ -506,7 +506,7 @@ export function MomentsQueue({
           {/* ─────────────────────────────────────────────────────────────
               BARRA DE PAGINAÇÃO AERO-GLOW (CONTROLES DE NAVEGAÇÃO)
              ───────────────────────────────────────────────────────────── */}
-          <Card className="rounded-2xl border border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-md shadow-xs p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <Card className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-md shadow-xs p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             {/* Esquerda: Contador de Contexto */}
             <div className="text-xs text-muted-foreground flex items-center gap-1.5">
               <span>
@@ -567,7 +567,7 @@ export function MomentsQueue({
                       onClick={() => setCurrentPage(pageNum)}
                       className={`h-8 w-8 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
                         isActive
-                          ? "bg-[#003B7A] dark:bg-sky-500 text-white shadow-xs scale-105"
+                          ? "bg-primary text-primary-foreground shadow-xs scale-105"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       }`}
                     >
@@ -613,7 +613,7 @@ export function MomentsQueue({
                     onClick={() => setItemsPerPage(size)}
                     className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-bold transition-all cursor-pointer ${
                       itemsPerPage === size
-                        ? "bg-[#003B7A] dark:bg-sky-500 text-white shadow-xs"
+                        ? "bg-primary text-primary-foreground shadow-xs"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     }`}
                   >

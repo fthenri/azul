@@ -50,14 +50,14 @@ export function ArbitrationPanel({ result }: ArbitrationPanelProps) {
   const maxRetorno = Math.max(...ranking_acoes.map((a) => Math.max(a.retorno_liquido, 0)), 1);
 
   return (
-    <Card className="rounded-2xl border border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-md shadow-xs overflow-hidden">
+    <Card className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-md shadow-xs overflow-hidden">
       {/* ─────────────────────────────────────────────────────────────
           HEADER DA ARBITRAGEM MATEMÁTICA
          ───────────────────────────────────────────────────────────── */}
-      <CardHeader className="pb-3 border-b border-border/60 dark:border-white/5 bg-muted/20">
+      <CardHeader className="pb-3 border-b border-border/60 bg-muted/20">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-400/20 text-[#0077C8] dark:text-sky-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
               <Scale className="h-4 w-4" />
             </div>
             <div>
@@ -198,7 +198,7 @@ export function ArbitrationPanel({ result }: ArbitrationPanelProps) {
             </span>
           </div>
 
-          <div className="rounded-xl border border-border/80 dark:border-white/10 overflow-hidden bg-card">
+          <div className="rounded-xl border border-border/80 overflow-hidden bg-card">
             <div className="divide-y divide-border/60">
               {ranking_acoes.map((item, idx) => {
                 const isWinner = item.acao.toLowerCase() === decisao_final.acao_vencedora.toLowerCase();
@@ -222,7 +222,7 @@ export function ArbitrationPanel({ result }: ArbitrationPanelProps) {
                         <span
                           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black font-mono ${
                             isWinner
-                              ? "bg-[#003B7A] dark:bg-sky-500 text-white"
+                              ? "bg-primary text-primary-foreground"
                               : "bg-muted text-muted-foreground"
                           }`}
                         >
@@ -286,7 +286,7 @@ export function ArbitrationPanel({ result }: ArbitrationPanelProps) {
                           isWinner
                             ? "bg-emerald-500"
                             : isPositive
-                            ? "bg-[#0077C8] dark:bg-sky-400"
+                            ? "bg-primary"
                             : "bg-rose-400"
                         }`}
                         style={{ width: `${isPositive ? ratioPercent : 4}%` }}

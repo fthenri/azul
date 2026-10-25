@@ -100,7 +100,7 @@ export function SimulationForm({
   })();
 
   return (
-    <Card className="rounded-2xl border border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-md shadow-xs overflow-hidden transition-all duration-300">
+    <Card className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-md shadow-xs overflow-hidden transition-all duration-300">
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* ─────────────────────────────────────────────────────────────
             MODO COMPACTO ATIVO (QUANDO A SIMULAÇÃO JÁ FOI EXECUTADA)
@@ -109,7 +109,7 @@ export function SimulationForm({
           <div className="p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-muted/20">
             {/* Esquerda: Identificação do Passageiro */}
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#003B7A] text-white font-bold text-xs shadow-xs border border-sky-400/30">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-xs border border-primary/30">
                 <User className="h-4 w-4" />
               </div>
               <div className="space-y-0.5">
@@ -117,11 +117,11 @@ export function SimulationForm({
                   <span className="text-xs font-black text-foreground">
                     Passageiro #{selectedMomento.cliente_id}
                   </span>
-                  <Badge className="bg-[#003B7A] dark:bg-sky-950 text-white dark:text-sky-300 border-sky-400/30 text-[9px] font-bold px-1.5 py-0">
-                    <Crown className="h-2.5 w-2.5 mr-1 text-sky-400" />
+                  <Badge className="bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0">
+                    <Crown className="h-2.5 w-2.5 mr-1 text-sky-200" />
                     {tier}
                   </Badge>
-                  <span className="text-[11px] font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 px-1.5 py-0 rounded">
+                  <span className="text-[11px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0 rounded">
                     {paretoDecil}
                   </span>
                 </div>
@@ -156,7 +156,7 @@ export function SimulationForm({
                   type="submit"
                   size="sm"
                   disabled={isSimulating}
-                  className="h-8 px-3 rounded-xl bg-gradient-to-r from-[#003B7A] to-[#0077C8] hover:from-[#002855] text-white text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  className="h-8 px-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
                 >
                   <RefreshCw className={`h-3 w-3 ${isSimulating ? "animate-spin" : ""}`} />
                   <span>{isSimulating ? "Recalculando..." : "Re-executar"}</span>
@@ -181,10 +181,10 @@ export function SimulationForm({
               MODO COMPLETO DO DOSSIÊ
              ───────────────────────────────────────────────────────────── */
           <div>
-            <CardHeader className="pb-3 border-b border-border/60 dark:border-white/5 bg-muted/20">
+            <CardHeader className="pb-3 border-b border-border/60 bg-muted/20">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-400/20 text-[#0077C8] dark:text-sky-400">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
                     <Sparkles className="h-4 w-4" />
                   </div>
                   <div>
@@ -269,7 +269,7 @@ export function SimulationForm({
                       className={`flex-1 rounded-xl border px-3 py-2 text-xs font-mono bg-background focus:outline-none focus:ring-2 focus:ring-sky-500/30 ${
                         errors.momento_id
                           ? "border-destructive focus:ring-destructive"
-                          : "border-border/80 dark:border-white/10"
+                          : "border-border/80"
                       }`}
                     />
                   </div>
@@ -284,11 +284,11 @@ export function SimulationForm({
 
               {/* Dossiê Visual Completo */}
               {selectedMomento ? (
-                <div className="rounded-xl border border-border/80 dark:border-white/10 bg-card p-4 space-y-3 shadow-xs">
+                <div className="rounded-xl border border-border/80 bg-card p-4 space-y-3 shadow-xs">
                   {/* Cabeçalho */}
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border/60">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#003B7A] text-white font-bold text-sm shadow-xs border border-sky-400/30">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-xs border border-primary/30">
                         <User className="h-5 w-5" />
                       </div>
                       <div>
@@ -296,8 +296,8 @@ export function SimulationForm({
                           <h4 className="text-sm font-black text-foreground">
                             Passageiro #{selectedMomento.cliente_id}
                           </h4>
-                          <Badge className="bg-[#003B7A] dark:bg-sky-950 text-white dark:text-sky-300 border-sky-400/30 text-[10px] font-bold px-2">
-                            <Crown className="h-2.5 w-2.5 mr-1 text-sky-400" />
+                          <Badge className="bg-primary text-primary-foreground text-[10px] font-bold px-2">
+                            <Crown className="h-2.5 w-2.5 mr-1 text-sky-200" />
                             Tier {tier}
                           </Badge>
                         </div>
@@ -324,7 +324,7 @@ export function SimulationForm({
                       <span className="text-[10px] uppercase font-bold text-muted-foreground">
                         CLV Previsto
                       </span>
-                      <p className="text-base font-black font-mono text-[#003B7A] dark:text-sky-300">
+                      <p className="text-base font-black font-mono text-primary">
                         {formatCurrency(selectedMomento.clv_previsto)}
                       </p>
                     </div>
@@ -402,7 +402,7 @@ export function SimulationForm({
                 <Button
                   type="submit"
                   disabled={isSimulating || !currentMomentoId}
-                  className="w-full h-11 rounded-xl bg-gradient-to-r from-[#003B7A] via-[#00529B] to-[#0077C8] hover:from-[#002855] hover:to-[#00529B] text-white font-bold text-xs shadow-md transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-md transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <Play className={`h-4 w-4 fill-white ${isSimulating ? "animate-pulse" : ""}`} />
                   <span>

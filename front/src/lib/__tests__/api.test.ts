@@ -45,7 +45,7 @@ describe("API Client Integration Tests (contract.md compliance)", () => {
       expect.anything()
     );
     expect(data).toHaveLength(DEMO_PERSONAS.length);
-    expect(data[0].persona).toBe("Executivo Frequente");
+    expect(data[0].persona).toBe(DEMO_PERSONAS[0].persona);
   });
 
   it("getPareto deve chamar GET /api/v1/dashboard/pareto", async () => {

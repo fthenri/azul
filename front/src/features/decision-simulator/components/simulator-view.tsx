@@ -56,7 +56,7 @@ export function SimulatorView() {
       {/* ─────────────────────────────────────────────────────────────
           HEADER DA CENTRAL DE DECISÕES
          ───────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between pb-2 border-b border-border/60 dark:border-white/10">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between pb-2 border-b border-border/60">
         <div>
           {/* Micro-badge de Ecossistema */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/25 text-azul-action dark:text-sky-300 text-[11px] font-semibold tracking-wide shadow-xs mb-2">
@@ -68,7 +68,7 @@ export function SimulatorView() {
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
               Central de Decisões & Arbitragem IA
             </h1>
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md font-semibold text-[11px] bg-[#EAF4FC] dark:bg-sky-950/70 text-[#003B7A] dark:text-sky-300 border border-[#0077C8]/25 dark:border-sky-500/30">
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md font-semibold text-[11px] bg-secondary text-secondary-foreground border border-primary/25">
               Simulador em Tempo Real
             </span>
           </div>
@@ -84,7 +84,7 @@ export function SimulatorView() {
         {/* Controles de Atualização & Status dos Motores */}
         <div className="flex items-center gap-2.5 flex-wrap">
           {/* Status do Motor DuckDB */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card/80 dark:bg-[#071120]/80 border border-border/80 dark:border-white/10 backdrop-blur-md text-xs shadow-xs">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card/80 border border-border/80 backdrop-blur-md text-xs shadow-xs">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -95,8 +95,8 @@ export function SimulatorView() {
           </div>
 
           {/* Status do Modelo RAG */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card/80 dark:bg-[#071120]/80 border border-border/80 dark:border-white/10 text-xs shadow-xs text-muted-foreground font-mono">
-            <Cpu className="h-3.5 w-3.5 text-sky-500" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card/80 border border-border/80 text-xs shadow-xs text-muted-foreground font-mono">
+            <Cpu className="h-3.5 w-3.5 text-primary" />
             <span className="text-[11px] font-medium text-foreground">GPT-4o-mini RAG</span>
           </div>
 
@@ -106,10 +106,10 @@ export function SimulatorView() {
             size="sm"
             onClick={() => refetchMomentos()}
             disabled={isLoadingMomentos}
-            className="h-9 px-3.5 rounded-xl border-border/80 dark:border-white/15 bg-card/80 dark:bg-[#071120]/80 hover:bg-muted dark:hover:bg-white/10 text-foreground font-semibold text-xs shadow-xs transition-all duration-200 flex items-center gap-2 cursor-pointer"
+            className="h-9 px-3.5 rounded-xl border-border/80 bg-card/80 hover:bg-muted text-foreground font-semibold text-xs shadow-xs transition-all duration-200 flex items-center gap-2 cursor-pointer"
           >
             <RefreshCw
-              className={`h-3.5 w-3.5 text-azul-action dark:text-sky-400 ${
+              className={`h-3.5 w-3.5 text-primary ${
                 isLoadingMomentos ? "animate-spin" : ""
               }`}
             />
@@ -193,7 +193,7 @@ export function SimulatorView() {
       {/* ─────────────────────────────────────────────────────────────
           FOOTER COMPLIANCE & INTEGRIDADE DO DATA LAKE
          ───────────────────────────────────────────────────────────── */}
-      <div className="pt-4 pb-2 border-t border-border/60 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+      <div className="pt-4 pb-2 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
           <Database className="h-4 w-4 text-azul-action dark:text-sky-400" />
           <span>

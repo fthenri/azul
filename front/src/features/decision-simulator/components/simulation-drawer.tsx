@@ -140,7 +140,7 @@ export function SimulationDrawer({
     switch (tier) {
       case "Diamante":
         return {
-          badge: "bg-[#002855] text-sky-200 border-sky-400/50 shadow-xs",
+          badge: "bg-azul-navy-dark text-sky-200 border-sky-400/50 shadow-xs",
         };
       case "Safira":
         return {
@@ -200,14 +200,14 @@ export function SimulationDrawer({
           2. DRAWER EXPANSIVO LATERAL (780px) COM ÚNICO SCROLL VERTICAL
          ───────────────────────────────────────────────────────────── */}
       <div className="fixed inset-y-0 right-0 z-50 flex max-w-full">
-        <aside className="w-screen max-w-[820px] bg-card text-foreground shadow-2xl border-l border-border/80 dark:border-white/10 flex flex-col h-full animate-in slide-in-from-right duration-300">
+        <aside className="w-screen max-w-[820px] bg-card text-foreground shadow-2xl border-l border-border/80 flex flex-col h-full animate-in slide-in-from-right duration-300">
           {/* ─────────────────────────────────────────────────────────────
               HEADER DO DRAWER: IDENTIFICAÇÃO + NAVEGAÇÃO ENTRE CASOS
              ───────────────────────────────────────────────────────────── */}
-          <div className="px-6 py-4 border-b border-border/70 dark:border-white/10 bg-muted/40 backdrop-blur-md flex items-center justify-between gap-4 shrink-0">
+          <div className="px-6 py-4 border-b border-border/70 bg-muted/40 backdrop-blur-md flex items-center justify-between gap-4 shrink-0">
             {/* Esquerda: Identificação do Passageiro */}
             <div className="flex items-center gap-3.5 min-w-0">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#003B7A] dark:bg-sky-600 text-white font-black text-sm shadow-md border border-border/60">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-black text-sm shadow-md border border-border/60">
                 <User className="h-5 w-5" />
               </div>
 
@@ -223,7 +223,7 @@ export function SimulationDrawer({
                   {rota && (
                     <Badge
                       variant="outline"
-                      className="text-[10px] font-mono font-bold text-[#0077C8] dark:text-sky-300 border-sky-500/30 bg-sky-500/10 flex items-center gap-1"
+                      className="text-[10px] font-mono font-bold text-primary border-primary/30 bg-primary/10 flex items-center gap-1"
                     >
                       <Plane className="h-2.5 w-2.5" />
                       <span>{rota}</span>
@@ -291,7 +291,7 @@ export function SimulationDrawer({
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 border border-sky-400/20 text-[#0077C8] dark:text-sky-400">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary">
                     <Sparkles className="h-3.5 w-3.5" />
                   </div>
                   <h3 className="text-sm font-black tracking-tight text-foreground">
@@ -307,11 +307,11 @@ export function SimulationDrawer({
               {/* Grid Amplo de Métricas Financeiras com Feixes de Luz Semânticos */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="relative overflow-hidden p-3.5 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
-                  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-sky-500/80 via-sky-400/30 to-transparent" />
+                  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/80 via-primary/30 to-transparent" />
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
                     CLV Previsto
                   </span>
-                  <p className="text-lg font-black font-mono text-[#003B7A] dark:text-sky-300">
+                  <p className="text-lg font-black font-mono text-primary">
                     {formatCurrency(selectedMomento.clv_previsto)}
                   </p>
                   <span className="text-[10px] text-muted-foreground block">Ciclo de vida Gold</span>
@@ -375,7 +375,7 @@ export function SimulationDrawer({
                 <Button
                   onClick={() => onSimulate(selectedMomento.id)}
                   disabled={isSimulating}
-                  className="w-full h-10 rounded-xl bg-[#003B7A] hover:bg-[#002855] dark:bg-sky-600 dark:hover:bg-sky-700 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
+                  className="w-full h-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
                 >
                   <Play className={`h-3.5 w-3.5 fill-white ${isSimulating ? "animate-pulse" : ""}`} />
                   <span>
@@ -400,7 +400,7 @@ export function SimulationDrawer({
                 SEÇÃO 2: RESULTADOS DO MOTOR QUANDO EXECUTADO
                ───────────────────────────────────────────────────────────── */}
             {simulationResult && (
-              <section className="space-y-6 pt-2 border-t border-border/70 dark:border-white/10 animate-in fade-in duration-300">
+              <section className="space-y-6 pt-2 border-t border-border/70 animate-in fade-in duration-300">
                 {/* ─────────────────────────────────────────────────────────
                     A. BANNER DE MISSÃO DE BORDO DESPACHADA
                    ───────────────────────────────────────────────────────── */}
@@ -443,7 +443,7 @@ export function SimulationDrawer({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 border border-sky-400/20 text-[#0077C8] dark:text-sky-400">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary">
                         <Scale className="h-3.5 w-3.5" />
                       </div>
                       <div>
@@ -556,7 +556,7 @@ export function SimulationDrawer({
                   </div>
 
                   {/* Tabela Ampla de Ranking de Todas as Ações */}
-                  <div className="rounded-xl border border-border/80 dark:border-white/10 overflow-hidden bg-card">
+                  <div className="rounded-xl border border-border/80 overflow-hidden bg-card">
                     <div className="p-3 bg-muted/40 border-b border-border/70 text-xs font-bold text-muted-foreground uppercase flex items-center justify-between">
                       <span>Ranking Comparativo das Concessões</span>
                       <span className="font-mono text-[11px]">{simulationResult.ranking_acoes.length} ações avaliadas</span>
@@ -579,7 +579,7 @@ export function SimulationDrawer({
                               <div className="flex items-center gap-2.5 min-w-0">
                                 <span
                                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-lg text-xs font-black font-mono ${
-                                    isWinner ? "bg-[#003B7A] dark:bg-sky-500 text-white" : "bg-muted text-muted-foreground"
+                                    isWinner ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                                   }`}
                                 >
                                   {idx + 1}
@@ -638,7 +638,7 @@ export function SimulationDrawer({
                                   isWinner
                                     ? "bg-emerald-500"
                                     : isPositive
-                                    ? "bg-[#0077C8] dark:bg-sky-400"
+                                    ? "bg-primary"
                                     : "bg-rose-400"
                                 }`}
                                 style={{ width: `${isPositive ? ratio : 3}%` }}
@@ -654,10 +654,10 @@ export function SimulationDrawer({
                 {/* ─────────────────────────────────────────────────────────
                     C. EXPLICABILIDADE ADITIVA SHAP (DECOMPOSIÇÃO DE RISCO)
                    ───────────────────────────────────────────────────────── */}
-                <div className="rounded-2xl border border-border/80 dark:border-white/10 bg-card p-4 space-y-3 shadow-xs">
+                <div className="rounded-2xl border border-border/80 bg-card p-4 space-y-3 shadow-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-border/60">
                     <div className="flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-sky-500" />
+                      <Activity className="h-4 w-4 text-primary" />
                       <h4 className="text-xs font-black tracking-tight text-foreground uppercase">
                         Explicabilidade Aditiva do Risco (SHAP)
                       </h4>
@@ -678,10 +678,10 @@ export function SimulationDrawer({
                 {/* ─────────────────────────────────────────────────────────
                     D. HUB OMNICANAL GENERATIVO (LLM + RAG)
                    ───────────────────────────────────────────────────────── */}
-                <div className="rounded-2xl border border-border/80 dark:border-white/10 bg-card shadow-xs overflow-hidden space-y-3 p-4">
+                <div className="rounded-2xl border border-border/80 bg-card shadow-xs overflow-hidden space-y-3 p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-border/60">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 border border-sky-400/20 text-[#0077C8] dark:text-sky-400">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary">
                         <Bot className="h-3.5 w-3.5" />
                       </div>
                       <div>
@@ -701,7 +701,7 @@ export function SimulationDrawer({
                         onClick={() => setActiveChannel("whatsapp")}
                         className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                           activeChannel === "whatsapp"
-                            ? "bg-[#003B7A] dark:bg-sky-500 text-white"
+                            ? "bg-primary text-primary-foreground"
                             : "bg-muted/60 text-muted-foreground hover:bg-muted"
                         }`}
                       >
@@ -712,7 +712,7 @@ export function SimulationDrawer({
                         onClick={() => setActiveChannel("internal")}
                         className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                           activeChannel === "internal"
-                            ? "bg-[#003B7A] dark:bg-sky-500 text-white"
+                            ? "bg-primary text-primary-foreground"
                             : "bg-muted/60 text-muted-foreground hover:bg-muted"
                         }`}
                       >
@@ -723,7 +723,7 @@ export function SimulationDrawer({
                         onClick={() => setActiveChannel("rag")}
                         className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                           activeChannel === "rag"
-                            ? "bg-blue-600 text-white"
+                            ? "bg-primary text-primary-foreground"
                             : "bg-muted/60 text-muted-foreground hover:bg-muted"
                         }`}
                       >
@@ -735,11 +735,11 @@ export function SimulationDrawer({
                   {/* Conteúdo do Canal Selecionado: WhatsApp Limpo Sem Gradiente */}
                   {activeChannel === "whatsapp" && (
                     <div className="space-y-3">
-                      <div className="rounded-2xl bg-card border border-border/80 dark:border-white/10 p-4 space-y-3 shadow-xs">
+                      <div className="rounded-2xl bg-card border border-border/80 p-4 space-y-3 shadow-xs">
                         {/* WhatsApp Header Sem Gradiente */}
                         <div className="flex items-center justify-between pb-3 border-b border-border/60 text-xs">
                           <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0077C8] text-white font-black text-xs ring-2 ring-emerald-500/40 shadow-xs">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-black text-xs ring-2 ring-emerald-500/40 shadow-xs">
                               Az
                             </div>
                             <div>
@@ -816,7 +816,7 @@ export function SimulationDrawer({
 
                   {activeChannel === "rag" && (
                     <div className="rounded-xl border border-border/80 bg-muted/40 p-4 text-xs text-foreground space-y-2">
-                      <div className="flex items-center gap-1.5 font-bold text-[#003B7A] dark:text-sky-300">
+                      <div className="flex items-center gap-1.5 font-bold text-primary">
                         <BookOpen className="h-4 w-4" />
                         <span>Diretriz do Programa Azul Fidelidade (RAG)</span>
                       </div>

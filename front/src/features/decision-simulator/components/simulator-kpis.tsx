@@ -111,8 +111,8 @@ export function SimulatorKpis({
       value: upliftEstimado,
       description: "Ganho líquido de retenção pós-benefício",
       icon: TrendingUp,
-      iconColor: "text-[#0077C8] dark:text-sky-400",
-      iconBg: "bg-sky-500/10 dark:bg-sky-500/15 border-sky-500/20 dark:border-sky-500/30",
+      iconColor: "text-primary",
+      iconBg: "bg-primary/10 border-primary/20",
       tooltip:
         "Diferencial matemático de probabilidade de permanência entre receber a ação recomendada versus o grupo de controle (sem ação).",
       metricPill: simulationResult ? "Simulação Ativa" : "Estimativa Preditiva",
@@ -147,7 +147,7 @@ export function SimulatorKpis({
             className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-lg min-h-[160px] flex flex-col justify-between ${
               isSpecial
                 ? "border-emerald-500/40 bg-gradient-to-br from-card via-card to-emerald-500/5 dark:to-emerald-950/20 shadow-md hover:border-emerald-500/60"
-                : "border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-md hover:border-sky-400/30 shadow-xs"
+                : "border-border/80 bg-card/80 backdrop-blur-md hover:border-primary/30 shadow-xs"
             }`}
           >
             {/* Feixe de Luz Superior EXCLUSIVO para o Card Especial de ROI */}
