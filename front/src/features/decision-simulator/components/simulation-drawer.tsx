@@ -197,14 +197,14 @@ export function SimulationDrawer({
       />
 
       {/* ─────────────────────────────────────────────────────────────
-          2. JANELA FLUTUANTE LATERAL TRANSLÚCIDA COM BORDAS ARREDONDADAS
+          2. GAVETA RESPONSIVA: FULLSCREEN NO CELULAR, JANELA FLUTUANTE NO PC
          ───────────────────────────────────────────────────────────── */}
-      <div className="fixed inset-y-0 right-0 z-50 flex max-w-full p-2.5 sm:p-4 lg:p-5 pointer-events-none">
-        <aside className="pointer-events-auto w-screen max-w-[840px] rounded-3xl bg-card/85 dark:bg-card/75 backdrop-blur-2xl text-foreground shadow-2xl shadow-black/40 border border-border/80 dark:border-white/10 flex flex-col h-full overflow-hidden transition-all duration-300 animate-in slide-in-from-right-4">
+      <div className="fixed inset-y-0 right-0 z-50 flex max-w-full p-0 sm:p-4 lg:p-5 pointer-events-none">
+        <aside className="pointer-events-auto w-screen max-w-full sm:max-w-[840px] rounded-none sm:rounded-3xl bg-card sm:bg-card/85 sm:dark:bg-card/75 sm:backdrop-blur-2xl text-foreground shadow-2xl shadow-black/40 border-l sm:border border-border/80 sm:dark:border-white/10 flex flex-col h-full overflow-hidden transition-all duration-300 animate-in slide-in-from-right">
           {/* ─────────────────────────────────────────────────────────────
-              HEADER DA JANELA: IDENTIFICAÇÃO + NAVEGAÇÃO ENTRE CASOS
+              HEADER: IDENTIFICAÇÃO + NAVEGAÇÃO ENTRE CASOS
              ───────────────────────────────────────────────────────────── */}
-          <div className="px-6 py-4 border-b border-border/60 bg-muted/30 dark:bg-muted/20 backdrop-blur-md flex items-center justify-between gap-4 shrink-0 rounded-t-3xl">
+          <div className="px-4 sm:px-6 py-4 border-b border-border/70 sm:border-border/60 bg-muted/40 sm:bg-muted/30 sm:dark:bg-muted/20 backdrop-blur-md flex items-center justify-between gap-4 shrink-0 rounded-none sm:rounded-t-3xl">
             {/* Esquerda: Identificação do Passageiro */}
             <div className="flex items-center gap-3.5 min-w-0">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-black text-sm shadow-md border border-border/60">
