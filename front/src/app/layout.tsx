@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import "driver.js/dist/driver.css";
+import "@/components/tour/driver-custom.css";
 import "./globals.css";
 import { AppQueryProvider } from "@/components/providers/query-provider";
 import { DemoModeProvider } from "@/components/providers/demo-mode-context";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
+import { TourProvider } from "@/components/tour/tour-provider";
 import { DashboardLayout } from "@/components/shared/dashboard-layout";
 
 const inter = Inter({
@@ -50,7 +53,9 @@ export default function RootLayout({
           <AppQueryProvider>
             <AuthProvider>
               <DemoModeProvider>
-              <DashboardLayout>{children}</DashboardLayout>
+                <TourProvider>
+                  <DashboardLayout>{children}</DashboardLayout>
+                </TourProvider>
               </DemoModeProvider>
             </AuthProvider>
           </AppQueryProvider>

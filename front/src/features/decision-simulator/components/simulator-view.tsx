@@ -161,7 +161,7 @@ export function SimulatorView() {
           2. RADAR OPERACIONAL DE ATRITOS (TELA MESTRE LIMPA)
              Sem scrolls internos presos; navegação ampla em grade!
          ───────────────────────────────────────────────────────────── */}
-      <section aria-label="Radar de Atritos e Fila de Momentos">
+      <section aria-label="Radar de Atritos e Fila de Momentos" data-tour="moments-queue">
         <MomentsQueue
           momentos={momentos}
           isLoading={isLoadingMomentos}

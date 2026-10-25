@@ -48,6 +48,7 @@ export function Sidebar({
       label: "Painel de Valor",
       sublabel: "Visão Executiva & ROI",
       icon: BarChart3,
+      tourId: "nav-dashboard",
       active: pathname === "/dashboard" || pathname === "/executive",
     },
     {
@@ -55,6 +56,7 @@ export function Sidebar({
       label: "Central de Decisões",
       sublabel: "Simulador Árbitro & LLM",
       icon: Cpu,
+      tourId: "nav-simulator",
       active: pathname === "/simulator",
     },
     {
@@ -62,6 +64,7 @@ export function Sidebar({
       label: "Logs & Explicabilidade",
       sublabel: "Auditoria & Pesos SHAP",
       icon: FileText,
+      tourId: "nav-audit",
       active: pathname === "/audit-logs",
     },
     {
@@ -69,6 +72,7 @@ export function Sidebar({
       label: "Despacho de Voo (Mapa)",
       sublabel: "Simulador de Assentos & Ações",
       icon: Plane,
+      tourId: "nav-dispatch",
       active:
         pathname === "/dashboard/dispatch" ||
         pathname === "/flight-dispatch" ||
@@ -117,6 +121,7 @@ export function Sidebar({
 
         {/* Top Header: Logo Oficial Pulso + Ecossistema Azul */}
         <div
+          data-tour="sidebar-brand"
           className={cn(
             "flex h-20 shrink-0 items-center transition-all px-4 bg-card border-b border-border/80",
             isCollapsed && "justify-center px-2"
@@ -183,6 +188,7 @@ export function Sidebar({
                     key={item.href}
                     href={item.href}
                     onClick={onClose}
+                    data-tour={item.tourId}
                     className={cn(
                       "group relative flex items-center rounded-2xl text-xs transition-all duration-200 overflow-hidden",
                       isCollapsed

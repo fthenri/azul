@@ -124,7 +124,7 @@ export function ExecutiveView() {
       {/* ─────────────────────────────────────────────────────────────
           1. KPIS CONSOLIDADOS (4 MACRO INDICADORES)
          ───────────────────────────────────────────────────────────── */}
-      <section aria-label="KPIs Macro Executivos">
+      <section aria-label="KPIs Macro Executivos" data-tour="executive-kpis">
         <KpiCards data={kpis} isLoading={isLoading} />
       </section>
 

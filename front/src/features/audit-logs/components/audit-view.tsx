@@ -162,7 +162,7 @@ export function AuditView() {
       {/* ─────────────────────────────────────────────────────────────
           2. TABELA MASTER DE AUDITORIA (COM ABAS ANIMADAS & AERO PAGINAÇÃO)
          ───────────────────────────────────────────────────────────── */}
-      <section aria-label="Trilha Histórica de Auditoria">
+      <section aria-label="Trilha Histórica de Auditoria" data-tour="audit-table">
         <AuditTable
           data={decisoes}
           isLoading={isLoadingDecisoes}

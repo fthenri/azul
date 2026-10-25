@@ -346,6 +346,7 @@ export function MomentsQueue({
                 <div
                   key={`${m.id}-p${safeCurrentPage}`}
                   onClick={() => onSelectMomento(m)}
+                  data-tour={idx === 0 ? "moments-first-card" : undefined}
                   style={{ animationDelay: `${(idx % itemsPerPage) * 35}ms` }}
                   className={`group relative p-4 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col justify-between hover:shadow-xl hover:-translate-y-1 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 fill-mode-both ${
                     isSelected

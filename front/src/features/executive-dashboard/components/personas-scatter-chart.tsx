@@ -97,7 +97,10 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
   const minVolume = Math.min(...data.map((d) => d.tamanho_bolha), 10);
 
   return (
-    <div className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
+    <div
+      data-tour="personas-chart"
+      className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col"
+    >
       {/* Feixe Superior Luminous Edge Highlight */}
       <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 

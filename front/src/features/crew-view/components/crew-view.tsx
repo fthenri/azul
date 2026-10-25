@@ -373,7 +373,7 @@ export function CrewView() {
       {/* Layout Principal: Mapa de Assentos (Esquerda) + Dossiê do Passageiro / LLM (Direita) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Coluna do Mapa de Assentos da Aeronave */}
-        <div className="lg:col-span-7 flex flex-col items-center">
+        <div data-tour="seat-map" className="lg:col-span-7 flex flex-col items-center">
           {isLoadingFlight ? (
             <div className="w-full max-w-xl h-[600px] rounded-3xl border border-dashed border-border flex flex-col items-center justify-center p-8 text-center bg-card/50 animate-pulse">
               <Compass className="h-8 w-8 text-primary animate-spin mb-3" />

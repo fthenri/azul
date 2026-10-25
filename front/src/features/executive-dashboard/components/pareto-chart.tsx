@@ -71,7 +71,10 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
   const top20Pct = top20 ? Math.round(top20.percentual_acumulado * 100) : 80;
 
   return (
-    <div className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
+    <div
+      data-tour="pareto-chart"
+      className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col"
+    >
       {/* Feixe Superior Luminous Edge Highlight */}
       <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
