@@ -1,7 +1,8 @@
-import {
+﻿import {
   DashboardKPIs,
   PersonaData,
   ParetoData,
+  ParetoRoiData,
   Momento,
   SimularPayload,
   SimularResponse,
@@ -103,6 +104,9 @@ export const api = {
     
   getPareto: (): Promise<ParetoData[]> =>
     request<ParetoData[]>("/dashboard/pareto"),
+
+  getParetoRoi: (): Promise<ParetoRoiData[]> =>
+    request<ParetoRoiData[]>("/dashboard/pareto-roi"),
 
   // Tela 2: Central de Decisões (Manager)
   getMomentos: (): Promise<Momento[]> => request<Momento[]>("/momentos"),

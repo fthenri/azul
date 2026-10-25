@@ -6,13 +6,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   Lock,
   Mail,
-  KeyRound,
   ArrowRight,
   ShieldCheck,
-  Sparkles,
-  AlertCircle,
   Eye,
   EyeOff,
+  AlertCircle,
+  Building2,
+  CheckCircle2,
+  Sparkles,
+  Plane,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,22 +34,25 @@ function LoginFormContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [demoSelected, setDemoSelected] = useState<"manager" | "commissioner" | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setErrorMessage("Informe o e-mail corporativo e a senha.");
+      setErrorMessage("Por favor, preencha o Corporate E-mail e a Senha.");
       return;
     }
 
     setErrorMessage(null);
+    setInfoMessage(null);
     setLoading(true);
 
     try {
       const response = await login(email, password);
-      // Redirecionamento baseado no perfil autenticado ou no redirect solicitado
       if (redirectPath) {
         router.push(redirectPath);
       } else if (response.role === "commissioner") {
@@ -55,140 +61,422 @@ function LoginFormContent() {
         router.push("/dashboard");
       }
     } catch (err: unknown) {
-      setErrorMessage((err as Error).message || "Falha na autenticação corporativa.");
+      setErrorMessage(
+        (err as Error).message ||
+          "Falha na autenticação corporativa. Verifique suas credenciais de acesso."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[#001733] via-[#002855] to-[#003B7A] text-white flex flex-col justify-between p-4 sm:p-8 relative overflow-hidden font-sans antialiased">
-      {/* Elementos Decorativos de Fundo (Aviation Aesthetic) */}
-      <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#0077C8]/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-[#38BDF8]/15 rounded-full blur-3xl pointer-events-none" />
+  const handleQuickDemo = (role: "manager" | "commissioner") => {
+    if (role === "manager") {
+      setEmail("gestor@azul.com.br");
+      setPassword("azul1234");
+      setDemoSelected("manager");
+      setInfoMessage("Credenciais selecionadas: Carlos Silveira (Gestor CRM)");
+    } else {
+      setEmail("comissario@azul.com.br");
+      setPassword("azul1234");
+      setDemoSelected("commissioner");
+      setInfoMessage("Credenciais selecionadas: Mariana Souza (Chefe de Cabine)");
+    }
+    setErrorMessage(null);
+  };
 
-      {/* Header com Logo Oficial da Azul */}
-      <header className="w-full max-w-6xl mx-auto flex items-center justify-between z-10 pt-2">
-        <div className="flex items-center gap-3">
-          <div className="relative h-12 w-32 flex items-center">
+  return (
+    <div className="relative min-h-screen w-full bg-[#030712] text-slate-100 flex flex-col justify-between selection:bg-sky-500/30 selection:text-sky-200 overflow-x-hidden font-sans antialiased">
+      {/* ─────────────────────────────────────────────────────────────
+          ELEMENTOS ATMOSFÉRICOS DE FUNDO (DEEP NAVY + VIBRANT SKY BLUE)
+         ───────────────────────────────────────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {/* Gradientes Radiais em Camadas Suaves */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              radial-gradient(circle at 50% 20%, rgba(14, 165, 233, 0.16) 0%, transparent 45%),
+              radial-gradient(circle at 85% 75%, rgba(2, 132, 199, 0.12) 0%, transparent 40%),
+              radial-gradient(circle at 15% 80%, rgba(0, 59, 122, 0.28) 0%, transparent 50%),
+              radial-gradient(circle at 50% 100%, rgba(3, 10, 26, 0.95) 0%, #030712 100%)
+            `,
+          }}
+        />
+
+        {/* Linhas Aero-Espaciais Vetoriais no Background */}
+        <svg
+          className="absolute inset-0 w-full h-full opacity-[0.06] text-sky-400 stroke-current"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <radialGradient id="meshGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#0284C7" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          <path
+            d="M -100 200 C 300 100, 800 450, 1900 250"
+            fill="none"
+            strokeWidth="1.5"
+            strokeDasharray="6 6"
+          />
+          <path
+            d="M -200 450 C 400 300, 950 650, 2000 400"
+            fill="none"
+            strokeWidth="1.2"
+          />
+          <circle cx="50%" cy="28%" r="420" fill="none" strokeWidth="1" strokeDasharray="4 8" />
+          <circle cx="50%" cy="28%" r="620" fill="none" strokeWidth="1" opacity="0.4" />
+        </svg>
+
+        {/* Grade Fina de Precisão Corporativa */}
+        <div
+          className="absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 1px, transparent 1px)
+            `,
+            backgroundSize: "40px 40px",
+          }}
+        />
+
+        {/* Luzes Difusas de Foco (Glow Ambient) */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[500px] bg-sky-500/12 blur-[150px] rounded-full" />
+        <div className="absolute -bottom-24 -left-24 w-[520px] h-[520px] bg-blue-800/15 blur-[140px] rounded-full" />
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          TOP NAVBAR CORPORATIVA
+         ───────────────────────────────────────────────────────────── */}
+      <header className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 pt-6 sm:pt-8 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="relative h-11 w-32 flex items-center transition-transform duration-200 hover:scale-[1.02]">
             <Image
               src="/logo.png"
               alt="Azul Linhas Aéreas"
               width={128}
-              height={48}
-              className="object-contain filter brightness-110"
+              height={44}
+              className="object-contain filter brightness-115 drop-shadow-[0_2px_14px_rgba(56,189,248,0.25)]"
               priority
             />
           </div>
-          <div className="hidden sm:flex flex-col border-l border-white/25 pl-3">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-white/80 leading-tight">
+
+          <div className="hidden sm:flex items-center gap-2 pl-4 border-l border-slate-800/90">
+            <span className="text-xs uppercase tracking-widest font-bold text-slate-300">
               Motor de Retenção
             </span>
-            <span className="text-[10px] uppercase font-black tracking-wider text-[#38BDF8] leading-tight">
-              Alto Valor & IA
+            <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold bg-sky-500/10 text-sky-400 border border-sky-400/25">
+              Enterprise B2B
             </span>
           </div>
         </div>
 
-        <Badge className="bg-white/10 hover:bg-white/15 text-white/90 border-white/20 text-[11px] font-medium py-1 px-3">
-          <Lock className="h-3 w-3 mr-1.5 text-[#38BDF8]" />
-          Portal Corporativo Seguro
-        </Badge>
-      </header>
-
-      {/* Card Central de Login */}
-      <main className="w-full max-w-md mx-auto my-auto py-8 z-10">
-        <div className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur-md p-6 sm:p-8 shadow-2xl space-y-6">
-          <div className="space-y-2 text-center">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#38BDF8]/15 border border-[#38BDF8]/30 text-[#38BDF8] text-xs font-semibold">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Acesso ao Ecossistema Azul</span>
-            </div>
-            <h1 className="text-2xl font-black text-white">Login Corporativo</h1>
-            <p className="text-xs text-white/70">
-              Autentique-se para acessar o Cockpit de CRM ou a Operação de Bordo.
-            </p>
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#071120]/70 border border-slate-800/90 backdrop-blur-md text-xs text-slate-300 shadow-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-[11px] font-medium text-slate-300">Sistemas Operacionais</span>
           </div>
 
-          {/* Alerta de Erro */}
-          {errorMessage && (
-            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-200 text-xs">
-              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
+          <Badge className="bg-sky-950/50 hover:bg-sky-900/50 text-sky-300 border-sky-800/60 text-[11px] font-medium py-1.5 px-3.5 backdrop-blur-md transition-colors gap-1.5 shadow-sm">
+            <ShieldCheck className="h-3.5 w-3.5 text-sky-400" />
+            <span>Portal Seguro</span>
+          </Badge>
+        </div>
+      </header>
 
-          {/* Formulário */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-white/90 flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5 text-[#38BDF8]" />
-                <span>E-mail Corporativo</span>
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="colaborador@azul.com.br"
-                className="w-full h-10 px-3.5 rounded-xl border border-white/20 bg-black/20 text-white placeholder-white/40 text-xs focus:outline-none focus:ring-2 focus:ring-[#38BDF8] transition-all"
-              />
-            </div>
+      {/* ─────────────────────────────────────────────────────────────
+          MAIN CONTENT: CARD CENTRAL DE LOGIN (FROSTED GLASS EFFECT)
+         ───────────────────────────────────────────────────────────── */}
+      <main className="relative z-10 w-full max-w-7xl mx-auto px-4 py-8 sm:py-10 flex items-center justify-center my-auto">
+        <div className="relative w-full max-w-[470px]">
+          {/* Brilho Perimetral em Halo Ciano/Azul */}
+          <div className="absolute -inset-1.5 rounded-[2.3rem] bg-gradient-to-b from-sky-400/25 via-blue-600/15 to-transparent blur-2xl opacity-75 -z-10" />
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-white/90 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <KeyRound className="h-3.5 w-3.5 text-[#38BDF8]" />
-                  <span>Senha</span>
-                </span>
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full h-10 px-3.5 pr-10 rounded-xl border border-white/20 bg-black/20 text-white placeholder-white/40 text-xs focus:outline-none focus:ring-2 focus:ring-[#38BDF8] transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 text-white/60 hover:text-white"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+          {/* Card Glassmorphism */}
+          <div className="relative rounded-[2.2rem] border border-white/10 bg-[#071120]/80 backdrop-blur-2xl p-7 sm:p-9 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.9),0_0_40px_rgba(56,189,248,0.07)] overflow-hidden">
+            {/* Feixe de Luz Superior em Gradiente (Subtle Edge Highlight) */}
+            <div className="absolute inset-x-12 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-400/90 to-transparent" />
+
+            {/* Cabeçalho do Card */}
+            <div className="text-center space-y-3 mb-7">
+              {/* Badge Minimalista de Ecossistema */}
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-sky-500/10 border border-sky-400/25 text-sky-300 text-[11px] font-semibold tracking-wide shadow-inner">
+                <Sparkles className="h-3 w-3 text-sky-400" />
+                <span>Ecossistema Azul Fidelidade</span>
+              </div>
+
+              {/* Título Principal Conforme Especificação */}
+              <div>
+                <h1 className="text-2xl sm:text-[27px] font-black tracking-tight text-white">
+                  Azul - Motor de Retenção
+                </h1>
+                <p className="text-xs sm:text-[13px] text-slate-400 mt-1.5 font-normal leading-relaxed">
+                  Acesso corporativo exclusivo para inteligência de retenção, simulações de alto valor e cockpit de bordo.
+                </p>
               </div>
             </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 rounded-xl bg-[#0077C8] hover:bg-[#005B99] text-white font-bold text-xs gap-2 transition-all shadow-lg hover:shadow-[#0077C8]/40"
+            {/* Alerta de Feedback / Sucesso de Seleção */}
+            {infoMessage && !errorMessage && (
+              <div className="mb-5 flex items-center gap-2.5 p-3 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-200 text-xs animate-in fade-in duration-200">
+                <CheckCircle2 className="h-4 w-4 text-sky-400 shrink-0" />
+                <span className="leading-snug">{infoMessage}</span>
+              </div>
+            )}
+
+            {/* Alerta de Erro com Alto Contraste */}
+            {errorMessage && (
+              <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-200 text-xs animate-in fade-in duration-200">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-rose-400" />
+                <span className="leading-relaxed">{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Formulário de Autenticação */}
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+              {/* Input: Corporate E-mail */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="corporate-email"
+                  className="block text-[11px] font-bold uppercase tracking-wider text-slate-300"
+                >
+                  Corporate E-mail
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-sky-400 transition-colors">
+                    <Mail className="h-4 w-4" />
+                  </div>
+                  <input
+                    id="corporate-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
+                    placeholder="colaborador@azul.com.br"
+                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-slate-700/80 bg-[#040915]/85 text-white placeholder-slate-500 text-sm font-medium focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/25 focus:bg-[#060e20] transition-all duration-200 shadow-inner"
+                  />
+                </div>
+              </div>
+
+              {/* Input: Password */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="corporate-password"
+                    className="block text-[11px] font-bold uppercase tracking-wider text-slate-300"
+                  >
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => {
+                      setErrorMessage(
+                        "Para redefinir sua credencial, contate o Suporte de TI Azul ou utilize as contas de demonstração abaixo."
+                      );
+                    }}
+                    className="text-xs font-medium text-sky-400 hover:text-sky-300 hover:underline transition-colors focus:outline-none"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </div>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-sky-400 transition-colors">
+                    <Lock className="h-4 w-4" />
+                  </div>
+                  <input
+                    id="corporate-password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
+                    placeholder="••••••••••••"
+                    className="w-full h-12 pl-10 pr-11 rounded-xl border border-slate-700/80 bg-[#040915]/85 text-white placeholder-slate-500 text-sm font-medium focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/25 focus:bg-[#060e20] transition-all duration-200 shadow-inner"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Lembrar Acesso */}
+              <div className="flex items-center justify-between pt-0.5">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-sky-500 focus:ring-sky-400/30 focus:ring-offset-0 cursor-pointer accent-[#00A3FF]"
+                  />
+                  <span className="text-xs text-slate-300 group-hover:text-white transition-colors">
+                    Lembrar meu acesso neste dispositivo
+                  </span>
+                </label>
+              </div>
+
+              {/* Botão Prominente e Arredondado: 'Entrar no Sistema' */}
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-[#00A3FF] via-[#0284C7] to-[#0077C8] hover:from-[#38BDF8] hover:via-[#0ea5e9] hover:to-[#0284C7] text-white font-bold text-sm tracking-wide shadow-[0_4px_22px_rgba(0,163,255,0.4)] hover:shadow-[0_6px_32px_rgba(0,163,255,0.65)] hover:brightness-105 active:scale-[0.99] transition-all duration-200 border-0 flex items-center justify-center gap-2 group cursor-pointer"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2.5">
+                    <svg
+                      className="animate-spin h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8H4z"
+                      ></path>
+                    </svg>
+                    <span>Autenticando...</span>
+                  </div>
+                ) : (
+                  <>
+                    <span>Entrar no Sistema</span>
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            {/* Divisor com Traço Tecnológico */}
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-800/80" />
+              </div>
+              <div className="relative flex justify-center text-[10px] uppercase">
+                <span className="bg-[#071120] px-3 text-slate-500 font-semibold tracking-wider">
+                  ou autenticação federada
+                </span>
+              </div>
+            </div>
+
+            {/* Botão SSO Corporativo */}
+            <button
+              type="button"
+              onClick={() => {
+                setErrorMessage(
+                  "Redirecionamento para o Provedor de Identidade Corporativo (Microsoft Azure AD). Para avaliação imediata, selecione um perfil de demonstração abaixo."
+                );
+              }}
+              className="w-full h-11 rounded-xl border border-slate-700/70 bg-white/[0.03] hover:bg-white/[0.07] hover:border-slate-600 text-xs text-slate-300 font-medium transition-all duration-200 flex items-center justify-center gap-2.5 shadow-sm cursor-pointer"
             >
-              {loading ? (
-                <span>Autenticando...</span>
-              ) : (
-                <>
-                  <span>Entrar no Sistema</span>
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </form>
+              <Building2 className="h-4 w-4 text-sky-400" />
+              <span>Acessar via Microsoft Azure AD / SSO</span>
+            </button>
+
+            {/* Acesso Rápido de Demonstração (1-Clique) */}
+            <div className="mt-6 pt-4 border-t border-slate-800/80">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-400 flex items-center gap-1.5">
+                  <Plane className="h-3 w-3 text-sky-400" />
+                  Acesso Rápido de Demonstração
+                </span>
+                <span className="text-[10px] font-mono text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-400/20">
+                  1-Clique
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemo("manager")}
+                  className={`p-2.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
+                    demoSelected === "manager"
+                      ? "border-sky-400 bg-sky-500/15 text-white shadow-[0_0_15px_rgba(56,189,248,0.25)]"
+                      : "border-slate-800 bg-[#040915]/60 hover:bg-slate-800/40 hover:border-slate-700 text-slate-300"
+                  }`}
+                >
+                  <div className="text-[11px] font-bold text-white flex items-center justify-between">
+                    <span>Gestor CRM</span>
+                    {demoSelected === "manager" ? (
+                      <CheckCircle2 className="h-3 w-3 text-sky-400" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3 text-slate-600" />
+                    )}
+                  </div>
+                  <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                    Cockpit Executivo
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemo("commissioner")}
+                  className={`p-2.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
+                    demoSelected === "commissioner"
+                      ? "border-sky-400 bg-sky-500/15 text-white shadow-[0_0_15px_rgba(56,189,248,0.25)]"
+                      : "border-slate-800 bg-[#040915]/60 hover:bg-slate-800/40 hover:border-slate-700 text-slate-300"
+                  }`}
+                >
+                  <div className="text-[11px] font-bold text-white flex items-center justify-between">
+                    <span>Chefe de Cabine</span>
+                    {demoSelected === "commissioner" ? (
+                      <CheckCircle2 className="h-3 w-3 text-sky-400" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3 text-slate-600" />
+                    )}
+                  </div>
+                  <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                    Visão de Bordo
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
-      {/* Footer Institucional */}
-      <footer className="w-full max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-white/60 gap-3 border-t border-white/10 pt-4 z-10">
+      {/* ─────────────────────────────────────────────────────────────
+          FOOTER INSTITUCIONAL CORPORATIVO & COMPLIANCE
+         ───────────────────────────────────────────────────────────── */}
+      <footer className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 py-5 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 border-t border-slate-800/70">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-[#38BDF8]" />
-          <span>Azul Linhas Aéreas Brasileiras • Retenção de Alto Valor B2B</span>
+          <ShieldCheck className="h-4 w-4 text-sky-400" />
+          <span>
+            Azul Linhas Aéreas Brasileiras S.A. • Motor de Retenção de Alto Valor
+          </span>
         </div>
         <div className="flex items-center gap-4 text-[11px]">
-          <span>Hackathon Azul 2026</span>
-          <span>•</span>
-          <span className="text-emerald-400">Ambiente Seguro Conectado</span>
+          <span>Criptografia Ponta a Ponta</span>
+          <span className="text-slate-600">•</span>
+          <span>Ambiente Restrito & Auditado</span>
+          <span className="text-slate-600">•</span>
+          <span className="text-sky-400 font-mono">v2.4 Enterprise</span>
         </div>
       </footer>
     </div>
@@ -199,8 +487,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#001733] flex items-center justify-center text-white text-xs">
-          <span>Carregando portal de acesso...</span>
+        <div className="min-h-screen bg-[#030712] flex items-center justify-center text-slate-300 text-xs">
+          <span>Carregando portal corporativo...</span>
         </div>
       }
     >

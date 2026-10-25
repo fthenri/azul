@@ -1,66 +1,118 @@
-"use client";
+﻿"use client";
 
-import React from "react";
-import { RefreshCw, AlertCircle, BarChart2 } from "lucide-react";
+import React, { useState } from "react";
+import {
+  RefreshCw,
+  AlertCircle,
+  BarChart3,
+  ShieldCheck,
+  Sparkles,
+  Database,
+  Layers,
+  Users,
+  Zap,
+} from "lucide-react";
 import { useExecutiveData } from "../hooks/use-executive-data";
 import { KpiCards } from "./kpi-cards";
 import { ParetoChart } from "./pareto-chart";
 import { PersonasScatterChart } from "./personas-scatter-chart";
 import { PersonaMatrix } from "./persona-matrix";
+import { ParetoRoiAnalysis } from "./pareto-roi-analysis";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 export function ExecutiveView() {
-  const { kpis, personas, pareto, isLoading, isError, error, refetchAll } =
-    useExecutiveData();
+  const {
+    kpis,
+    personas,
+    pareto,
+    paretoRoi,
+    isLoading,
+    isError,
+    error,
+    refetchAll,
+    isDemoMode,
+  } = useExecutiveData();
+
+  const [activeTab, setActiveTab] = useState<"all" | "pareto" | "personas" | "roi">("all");
 
   return (
-    <div className="space-y-6">
-      {/* Header da Tela */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="relative space-y-7 selection:bg-sky-500/30 selection:text-sky-200">
+      {/* ─────────────────────────────────────────────────────────────
+          ELEMENTO ATMOSFÉRICO DE PROFUNDIDADE (AERO GLOW SUTIL)
+         ───────────────────────────────────────────────────────────── */}
+      <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-full max-w-5xl h-64 bg-sky-500/5 dark:bg-sky-500/10 blur-[120px] pointer-events-none -z-10 rounded-full" />
+
+      {/* ─────────────────────────────────────────────────────────────
+          HEADER DA TELA EXECUTIVA
+         ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between pb-2 border-b border-border/60 dark:border-white/10">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-[#003B7A] sm:text-3xl">
-              Painel de Valor
+          {/* Micro-badge de Ecossistema */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/25 text-azul-action dark:text-sky-300 text-[11px] font-semibold tracking-wide shadow-xs mb-2">
+            <Sparkles className="h-3 w-3 text-azul-action dark:text-sky-400" />
+            <span>Ecossistema Azul Fidelidade • Cockpit B2B</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+              Painel de Valor & Retenção
             </h1>
-            <span className="rounded bg-[#EAF4FC] text-[#003B7A] border border-[#0077C8]/20 text-[11px] font-bold px-2.5 py-0.5">
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md font-semibold text-[11px] bg-[#EAF4FC] dark:bg-sky-950/70 text-[#003B7A] dark:text-sky-300 border border-[#0077C8]/25 dark:border-sky-500/30">
               Visão Executiva
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-[#5B6E84] mt-1">
-            Monitoramento macro do ROI, concentração de carteira (Pareto) e matriz de personas de alto valor
+
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-3xl leading-relaxed">
+            Monitoramento macro do ROI por real gasto, concentração da receita pela regra de Pareto (80/20) e clusterização preditiva da carteira de passageiros de alto valor.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Controles de Atualização & Status do Motor */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Status do Motor DuckDB */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card/80 dark:bg-[#071120]/80 border border-border/80 dark:border-white/10 backdrop-blur-md text-xs shadow-xs">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-[11px] font-medium text-foreground">
+              {isDemoMode ? "Modo Demo" : "DuckDB Camada Gold"}
+            </span>
+          </div>
+
+          {/* Botão de Atualização com Micro-Interação */}
           <Button
             variant="outline"
             size="sm"
             onClick={refetchAll}
             disabled={isLoading}
-            className="flex items-center gap-2 border-[#E2E8F0] text-[#003B7A] hover:bg-[#EAF4FC]"
+            className="h-9 px-3.5 rounded-xl border-border/80 dark:border-white/15 bg-card/80 dark:bg-[#071120]/80 hover:bg-muted dark:hover:bg-white/10 text-foreground font-semibold text-xs shadow-xs transition-all duration-200 flex items-center gap-2 cursor-pointer"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 text-azul-action dark:text-sky-400 ${isLoading ? "animate-spin" : ""}`} />
             <span>Atualizar Dados</span>
           </Button>
         </div>
       </div>
 
-      {/* Tratamento de Erro Real da API */}
+      {/* ─────────────────────────────────────────────────────────────
+          ALERTA DE FALHA NA COMUNICAÇÃO DA API (SE HOUVER)
+         ───────────────────────────────────────────────────────────── */}
       {isError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Falha na comunicação com a API</AlertTitle>
-          <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-2">
+        <Alert variant="destructive" className="rounded-xl border-rose-500/30 bg-rose-500/10 text-rose-800 dark:text-rose-200">
+          <AlertCircle className="h-4 w-4 text-rose-500" />
+          <AlertTitle className="font-bold text-sm">Falha na comunicação com a API analítica</AlertTitle>
+          <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-1 text-xs">
             <span>
               {error?.message ||
-                "Não foi possível carregar os dados executivos da API (/api/v1/dashboard/*). Verifique se o backend FastAPI está em execução."}
+                "Não foi possível sincronizar os dados com o serviço backend FastAPI (/api/v1/dashboard/*). Verifique a conectividade da API."}
             </span>
             <Button
               variant="outline"
               size="sm"
               onClick={refetchAll}
-              className="w-fit border-destructive/50 text-destructive hover:bg-destructive/10"
+              className="w-fit h-8 rounded-lg border-rose-500/40 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20"
             >
               Tentar Novamente
             </Button>
@@ -68,21 +120,109 @@ export function ExecutiveView() {
         </Alert>
       )}
 
-      {/* 1. KPIs Consolidados */}
-      <section aria-label="KPIs Consolidados">
+      {/* ─────────────────────────────────────────────────────────────
+          1. KPIS CONSOLIDADOS (4 MACRO INDICADORES)
+         ───────────────────────────────────────────────────────────── */}
+      <section aria-label="KPIs Macro Executivos">
         <KpiCards data={kpis} isLoading={isLoading} />
       </section>
 
-      {/* 2. Gráficos de Concentração e Personas */}
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <ParetoChart data={pareto} isLoading={isLoading} />
-        <PersonasScatterChart data={personas} isLoading={isLoading} />
-      </section>
+      {/* ─────────────────────────────────────────────────────────────
+          SELETOR DE ABAS / FILTROS VISUAIS
+         ───────────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          onClick={() => setActiveTab("all")}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+            activeTab === "all"
+              ? "bg-[#003B7A] dark:bg-sky-500 text-white dark:text-slate-950 shadow-sm"
+              : "bg-card/70 dark:bg-white/[0.04] text-muted-foreground hover:text-foreground border border-border/60 dark:border-white/10"
+          }`}
+        >
+          Visão Geral Completa
+        </button>
 
-      {/* 3. Matriz Persona x Faixa de Valor */}
-      <section aria-label="Matriz de Personas">
-        <PersonaMatrix data={personas} />
-      </section>
+        <button
+          onClick={() => setActiveTab("pareto")}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+            activeTab === "pareto"
+              ? "bg-[#003B7A] dark:bg-sky-500 text-white dark:text-slate-950 shadow-sm"
+              : "bg-card/70 dark:bg-white/[0.04] text-muted-foreground hover:text-foreground border border-border/60 dark:border-white/10"
+          }`}
+        >
+          <Layers className="h-3.5 w-3.5" />
+          <span>Curva de Concentração (Pareto)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("personas")}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+            activeTab === "personas"
+              ? "bg-[#003B7A] dark:bg-sky-500 text-white dark:text-slate-950 shadow-sm"
+              : "bg-card/70 dark:bg-white/[0.04] text-muted-foreground hover:text-foreground border border-border/60 dark:border-white/10"
+          }`}
+        >
+          <Users className="h-3.5 w-3.5" />
+          <span>Matriz de Personas</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("roi")}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+            activeTab === "roi"
+              ? "bg-[#003B7A] dark:bg-sky-500 text-white dark:text-slate-950 shadow-sm"
+              : "bg-card/70 dark:bg-white/[0.04] text-muted-foreground hover:text-foreground border border-border/60 dark:border-white/10"
+          }`}
+        >
+          <Zap className="h-3.5 w-3.5" />
+          <span>Análise de ROI (Top 20%)</span>
+        </button>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. GRÁFICOS: PARETO 80/20 & SCATTER PLOT PERSONAS
+         ───────────────────────────────────────────────────────────── */}
+      {(activeTab === "all" || activeTab === "pareto") && (
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <ParetoChart data={pareto} isLoading={isLoading} />
+          <PersonasScatterChart data={personas} isLoading={isLoading} />
+        </section>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          3. COMPROVAÇÃO MATEMÁTICA DE ROI (TOP 20% VS CAUDA LONGA)
+         ───────────────────────────────────────────────────────────── */}
+      {(activeTab === "all" || activeTab === "roi") && (
+        <section aria-label="Comprovação de ROI">
+          <ParetoRoiAnalysis data={paretoRoi} isLoading={isLoading} />
+        </section>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          4. MATRIZ ESTRATÉGICA: PERSONAS X FAIXA DE VALOR
+         ───────────────────────────────────────────────────────────── */}
+      {(activeTab === "all" || activeTab === "personas") && (
+        <section aria-label="Matriz de Personas">
+          <PersonaMatrix data={personas} />
+        </section>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          FOOTER COMPLIANCE & INTEGRIDADE DO DATA LAKE
+         ───────────────────────────────────────────────────────────── */}
+      <div className="pt-4 pb-2 border-t border-border/60 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <Database className="h-4 w-4 text-azul-action dark:text-sky-400" />
+          <span>
+            Arquitetura Medallion: Camadas Silver e Gold processadas via DuckDB In-Process
+          </span>
+        </div>
+        <div className="flex items-center gap-3 text-[11px]">
+          <span>Políticas de Retenção Ativas</span>
+          <span>•</span>
+          <span className="font-mono text-azul-action dark:text-sky-400">Azul v2.4 Enterprise</span>
+        </div>
+      </div>
     </div>
   );
 }

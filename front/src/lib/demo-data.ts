@@ -8,6 +8,7 @@ import {
   DashboardKPIs,
   PersonaData,
   ParetoData,
+  ParetoRoiData,
   Momento,
   SimularResponse,
   DecisaoAuditoria,
@@ -71,6 +72,45 @@ export const DEMO_PARETO: ParetoData[] = [
   { decil_clientes: "Top 80%", valor_acumulado: 8420000.0, percentual_acumulado: 0.99 },
   { decil_clientes: "Top 90%", valor_acumulado: 8470000.0, percentual_acumulado: 0.995 },
   { decil_clientes: "100%", valor_acumulado: 8500000.0, percentual_acumulado: 1.0 },
+];
+
+export const DEMO_PARETO_ROI: ParetoRoiData[] = [
+  {
+    faixa_pareto: 'Top 10% Receita',
+    total_clientes: 48,
+    clv_medio: 46616.99,
+    risco_evasao_medio: 0.3932,
+    total_receita_em_risco: 852183.13,
+    perda_media_por_cliente: 17753.82,
+    roi_retencao_multiplicador: 147.9,
+  },
+  {
+    faixa_pareto: 'Top 20% Receita',
+    total_clientes: 75,
+    clv_medio: 30550.26,
+    risco_evasao_medio: 0.3694,
+    total_receita_em_risco: 840139.24,
+    perda_media_por_cliente: 11201.86,
+    roi_retencao_multiplicador: 93.3,
+  },
+  {
+    faixa_pareto: 'Top 50% Receita',
+    total_clientes: 471,
+    clv_medio: 14502.75,
+    risco_evasao_medio: 0.298,
+    total_receita_em_risco: 2116751.87,
+    perda_media_por_cliente: 4494.17,
+    roi_retencao_multiplicador: 37.5,
+  },
+  {
+    faixa_pareto: 'Cauda Longa',
+    total_clientes: 4406,
+    clv_medio: 2579.72,
+    risco_evasao_medio: 0.2938,
+    total_receita_em_risco: 3038506.46,
+    perda_media_por_cliente: 689.63,
+    roi_retencao_multiplicador: 5.7,
+  },
 ];
 
 export const DEMO_MOMENTOS: Momento[] = [

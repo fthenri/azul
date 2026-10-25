@@ -30,6 +30,16 @@ export interface ParetoData {
   percentual_acumulado: number;
 }
 
+export interface ParetoRoiData {
+  faixa_pareto: string;
+  total_clientes: number;
+  clv_medio: number;
+  risco_evasao_medio: number;
+  total_receita_em_risco: number;
+  perda_media_por_cliente: number;
+  roi_retencao_multiplicador: number;
+}
+
 // ==========================================
 // Tela 2: Central de Decisões (Simulador)
 // ==========================================

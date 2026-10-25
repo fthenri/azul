@@ -11,6 +11,8 @@ __pycache__/
 *.sqlite3
 *.db-journal
 *.db-wal
+*.db-shm
+.playwright-mcp/
 
 # Frontend & Node
 node_modules/

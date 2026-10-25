@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
-import { DEMO_KPIS, DEMO_PERSONAS, DEMO_PARETO } from "@/lib/demo-data";
-import { DashboardKPIs, PersonaData, ParetoData } from "@/types/api";
+import { DEMO_KPIS, DEMO_PERSONAS, DEMO_PARETO, DEMO_PARETO_ROI } from "@/lib/demo-data";
+import { DashboardKPIs, PersonaData, ParetoData, ParetoRoiData } from "@/types/api";
 
 export function useExecutiveData() {
   const { isDemoMode } = useDemoMode();
@@ -36,6 +36,19 @@ export function useExecutiveData() {
     },
   });
 
+  // Conexão de estado: chamada à API para ROI detalhado de Pareto (Top 20% vs Cauda Longa)
+  const paretoRoiQuery = useQuery<ParetoRoiData[], Error>({
+    queryKey: ["dashboard-pareto-roi", isDemoMode],
+    queryFn: async () => {
+      if (isDemoMode) return DEMO_PARETO_ROI;
+      try {
+        return await api.getParetoRoi();
+      } catch {
+        return DEMO_PARETO_ROI;
+      }
+    },
+  });
+
   const isLoading =
     kpisQuery.isLoading || personasQuery.isLoading || paretoQuery.isLoading;
 
@@ -49,12 +62,14 @@ export function useExecutiveData() {
     kpisQuery.refetch();
     personasQuery.refetch();
     paretoQuery.refetch();
+    paretoRoiQuery.refetch();
   };
 
   return {
     kpis: kpisQuery.data,
     personas: personasQuery.data,
     pareto: paretoQuery.data,
+    paretoRoi: paretoRoiQuery.data,
     isLoading,
     isError,
     error,

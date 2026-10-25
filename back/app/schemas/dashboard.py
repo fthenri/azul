@@ -34,3 +34,17 @@ class ParetoData(BaseModel):
     decil_clientes: str = Field(..., description="Faixa decil (ex: 'Top 10%', 'Top 20%')")
     valor_acumulado: float = Field(..., description="Valor monetário acumulado até o decil (R$)")
     percentual_acumulado: float = Field(..., description="Percentual acumulado do valor total (0.0 a 1.0)")
+
+
+class ParetoRoiData(BaseModel):
+    """Contrato para a análise de ROI do Pareto (Top 20% vs Cauda Longa)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    faixa_pareto: str = Field(..., description="Segmento de clientes (Top 10%, Top 20%, Cauda Longa)")
+    total_clientes: int = Field(..., description="Quantidade total de clientes no cluster")
+    clv_medio: float = Field(..., description="CLV médio dos clientes no cluster")
+    risco_evasao_medio: float = Field(..., description="Risco médio de evasão no cluster")
+    total_receita_em_risco: float = Field(..., description="Total da receita em risco de perda")
+    perda_media_por_cliente: float = Field(..., description="Perda financeira média esperada por cliente")
+    roi_retencao_multiplicador: float = Field(..., description="Multiplicador de ROI em comparação ao custo padrão de retenção")

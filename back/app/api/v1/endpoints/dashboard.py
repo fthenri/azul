@@ -4,7 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 
 from back.app.api.dependencies import DashboardServiceDep, RoleChecker
-from back.app.schemas.dashboard import DashboardKPIs, ParetoData, PersonaData
+from back.app.schemas.dashboard import DashboardKPIs, ParetoData, ParetoRoiData, PersonaData
 
 router = APIRouter(
     prefix="/dashboard",
@@ -41,3 +41,13 @@ async def get_dashboard_personas(service: DashboardServiceDep) -> List[PersonaDa
 )
 async def get_dashboard_pareto(service: DashboardServiceDep) -> List[ParetoData]:
     return service.get_pareto()
+
+
+@router.get(
+    "/pareto-roi",
+    response_model=List[ParetoRoiData],
+    summary="Obter Análise de ROI do Pareto",
+    description="Retorna a comprovação matemática de ROI de retenção por faixa de receita (Top 10%, Top 20%, etc).",
+)
+async def get_dashboard_pareto_roi(service: DashboardServiceDep) -> List[ParetoRoiData]:
+    return service.get_pareto_roi()

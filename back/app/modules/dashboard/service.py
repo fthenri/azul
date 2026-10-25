@@ -4,7 +4,7 @@ import logging
 from typing import List
 
 from back.app.modules.dashboard.repository import DashboardRepository
-from back.app.schemas.dashboard import DashboardKPIs, ParetoData, PersonaData
+from back.app.schemas.dashboard import DashboardKPIs, ParetoData, ParetoRoiData, PersonaData
 
 logger = logging.getLogger("azul.dashboard.service")
 
@@ -58,6 +58,22 @@ class DashboardService:
                 decil_clientes=str(r["decil_clientes"]),
                 valor_acumulado=float(r["valor_acumulado"]),
                 percentual_acumulado=float(r["percentual_acumulado"]),
+            )
+            for r in rows
+        ]
+
+    def get_pareto_roi(self) -> List[ParetoRoiData]:
+        """Retorna a comprovação matemática de ROI por faixa de Pareto (Top 20% vs Cauda Longa)."""
+        rows = self.repository.get_pareto_roi_analysis()
+        return [
+            ParetoRoiData(
+                faixa_pareto=str(r["faixa_pareto"]),
+                total_clientes=int(r["total_clientes"]),
+                clv_medio=float(r["clv_medio"]),
+                risco_evasao_medio=float(r["risco_evasao_medio"]),
+                total_receita_em_risco=float(r["total_receita_em_risco"]),
+                perda_media_por_cliente=float(r["perda_media_por_cliente"]),
+                roi_retencao_multiplicador=float(r["roi_retencao_multiplicador"]),
             )
             for r in rows
         ]
