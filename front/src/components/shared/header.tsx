@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserAvatar } from "@/components/shared/user-avatar";
+import { PwaInstallButton } from "@/components/shared/pwa-install-button";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
@@ -167,6 +168,7 @@ export function Header({
         {/* Direita: ThemeToggle e Identidade do Usuário (sem tags 'DuckDB'/'Pareto' e sem botão de exit) */}
         <div className="flex items-center gap-3 sm:gap-4">
           {/* Botão de Troca de Tema (Claro / Escuro) */}
+          <PwaInstallButton size="sm" className="hidden sm:inline-flex h-8" />
           <ThemeToggle />
 
           {/* User Profile Pill centralizado no Header com Shadcn UserAvatar */}

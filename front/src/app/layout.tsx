@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "driver.js/dist/driver.css";
 import "@/components/tour/driver-custom.css";
@@ -25,14 +25,41 @@ const inter = Inter({
   ],
 });
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#002566" },
+    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   title: "pulso | Antecipe o risco. Preserve o valor — Azul Fidelidade",
   description:
     "pulso: Inteligência preditiva para identificar clientes valiosos em risco, selecionar intervenções e maximizar o retorno da retenção.",
+  applicationName: "pulso",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "pulso",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
-    icon: "/pulso-branco.svg",
-    shortcut: "/pulso-branco.svg",
-    apple: "/pulso-branco.svg",
+    icon: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+      { url: "/pulso-branco.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/icons/icon-192x192.png",
+    apple: [
+      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 

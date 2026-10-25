@@ -19,6 +19,7 @@ import {
   X,
   Radio,
   Plane,
+  WifiOff,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,8 @@ import { useCrewFlight } from "@/features/crew-view/hooks/use-crew-flight";
 import { CrewSeatMap } from "@/features/crew-view/components/crew-seat-map";
 import { AssentoVoo, MetadataAeronave } from "@/types/api";
 import { useAuth } from "@/lib/auth-context";
+import { useOnlineStatus } from "@/lib/use-online-status";
+import { PwaInstallButton } from "@/components/shared/pwa-install-button";
 
 /**
  * ============================================================================
@@ -47,6 +50,7 @@ import { useAuth } from "@/lib/auth-context";
  */
 export default function CrewPage() {
   const { user, logout } = useAuth();
+  const isOnline = useOnlineStatus();
   // Estado do voo ativo despachado pela Torre de Controle (Gestor)
   const [activeFlight, setActiveFlight] = useState<ActiveFlight | null>(null);
 
@@ -270,9 +274,27 @@ export default function CrewPage() {
             </div>
           </div>
 
-          {/* Lado Direito: Botão para Trocar de Perfil */}
-          <div className="flex items-center">
+          {/* Lado Direito: Status de Conectividade, Instalação PWA e Sair */}
+          <div className="flex items-center gap-2">
+            {isOnline ? (
+              <div
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[11px] font-semibold"
+                title="Conexão com os servidores ativa"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Online</span>
+              </div>
+            ) : (
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-semibold animate-pulse"
+                title="Dispositivo operando em Modo Cabine (sem rede externa). Missões locais preservadas."
+              >
+                <WifiOff className="h-3.5 w-3.5" />
+                <span>Modo Cabine (Offline)</span>
+              </div>
+            )}
 
+            <PwaInstallButton size="sm" className="h-8" />
 
             <Button
               variant="outline"

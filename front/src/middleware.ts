@@ -7,10 +7,11 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("azul_auth_token")?.value;
   const role = request.cookies.get("azul_user_role")?.value;
 
-  // Rotas estáticas ou de assets internas do Next.js
+  // Rotas estáticas ou de assets internas do Next.js e página offline de contingência
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
+    pathname.startsWith("/offline") ||
     pathname.includes(".") ||
     pathname === "/favicon.ico"
   ) {

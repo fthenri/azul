@@ -1,0 +1,63 @@
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "pulso — Inteligência de Retenção & Copiloto Azul",
+    short_name: "pulso",
+    description:
+      "Inteligência preditiva para identificar clientes valiosos em risco, simular intervenções e copiloto tático da tripulação Azul.",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#020617",
+    theme_color: "#002566",
+    orientation: "any",
+    lang: "pt-BR",
+    categories: ["business", "productivity", "utilities"],
+    icons: [
+      {
+        src: "/icons/icon-48x48.png",
+        sizes: "48x48",
+        type: "image/png",
+      },
+      {
+        src: "/icons/icon-96x96.png",
+        sizes: "96x96",
+        type: "image/png",
+      },
+      {
+        src: "/icons/icon-192x192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-512x512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-maskable-512x512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+    ],
+    shortcuts: [
+      {
+        name: "Modo Cabine (Crew)",
+        short_name: "Cabine",
+        description: "Painel de missões e atendimento da tripulação a bordo",
+        url: "/crew",
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Torre de Controle",
+        short_name: "Cockpit",
+        description: "Painel executivo de inteligência e simulador",
+        url: "/dashboard",
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+      },
+    ],
+  };
+}
