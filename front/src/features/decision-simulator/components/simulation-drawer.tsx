@@ -193,18 +193,18 @@ export function SimulationDrawer({
          ───────────────────────────────────────────────────────────── */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in"
+        className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
       />
 
       {/* ─────────────────────────────────────────────────────────────
-          2. DRAWER EXPANSIVO LATERAL (780px) COM ÚNICO SCROLL VERTICAL
+          2. JANELA FLUTUANTE LATERAL TRANSLÚCIDA COM BORDAS ARREDONDADAS
          ───────────────────────────────────────────────────────────── */}
-      <div className="fixed inset-y-0 right-0 z-50 flex max-w-full">
-        <aside className="w-screen max-w-[820px] bg-card text-foreground shadow-2xl border-l border-border/80 flex flex-col h-full animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-y-0 right-0 z-50 flex max-w-full p-2.5 sm:p-4 lg:p-5 pointer-events-none">
+        <aside className="pointer-events-auto w-screen max-w-[840px] rounded-3xl bg-card/85 dark:bg-card/75 backdrop-blur-2xl text-foreground shadow-2xl shadow-black/40 border border-border/80 dark:border-white/10 flex flex-col h-full overflow-hidden transition-all duration-300 animate-in slide-in-from-right-4">
           {/* ─────────────────────────────────────────────────────────────
-              HEADER DO DRAWER: IDENTIFICAÇÃO + NAVEGAÇÃO ENTRE CASOS
+              HEADER DA JANELA: IDENTIFICAÇÃO + NAVEGAÇÃO ENTRE CASOS
              ───────────────────────────────────────────────────────────── */}
-          <div className="px-6 py-4 border-b border-border/70 bg-muted/40 backdrop-blur-md flex items-center justify-between gap-4 shrink-0">
+          <div className="px-6 py-4 border-b border-border/60 bg-muted/30 dark:bg-muted/20 backdrop-blur-md flex items-center justify-between gap-4 shrink-0 rounded-t-3xl">
             {/* Esquerda: Identificação do Passageiro */}
             <div className="flex items-center gap-3.5 min-w-0">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-black text-sm shadow-md border border-border/60">
