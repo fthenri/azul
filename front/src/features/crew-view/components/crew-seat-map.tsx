@@ -98,6 +98,15 @@ export function CrewSeatMap({
   const leftCols = is6Seats ? ["A", "B", "C"] : ["A", "B"];
   const rightCols = is6Seats ? ["D", "E", "F"] : ["C", "D"];
 
+  // Extrai o PNR ativo de grupo familiar a partir do assento selecionado
+  const activePnr = useMemo(() => {
+    if (!selectedSeat) return null;
+    const pnr = (selectedSeat.dados_cliente?.pnr || (selectedSeat as any).pnr || "").trim();
+    const isGroup = Boolean(selectedSeat.dados_cliente?.is_grupo_familiar ?? (selectedSeat as any).is_grupo_familiar);
+    if (!pnr || pnr === "SOLO" || !isGroup) return null;
+    return pnr;
+  }, [selectedSeat]);
+
   const rows = useMemo(() => {
     const list: number[] = [];
     for (let r = 1; r <= numFileiras; r++) {
@@ -118,21 +127,42 @@ export function CrewSeatMap({
     const seatCode = `${row}${col}`;
     const seat = seatMap.get(seatCode);
 
+    const isSelected = selectedSeat?.assento === seat?.assento;
+    const hasSelection = Boolean(selectedSeat);
+
     if (!seat) {
       return (
         <div
           key={seatCode}
-          className="h-14 w-11 sm:w-13 md:w-14 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-center opacity-40 text-[10px] text-muted-foreground"
+          className={cn(
+            "h-14 w-11 sm:w-13 md:w-14 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-center text-[10px] text-muted-foreground transition-all duration-300",
+            hasSelection ? "opacity-30" : "opacity-40"
+          )}
         >
           {seatCode}
         </div>
       );
     }
 
-    const isSelected = selectedSeat?.assento === seat.assento;
     const isAttended = attendedSeats.has(seat.assento);
     const highlighted = isSeatHighlighted(seat);
     const isEspacoAzul = metadata?.codigo === "ATR 72-600" ? row <= 2 : row <= 4;
+
+    const seatPnr = (seat.dados_cliente?.pnr || (seat as any).pnr || "SOLO").trim();
+    const isFamily = Boolean(seat.dados_cliente?.is_grupo_familiar ?? (seat as any).is_grupo_familiar);
+
+    // Lógica de Destaque Visual PNR:
+    // const isGroupMember = selectedSeat?.pnr === seat.pnr && seat.pnr !== 'SOLO' && seat.is_grupo_familiar
+    const isGroupMember = Boolean(
+      activePnr &&
+      activePnr === seatPnr &&
+      seatPnr !== "SOLO" &&
+      isFamily
+    );
+
+    // Contraste tátil: reduz opacidade (opacity-60) nos assentos que NÃO pertencem ao PNR selecionado
+    const belongsToSelection = isSelected || isGroupMember;
+    const isDimmed = hasSelection && !belongsToSelection;
 
     // =========================================================================
     // RBAC: MODO TRIPULAÇÃO (role === 'crew' ou isDirectionalOnly)
@@ -188,13 +218,16 @@ export function CrewSeatMap({
             }
           }}
           className={cn(
-            "relative group flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border text-left transition-all duration-200 cursor-pointer shadow-md",
+            "relative group flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border text-left transition-all duration-300 cursor-pointer shadow-md",
             isDone
               ? "bg-emerald-50 text-emerald-950 border-emerald-400 dark:bg-emerald-950/70 dark:text-emerald-100 dark:border-emerald-500 ring-2 ring-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/70"
               : isAtrito
               ? "bg-rose-50 text-rose-950 border-rose-400 dark:bg-rose-950/70 dark:text-rose-100 dark:border-rose-500 ring-2 ring-rose-500 ring-offset-2 hover:bg-rose-100 dark:hover:bg-rose-900/70 animate-pulse"
               : "bg-amber-50 text-amber-950 border-amber-400 dark:bg-amber-950/70 dark:text-amber-100 dark:border-amber-400 ring-2 ring-amber-400 ring-offset-2 hover:bg-amber-100 dark:hover:bg-amber-900/70 animate-pulse",
-            isSelected && "scale-105 ring-4 z-20 shadow-lg"
+            isGroupMember &&
+              "ring-4 ring-blue-500 ring-offset-2 scale-105 z-10 bg-blue-50 dark:bg-blue-950/70 dark:ring-blue-400 shadow-md transition-all duration-300",
+            isSelected && "scale-105 ring-4 ring-blue-600 dark:ring-blue-400 z-20 shadow-xl",
+            isDimmed && "opacity-60 hover:opacity-100"
           )}
           title={`Missão IA: ${seatCode} - ${mission.passageiro || seat.dados_cliente?.nome} (${isDone ? "Concluída" : "Pendente"})`}
         >
@@ -291,22 +324,24 @@ export function CrewSeatMap({
       );
     }
 
-    const isFamily = Boolean(seat.dados_cliente?.is_grupo_familiar);
-
     return (
       <button
         key={seatCode}
         type="button"
         onClick={() => onSelectSeat(seat)}
         className={cn(
-          "relative group flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border text-left transition-all duration-150 cursor-pointer",
+          "relative group flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border text-left transition-all duration-300 cursor-pointer",
           statusStyles,
-          isFamily && "ring-1 ring-sky-400/60 dark:ring-sky-500/50",
+          isFamily && !isGroupMember && "ring-1 ring-sky-400/60 dark:ring-sky-500/50",
+          isGroupMember &&
+            "ring-4 ring-blue-500 ring-offset-2 scale-105 z-10 bg-blue-50 dark:bg-blue-950/70 dark:ring-blue-400 shadow-md transition-all duration-300",
+          isSelected &&
+            "scale-105 z-20 shadow-xl ring-4 ring-blue-600 dark:ring-blue-500 ring-offset-2 dark:ring-offset-slate-950",
+          isDimmed && "opacity-60 hover:opacity-100",
           !highlighted && "opacity-25 hover:opacity-100 scale-95",
-          highlighted && "hover:scale-105 active:scale-95",
-          isSelected && "scale-105 shadow-md z-10"
+          highlighted && !isDimmed && "hover:scale-105 active:scale-95"
         )}
-        title={`${seatCode}: ${seat.dados_cliente.nome} (${seat.status.toUpperCase()}) - ${seat.dados_cliente.tier_fidelidade}${isFamily ? ` [Grupo Familiar / PNR ${seat.dados_cliente.pnr}: ${seat.dados_cliente.tamanho_grupo} pax]` : ""}`}
+        title={`${seatCode}: ${seat.dados_cliente.nome} (${seat.status.toUpperCase()}) - ${seat.dados_cliente.tier_fidelidade}${isFamily ? ` [Grupo Familiar / PNR ${seatPnr}: ${seat.dados_cliente.tamanho_grupo || 2} pax]` : ""}`}
       >
         {/* Header do Assento: Código + Ícone de Grupo/Status */}
         <div className="flex items-center justify-between w-full">
@@ -315,7 +350,14 @@ export function CrewSeatMap({
               {seatCode}
             </span>
             {isFamily && (
-              <Users className="h-2.5 w-2.5 text-sky-500 dark:text-sky-400 shrink-0" />
+              <Users
+                className={cn(
+                  "h-2.5 w-2.5 shrink-0 transition-colors duration-200",
+                  isGroupMember
+                    ? "text-blue-600 dark:text-blue-300 font-bold animate-pulse"
+                    : "text-sky-500 dark:text-sky-400"
+                )}
+              />
             )}
           </div>
           {indicatorIcon}

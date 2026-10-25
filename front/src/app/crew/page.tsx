@@ -155,6 +155,13 @@ export default function CrewPage() {
     return set;
   }, [missions]);
 
+  // Assento selecionado para o mapa (quando o modal de missão estiver ativo)
+  const selectedSeatForMap = useMemo(() => {
+    if (!selectedMissionModal) return null;
+    const list = dynamicSeats.length > 0 ? dynamicSeats : seats;
+    return list.find((s) => s.assento === selectedMissionModal.assento) || null;
+  }, [selectedMissionModal, dynamicSeats, seats]);
+
   // Filtra as missões a serem exibidas no grid responsivo
   const filteredMissions = useMemo(() => {
     return missions.filter((m) => {
@@ -756,7 +763,7 @@ export default function CrewPage() {
                   seats={dynamicSeats.length > 0 ? dynamicSeats : seats}
                   layout={dynamicLayout}
                   aircraftModel={aircraftModelName}
-                  selectedSeat={null}
+                  selectedSeat={selectedSeatForMap}
                   onSelectSeat={() => {}}
                   filter="todos"
                   attendedSeats={attendedSeatsSet}

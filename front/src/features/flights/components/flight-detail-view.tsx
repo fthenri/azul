@@ -505,7 +505,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Users className="h-3 w-3 text-sky-500" />
-                  <span>Grupo Familiar (Mesmo PNR)</span>
+                  <span>Grupo Familiar (Mesmo PNR • clique para destacar)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-3 w-3 rounded-xs bg-slate-200 dark:bg-slate-700" />
