@@ -93,6 +93,9 @@ export function SimulatorKpis({
         "Soma do CLV esperado dos passageiros da fila multiplicado pelo risco individual de evasão (DuckDB Gold).",
       metricPill: `${momentos.length} eventos`,
       type: "common" as const,
+      highlightBeam: "from-rose-500/80 via-rose-500/30 to-transparent",
+      accentGlow: "group-hover:bg-rose-500/[0.03]",
+      tagText: "Alvo Mitigável",
     },
     {
       title: "Eventos Críticos / Atrito",
@@ -105,6 +108,9 @@ export function SimulatorKpis({
         "Ocorrências operacionais graves com score de risco de evasão ≥ 70% ou impacto direto na jornada do passageiro.",
       metricPill: "Intervenção Imediata",
       type: "common" as const,
+      highlightBeam: "from-amber-500/80 via-amber-500/30 to-transparent",
+      accentGlow: "group-hover:bg-amber-500/[0.03]",
+      tagText: "Ação Urgente",
     },
     {
       title: "Uplift Médio Projetado",
@@ -117,6 +123,9 @@ export function SimulatorKpis({
         "Diferencial matemático de probabilidade de permanência entre receber a ação recomendada versus o grupo de controle (sem ação).",
       metricPill: simulationResult ? "Simulação Ativa" : "Estimativa Preditiva",
       type: "common" as const,
+      highlightBeam: "from-sky-500/80 via-sky-400/30 to-transparent",
+      accentGlow: "group-hover:bg-sky-500/[0.03]",
+      tagText: "Score Uplift",
     },
     {
       title: "ROI Médio de Retenção",
@@ -129,8 +138,9 @@ export function SimulatorKpis({
         "Multiplicador de retorno que comprova a eficiência financeira do motor de concessão sobre o custo de reposição de clientes (CAC).",
       metricPill: "Top 20% Pareto",
       type: "special" as const,
-      highlightBeam: "from-sky-500/25 via-emerald-500/15 to-transparent",
-      accentGlow: "bg-emerald-500/10 dark:bg-emerald-500/15",
+      highlightBeam: "from-emerald-500/90 via-sky-400/40 to-transparent",
+      accentGlow: "bg-emerald-500/5 dark:bg-emerald-500/10",
+      tagText: "Lucro Líquido",
     },
   ];
 
@@ -147,15 +157,13 @@ export function SimulatorKpis({
             className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-lg min-h-[160px] flex flex-col justify-between ${
               isSpecial
                 ? "border-emerald-500/40 bg-gradient-to-br from-card via-card to-emerald-500/5 dark:to-emerald-950/20 shadow-md hover:border-emerald-500/60"
-                : "border-border/80 dark:border-white/10 bg-card/80 dark:bg-[#071120]/80 backdrop-blur-md hover:border-sky-400/30 shadow-xs"
-            }`}
+                : "border-border/80 dark:border-white/10 bg-card/85 dark:bg-[#071120]/85 backdrop-blur-md hover:border-sky-400/30 shadow-xs"
+            } ${kpi.accentGlow}`}
           >
-            {/* Feixe de Luz Superior para o Card Especial de ROI */}
-            {isSpecial && (
-              <div
-                className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${kpi.highlightBeam}`}
-              />
-            )}
+            {/* Feixe de Luz Superior Semântico (Accent Beam) */}
+            <div
+              className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${kpi.highlightBeam}`}
+            />
 
             <div className="p-5 flex flex-col justify-between h-full space-y-3">
               {/* Linha Superior: Título + Ícone (Altura padronizada para alinhamento horizontal) */}
@@ -176,7 +184,7 @@ export function SimulatorKpis({
                 </div>
 
                 <div
-                  className={`p-2.5 rounded-xl border shrink-0 transition-transform duration-300 group-hover:scale-105 ${kpi.iconBg}`}
+                  className={`p-2.5 rounded-xl border shrink-0 transition-transform duration-300 group-hover:scale-105 shadow-xs ${kpi.iconBg}`}
                 >
                   <Icon className={`h-4 w-4 ${kpi.iconColor}`} />
                 </div>
@@ -187,7 +195,7 @@ export function SimulatorKpis({
                 <div className="flex items-baseline justify-between gap-2 overflow-hidden h-9">
                   <span
                     title={kpi.value}
-                    className={`font-black tracking-tight whitespace-nowrap truncate ${
+                    className={`font-black tracking-tight whitespace-nowrap truncate font-mono ${
                       isLongText
                         ? "text-lg sm:text-xl xl:text-[22px] 2xl:text-[25px]"
                         : "text-2xl sm:text-3xl"
@@ -199,12 +207,16 @@ export function SimulatorKpis({
                   >
                     {kpi.value}
                   </span>
-                  {isSpecial && (
-                    <span className="inline-flex items-center text-[10px] sm:text-[11px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
-                      <ArrowUpRight className="h-3 w-3 mr-0.5" />
-                      Lucro Líquido
-                    </span>
-                  )}
+                  <span
+                    className={`inline-flex items-center text-[10px] sm:text-[11px] font-bold shrink-0 ${
+                      isSpecial
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    <ArrowUpRight className="h-3 w-3 mr-0.5 opacity-80" />
+                    {kpi.tagText}
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed truncate" title={kpi.description}>
                   {kpi.description}
