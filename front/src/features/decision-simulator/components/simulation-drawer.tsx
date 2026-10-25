@@ -34,8 +34,6 @@ import { Button } from "@/components/ui/button";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { ShapChart } from "@/features/audit-logs/components/shap-chart";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
-import { UserAvatar } from "@/components/shared/user-avatar";
-import { CLIENT_INFO_MAP } from "../hooks/use-simulation";
 
 interface SimulationDrawerProps {
   isOpen: boolean;
@@ -142,36 +140,24 @@ export function SimulationDrawer({
     switch (tier) {
       case "Diamante":
         return {
-          avatarBg: "bg-gradient-to-br from-[#001D40] to-[#003B7A] text-sky-200 ring-2 ring-sky-400/60 shadow-[0_0_14px_rgba(56,189,248,0.3)]",
           badge: "bg-[#002855] text-sky-200 border-sky-400/50 shadow-xs",
         };
       case "Safira":
         return {
-          avatarBg: "bg-gradient-to-br from-blue-950 to-blue-800 text-blue-200 ring-2 ring-blue-400/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
           badge: "bg-blue-900 text-blue-200 border-blue-400/40 shadow-xs",
         };
       case "Topázio":
         return {
-          avatarBg: "bg-gradient-to-br from-amber-950 to-amber-800 text-amber-200 ring-2 ring-amber-400/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]",
           badge: "bg-amber-900 text-amber-200 border-amber-400/40 shadow-xs",
         };
       default:
         return {
-          avatarBg: "bg-slate-800 text-slate-300 ring-1 ring-slate-600",
           badge: "bg-slate-800 text-slate-300 border-slate-700",
         };
     }
   })();
 
   const { voo, rota } = parseFlightDetails(selectedMomento.descricao);
-
-  const passengerName =
-    (selectedMomento as any).nome ||
-    (selectedMomento as any).passageiro ||
-    CLIENT_INFO_MAP[selectedMomento.cliente_id]?.nome ||
-    (lastDispatchedMission?.passageiro && lastDispatchedMission?.assento && selectedMomento.cliente_id
-      ? lastDispatchedMission.passageiro
-      : null);
 
   const paretoDecil = (() => {
     const clv = selectedMomento.clv_previsto;
@@ -219,22 +205,16 @@ export function SimulationDrawer({
               HEADER DO DRAWER: IDENTIFICAÇÃO + NAVEGAÇÃO ENTRE CASOS
              ───────────────────────────────────────────────────────────── */}
           <div className="px-6 py-4 border-b border-border/70 dark:border-white/10 bg-muted/40 backdrop-blur-md flex items-center justify-between gap-4 shrink-0">
-            {/* Esquerda: Identificação do Passageiro Estilo VIP Boarding Pass */}
+            {/* Esquerda: Identificação do Passageiro */}
             <div className="flex items-center gap-3.5 min-w-0">
-              {passengerName ? (
-                <UserAvatar name={passengerName} size="md" className="h-11 w-11 rounded-2xl" />
-              ) : (
-                <div
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-black text-sm transition-all ${tierConfig.avatarBg}`}
-                >
-                  <User className="h-5 w-5" />
-                </div>
-              )}
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#003B7A] dark:bg-sky-600 text-white font-black text-sm shadow-md border border-border/60">
+                <User className="h-5 w-5" />
+              </div>
 
               <div className="min-w-0 space-y-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-base font-black tracking-tight text-foreground truncate">
-                    {passengerName || `Passageiro #${selectedMomento.cliente_id}`}
+                    Passageiro #{selectedMomento.cliente_id}
                   </h2>
                   <Badge className={`text-[10px] font-bold px-2 py-0.5 ${tierConfig.badge}`}>
                     <Crown className="h-2.5 w-2.5 mr-1" />
@@ -254,7 +234,7 @@ export function SimulationDrawer({
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
-                  {passengerName ? `Passageiro #${selectedMomento.cliente_id} • ` : ""}Cluster: <span className="font-semibold text-foreground">{selectedMomento.persona}</span> • ID: {selectedMomento.id} {voo ? `• Voo ${voo}` : ""}
+                  Cluster: <span className="font-semibold text-foreground">{selectedMomento.persona}</span> • ID: {selectedMomento.id} {voo ? `• Voo ${voo}` : ""}
                 </p>
               </div>
             </div>
