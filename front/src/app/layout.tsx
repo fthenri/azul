@@ -23,12 +23,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Motor de Retenção de Alto Valor | Azul Linhas Aéreas",
-  description: "Plataforma Analítica B2B de Retenção e Decisões — Azul Linhas Aéreas",
+  title: "pulso | Antecipe o risco. Preserve o valor — Azul Fidelidade",
+  description:
+    "pulso: Inteligência preditiva para identificar clientes valiosos em risco, selecionar intervenções e maximizar o retorno da retenção.",
   icons: {
-    icon: "/aba.png",
-    shortcut: "/aba.png",
-    apple: "/aba.png",
+    icon: "/pulso-branco.svg",
+    shortcut: "/pulso-branco.svg",
+    apple: "/pulso-branco.svg",
   },
 };
 

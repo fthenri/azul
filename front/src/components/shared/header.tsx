@@ -87,11 +87,11 @@ export function Header({
           <button
             type="button"
             onClick={onToggleSidebar || onOpenMobileMenu}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-foreground hover:text-primary hover:bg-muted transition-colors cursor-pointer shrink-0"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-foreground hover:text-surface hover:bg-muted transition-colors cursor-pointer shrink-0"
             aria-label={isCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
             title={isCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
           >
-            <Menu className="h-5 w-5 text-primary transition-transform duration-200" />
+            <Menu className="h-5 w-5 text-surface transition-transform duration-200" />
           </button>
 
           {/* Breadcrumb e Título da Página (sem o ícone prévio do começo) */}
@@ -109,7 +109,7 @@ export function Header({
               </span>
             </div>
             <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline-block">
-              Portal Corporativo de Retenção e Decisão
+              pulso • Antecipe o risco. Preserve o valor.
             </span>
           </div>
         </div>

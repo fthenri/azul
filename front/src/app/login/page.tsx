@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
+import { PulsoLogo } from "@/components/shared/pulso-logo";
 
 // Força renderização dinâmica para desativar a pré-renderização estática
 export const dynamic = "force-dynamic";
@@ -151,25 +152,22 @@ function LoginFormContent() {
           TOP NAVBAR CORPORATIVA
          ───────────────────────────────────────────────────────────── */}
       <header className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 pt-6 sm:pt-8 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="relative h-11 w-32 flex items-center transition-transform duration-200 hover:scale-[1.02]">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="relative h-10 w-24 sm:w-28 flex items-center transition-transform duration-200 hover:scale-[1.02]">
             <Image
               src="/logo.png"
               alt="Azul Linhas Aéreas"
-              width={128}
-              height={44}
+              width={112}
+              height={38}
               className="object-contain filter brightness-115 drop-shadow-[0_2px_14px_rgba(56,189,248,0.25)]"
               priority
             />
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 pl-4 border-l border-border">
-            <span className="text-xs uppercase tracking-widest font-bold text-muted-foreground">
-              Motor de Retenção
-            </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold bg-primary/10 text-primary border border-primary/25">
-              Enterprise B2B
-            </span>
+          <div className="h-6 w-[1px] bg-border" />
+
+          <div className="flex items-center">
+            <PulsoLogo width={72} height={48} priority />
           </div>
         </div>
 
@@ -202,21 +200,27 @@ function LoginFormContent() {
             {/* Feixe de Luz Superior em Gradiente (Subtle Edge Highlight) */}
             <div className="absolute inset-x-12 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary/80 to-transparent" />
 
-            {/* Cabeçalho do Card */}
-            <div className="text-center space-y-3 mb-7">
-              {/* Badge Minimalista de Ecossistema */}
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary text-[11px] font-semibold tracking-wide shadow-inner">
-                <Sparkles className="h-3 w-3 text-primary" />
-                <span>Ecossistema Azul Fidelidade</span>
+            {/* Cabeçalho do Card com Logo Pulso Oficial e Proposta de Valor */}
+            <div className="text-center space-y-4 mb-7">
+              {/* Logo Pulso Oficial ao lado de pulso na fonte Sora */}
+              <div className="inline-flex items-center justify-center">
+                <PulsoLogo width={104} height={72} priority />
+                <div className="flex flex-col text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="text-4xl sm:text-4xl font-bold tracking-tight text-foreground lowercase font-outfit leading-none">
+                      pulso
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Título Principal Conforme Especificação */}
-              <div>
-                <h1 className="text-2xl sm:text-[27px] font-black tracking-tight text-foreground">
-                  Azul - Motor de Retenção
+              {/* Slogan & Proposta de Valor Conforme Solicitado */}
+              <div className="space-y-1.5 px-1">
+                <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground leading-snug font-outfit">
+                  Antecipe o risco. Preserve o valor.
                 </h1>
-                <p className="text-xs sm:text-[13px] text-muted-foreground mt-1.5 font-normal leading-relaxed">
-                  Acesso corporativo exclusivo para inteligência de retenção, simulações de alto valor e cockpit de bordo.
+                <p className="text-xs sm:text-[13px] text-muted-foreground font-normal leading-relaxed max-w-sm mx-auto">
+                  Inteligência preditiva para identificar clientes valiosos em risco, selecionar intervenções e maximizar o retorno da retenção.
                 </p>
               </div>
             </div>
@@ -468,7 +472,7 @@ function LoginFormContent() {
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-primary" />
           <span>
-            Azul Linhas Aéreas Brasileiras S.A. • Motor de Retenção de Alto Valor
+            Azul Linhas Aéreas Brasileiras S.A. • pulso: Antecipe o risco. Preserve o valor.
           </span>
         </div>
         <div className="flex items-center gap-4 text-[11px]">

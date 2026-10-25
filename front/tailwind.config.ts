@@ -30,6 +30,8 @@ const config: Config = {
           "Arial",
           "sans-serif",
         ],
+        outfit: ["'Outfit'", "sans-serif"],
+        sora: ["'Sora'", "sans-serif"],
       },
       colors: {
         azul: {

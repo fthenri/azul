@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
+import { PulsoLogo } from "@/components/shared/pulso-logo";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -87,51 +88,41 @@ export function Sidebar({
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        {/* Top Header: Logo Azul + MOTOR DE RETENÇÃO (sempre branco) */}
+        {/* Top Header: Logo Oficial Pulso + Ecossistema Azul */}
         <div
           className={cn(
-            "flex h-20 shrink-0 items-center transition-all px-4 bg-white",
+            "flex h-20 shrink-0 items-center transition-all px-4 bg-card border-b border-border/80",
             isCollapsed && "justify-center px-2"
           )}
         >
           {isCollapsed ? (
-            /* Ícone colorido da bandeira do Brasil da Azul centralizado */
-            <div className="relative h-8 w-8 shrink-0 flex items-center justify-center">
-              <Image
-                src="/aba.png"
-                alt="Azul Linhas Aéreas"
-                width={28}
-                height={28}
-                className="object-contain"
-                priority
-              />
-            </div>
-          ) : (
-            /* Logo Completo Azul com mapa + Separador + Motor de Retenção */
+            /* Ícone Pulso Oficial Centralizado no Colapso */
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 group overflow-hidden transition-transform duration-200 hover:scale-[1.01]"
-              title="Azul Linhas Aéreas - Motor de Retenção"
+              className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-xl hover:bg-muted/70 transition-all"
+              title="pulso — Antecipe o risco. Preserve o valor."
             >
-              <div className="relative h-8 w-20 shrink-0 flex items-center">
-                <Image
-                  src="/logo.png"
-                  alt="Azul Linhas Aéreas"
-                  width={80}
-                  height={30}
-                  className="object-contain"
-                  priority
-                />
+              <PulsoLogo width={72} height={48} priority />
+            </Link>
+          ) : (
+            /* Logo Oficial Pulso + Separador + Branding Corporativo Azul */
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2.5 group overflow-hidden transition-transform duration-200"
+              title="pulso — Antecipe o risco. Preserve o valor."
+            >
+              <div className="relative h-9 w-12 shrink-0 flex items-center justify-center">
+                <PulsoLogo width={46} height={30} priority />
               </div>
 
-              <div className="h-6 w-[1px] bg-slate-300 mx-0.5" />
+              <div className="h-6 w-[1px] bg-border mx-0.5" />
 
-              <div className="flex flex-col text-left pl-1">
-                <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500 leading-tight">
-                  MOTOR DE
+              <div className="flex flex-col text-left">
+                <span className="text-2xl font-semibold tracking-tight text-foreground lowercase font-outfit leading-none">
+                  pulso
                 </span>
-                <span className="text-[11px] uppercase font-black tracking-wider text-[#0077C8] leading-tight">
-                  RETENÇÃO
+                <span className="text-[10px] text-muted-foreground font-medium leading-none mt-1">
+                  Motor de Retenção
                 </span>
               </div>
             </Link>
@@ -173,7 +164,7 @@ export function Sidebar({
                           className={cn(
                             "h-7 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
                             item.active
-                              ? "text-primary"
+                              ? "text-surface"
                               : "text-muted-foreground group-hover:text-primary"
                           )}
                         />
@@ -185,7 +176,7 @@ export function Sidebar({
                             className={cn(
                               "h-7 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
                               item.active
-                                ? "text-primary"
+                                ? "text-surface"
                                 : "text-muted-foreground group-hover:text-primary"
                             )}
                           />

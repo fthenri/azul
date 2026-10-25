@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AnimatedTabs, type TabItem } from "@/components/ui/animated-tabs";
 import { Momento } from "@/types/api";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 
@@ -125,6 +126,46 @@ export function MomentsQueue({
       alto_clv: momentos.filter((m) => m.clv_previsto >= 5000).length,
     };
   }, [momentos]);
+
+  const queueTabs = useMemo<TabItem<FilterCategory>[]>(
+    () => [
+      {
+        id: "all",
+        label: "Todos os Casos",
+        icon: Layers,
+        badge: counts.all,
+      },
+      {
+        id: "reativa",
+        label: "Atritos Operacionais",
+        icon: AlertTriangle,
+        badge: counts.reativa,
+        activeBadgeClassName: "bg-rose-500/20 text-rose-600 dark:text-rose-300 border-rose-500/30",
+      },
+      {
+        id: "critico",
+        label: "Risco Crítico (≥70%)",
+        icon: Flame,
+        badge: counts.critico,
+        activeBadgeClassName: "bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/30",
+      },
+      {
+        id: "proativa",
+        label: "Preditivo / Churn",
+        icon: Zap,
+        badge: counts.proativa,
+        activeBadgeClassName: "bg-primary/20 text-primary border-primary/30",
+      },
+      {
+        id: "alto_clv",
+        label: "Top CLV (>R$ 5k)",
+        icon: Crown,
+        badge: counts.alto_clv,
+        activeBadgeClassName: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/30",
+      },
+    ],
+    [counts]
+  );
 
   const filteredMomentos = useMemo(() => {
     return momentos.filter((m) => {
@@ -252,109 +293,12 @@ export function MomentsQueue({
           </div>
         </div>
 
-        {/* Pílulas de Filtro por Categoria com Contadores Dinâmicos */}
-        <div className="flex items-center gap-1.5 overflow-x-auto p-1 rounded-2xl bg-muted/40 border border-border/60 text-xs scrollbar-none">
-          <button
-            type="button"
-            onClick={() => setActiveFilter("all")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap cursor-pointer flex items-center gap-2 ${
-              activeFilter === "all"
-                ? "bg-background text-foreground shadow-xs border border-border/80"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
-            }`}
-          >
-            <span>Todos os Casos</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold transition-colors ${
-                activeFilter === "all"
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "bg-muted/80 text-muted-foreground"
-              }`}
-            >
-              {counts.all}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveFilter("reativa")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap cursor-pointer flex items-center gap-2 ${
-              activeFilter === "reativa"
-                ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 shadow-xs"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
-            }`}
-          >
-            <span>Atritos Operacionais</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold transition-colors ${
-                activeFilter === "reativa"
-                  ? "bg-rose-500/20 text-rose-600 dark:text-rose-300"
-                  : "bg-muted/80 text-muted-foreground"
-              }`}
-            >
-              {counts.reativa}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveFilter("critico")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap cursor-pointer flex items-center gap-2 ${
-              activeFilter === "critico"
-                ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shadow-xs"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
-            }`}
-          >
-            <span>Risco Crítico (≥70%)</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold transition-colors ${
-                activeFilter === "critico"
-                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-300"
-                  : "bg-muted/80 text-muted-foreground"
-              }`}
-            >
-              {counts.critico}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveFilter("proativa")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap cursor-pointer flex items-center gap-2 ${
-              activeFilter === "proativa"
-                ? "bg-primary/15 text-primary border border-primary/30 shadow-xs"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
-            }`}
-          >
-            <span>Preditivo / Churn</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold transition-colors ${
-                activeFilter === "proativa"
-                  ? "bg-primary/20 text-primary"
-                  : "bg-muted/80 text-muted-foreground"
-              }`}
-            >
-              {counts.proativa}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveFilter("alto_clv")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap cursor-pointer flex items-center gap-2 ${
-              activeFilter === "alto_clv"
-                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shadow-xs"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
-            }`}
-          >
-            <span>Top CLV (&gt;R$ 5k)</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold transition-colors ${
-                activeFilter === "alto_clv"
-                  ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300"
-                  : "bg-muted/80 text-muted-foreground"
-              }`}
-            >
-              {counts.alto_clv}
-            </span>
-          </button>
-        </div>
+        {/* Pílulas de Filtro por Categoria com Trilho Interligador e Animação Fluida */}
+        <AnimatedTabs<FilterCategory>
+          tabs={queueTabs}
+          activeTab={activeFilter}
+          onChange={setActiveFilter}
+        />
       </Card>
 
       {/* ─────────────────────────────────────────────────────────────
