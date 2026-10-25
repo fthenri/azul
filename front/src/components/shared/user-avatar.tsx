@@ -52,16 +52,16 @@ export function UserAvatar({
   return (
     <Avatar
       className={cn(
-        "rounded-xl border border-sky-400/25 shrink-0 select-none shadow-xs",
+        "rounded-full border border-sky-400/30 shrink-0 select-none shadow-xs",
         sizeClasses[size],
         className
       )}
       {...props}
     >
-      {src && <AvatarImage src={src} alt={name || "Avatar"} />}
+      {src && <AvatarImage src={src} alt={name || "Avatar"} className="rounded-full" />}
       <AvatarFallback
         className={cn(
-          "rounded-xl font-bold tracking-wide transition-colors",
+          "rounded-full font-bold tracking-wide transition-colors",
           "bg-sky-500/15 text-[#003B7A] dark:bg-sky-500/20 dark:text-sky-300"
         )}
       >

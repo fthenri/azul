@@ -89,7 +89,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           onToggleSidebar={handleToggleSidebar}
           isCollapsed={isCollapsed}
         />
-        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 pt-24 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>

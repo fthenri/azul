@@ -15,6 +15,7 @@ import {
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { useAuth } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   onOpenMobileMenu: () => void;
@@ -68,7 +69,13 @@ export function Header({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex flex-col border-b border-border/80 dark:border-white/10 bg-white/85 dark:bg-[#071120]/85 backdrop-blur-xl shadow-xs transition-colors duration-200">
+    <header
+      className={cn(
+        "fixed top-0 right-0 left-0 z-30 flex flex-col border-b border-border/80 dark:border-white/10",
+        "bg-white/90 dark:bg-[#071120]/90 backdrop-blur-xl shadow-xs transition-all duration-300 ease-in-out",
+        isCollapsed ? "lg:left-20" : "lg:left-72"
+      )}
+    >
       {/* Feixe de Luz Superior em Gradiente (Subtle Highlight Beam - Enterprise Pattern) */}
       <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#0077C8]/40 dark:via-sky-400/80 to-transparent pointer-events-none" />
 

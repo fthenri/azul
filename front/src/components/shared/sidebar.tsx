@@ -13,7 +13,6 @@ import {
   Database,
   Plane,
   LogOut,
-  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -91,79 +90,55 @@ export function Sidebar({
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        {/* Top Header: Logo Azul + MOTOR DE RETENÇÃO + Botão Circular de Toggle */}
+        {/* Top Header: Logo Azul + MOTOR DE RETENÇÃO (sem hambúrguer interno) */}
         <div
           className={cn(
-            "flex h-20 shrink-0 items-center border-b transition-all",
+            "flex h-20 shrink-0 items-center border-b transition-all px-4",
             "border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#050e1b]",
-            isCollapsed ? "px-2.5 justify-between" : "px-4 justify-between"
+            isCollapsed && "justify-center px-2"
           )}
         >
           {isCollapsed ? (
-            <div className="flex items-center justify-between w-full">
-              {/* Ícone colorido da bandeira do Brasil da Azul */}
-              <div className="relative h-7 w-7 shrink-0 flex items-center justify-center">
+            /* Ícone colorido da bandeira do Brasil da Azul centralizado */
+            <div className="relative h-8 w-8 shrink-0 flex items-center justify-center">
+              <Image
+                src="/aba.png"
+                alt="Azul Linhas Aéreas"
+                width={28}
+                height={28}
+                className="object-contain"
+                priority
+              />
+            </div>
+          ) : (
+            /* Logo Completo Azul com mapa + Separador + Motor de Retenção */
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 group overflow-hidden transition-transform duration-200 hover:scale-[1.01]"
+              title="Azul Linhas Aéreas - Motor de Retenção"
+            >
+              <div className="relative h-8 w-20 shrink-0 flex items-center">
                 <Image
-                  src="/aba.png"
+                  src="/logo.png"
                   alt="Azul Linhas Aéreas"
-                  width={26}
-                  height={26}
-                  className="object-contain"
+                  width={80}
+                  height={30}
+                  className="object-contain filter dark:brightness-125"
                   priority
                 />
               </div>
 
-              {/* Botão circular de expansão com chevron '>' */}
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                title="Expandir barra lateral"
-                className="h-7 w-7 rounded-full bg-slate-100 dark:bg-[#132238] border border-slate-200 dark:border-slate-700/60 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-azul-action dark:hover:text-white hover:border-sky-400/50 transition-all cursor-pointer shadow-xs shrink-0"
-              >
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* Logo Completo Azul com mapa + Separador + Motor de Retenção */}
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 group overflow-hidden transition-transform duration-200 hover:scale-[1.01]"
-                title="Azul Linhas Aéreas - Motor de Retenção"
-              >
-                <div className="relative h-8 w-20 shrink-0 flex items-center">
-                  <Image
-                    src="/logo.png"
-                    alt="Azul Linhas Aéreas"
-                    width={80}
-                    height={30}
-                    className="object-contain filter dark:brightness-125"
-                    priority
-                  />
-                </div>
+              <div className="h-6 w-[1px] bg-slate-300 dark:bg-white/15 mx-0.5" />
 
-                <div className="h-6 w-[1px] bg-slate-300 dark:bg-white/15 mx-0.5" />
-
-                <div className="flex flex-col text-left pl-1">
-                  <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 leading-tight">
-                    MOTOR DE
-                  </span>
-                  <span className="text-[11px] uppercase font-black tracking-wider text-azul-action dark:text-[#38BDF8] leading-tight">
-                    RETENÇÃO
-                  </span>
-                </div>
-              </Link>
-
-              {/* Botão circular de recolhimento com ícone de hambúrguer '☰' */}
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                title="Recolher barra lateral"
-                className="h-8 w-8 rounded-full bg-slate-100 dark:bg-[#132238] border border-slate-200 dark:border-slate-700/60 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-azul-action dark:hover:text-white hover:border-sky-400/50 transition-all cursor-pointer shadow-xs shrink-0"
-              >
-                <Menu className="h-4 w-4" />
-              </button>
-            </>
+              <div className="flex flex-col text-left pl-1">
+                <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 leading-tight">
+                  MOTOR DE
+                </span>
+                <span className="text-[11px] uppercase font-black tracking-wider text-azul-action dark:text-[#38BDF8] leading-tight">
+                  RETENÇÃO
+                </span>
+              </div>
+            </Link>
           )}
         </div>
 
