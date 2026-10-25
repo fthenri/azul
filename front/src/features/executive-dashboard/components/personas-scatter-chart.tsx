@@ -26,17 +26,29 @@ interface PersonasScatterChartProps {
   isLoading: boolean;
 }
 
-const getPersonaColor = (nome: string, _isDark?: boolean) => {
+const getPersonaColor = (nome: string, isDark: boolean = false) => {
   if (nome.includes("Corporativo")) {
-    return { fill: "hsl(var(--primary))", stroke: "hsl(var(--primary) / 0.8)", label: "Gestor Corporativo" };
+    // Gestor Corporativo (Tier Diamante): Azul Marinho Profundo / Azul Safira Intenso
+    return isDark
+      ? { fill: "#3b82f6", stroke: "#60a5fa", label: "Gestor Corporativo" }
+      : { fill: "#003066", stroke: "#001c3d", label: "Gestor Corporativo" };
   }
   if (nome.includes("Solo")) {
-    return { fill: "hsl(var(--azul-action))", stroke: "hsl(var(--primary))", label: "Viajante Solo Premium" };
+    // Viajante Solo Premium (Tier Safira): Azul Action Oficial da Azul / Ciano Elétrico
+    return isDark
+      ? { fill: "#00a3ff", stroke: "#38bdf8", label: "Viajante Solo Premium" }
+      : { fill: "#006eb8", stroke: "#004d80", label: "Viajante Solo Premium" };
   }
   if (nome.includes("Familiar")) {
-    return { fill: "hsl(var(--azul-success))", stroke: "hsl(var(--azul-success) / 0.8)", label: "Líder Familiar" };
+    // Líder Familiar (Tier Topázio): Azul Celeste / Sky Blue
+    return isDark
+      ? { fill: "#38bdf8", stroke: "#7dd3fc", label: "Líder Familiar" }
+      : { fill: "#0284c7", stroke: "#0369a1", label: "Líder Familiar" };
   }
-  return { fill: "hsl(var(--azul-warning))", stroke: "hsl(var(--azul-warning) / 0.8)", label: "Turista Eventual" };
+  // Turista Eventual (Tier Azul / Básico): Azul Glacial / Pastel Luminous
+  return isDark
+    ? { fill: "#93c5fd", stroke: "#bfdbfe", label: "Turista Eventual" }
+    : { fill: "#60a5fa", stroke: "#2563eb", label: "Turista Eventual" };
 };
 
 export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartProps) {
@@ -274,8 +286,8 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
         ].map(({ name, conf }) => (
           <div key={name} className="flex items-center gap-1.5">
             <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: conf.fill }}
+              className="h-2.5 w-2.5 rounded-full border shadow-xs"
+              style={{ backgroundColor: conf.fill, borderColor: conf.stroke }}
             />
             <span className="text-muted-foreground font-medium text-[11px]">{name}</span>
           </div>
