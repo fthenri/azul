@@ -16,6 +16,8 @@ import {
   MetadataAeronave,
   VooSimuladoResponse,
   SimularBordoResponse,
+  ListaVoosResponse,
+  VooDetalheResponse,
 } from "@/types/api";
 
 export const DEMO_KPIS: DashboardKPIs = {
@@ -344,5 +346,215 @@ export function getDemoSimularBordo(assento: string, id_cliente: string): Simula
       ? `Atenção Tripulação: O passageiro ${cliente.nome} (${cliente.tier_fidelidade}) no assento ${assento} teve um atrito recente em conexão. Por gentileza, ofereça uma bebida cortesia do carrinho especial, pergunte sobre a experiência de hoje e transmita a atenção dedicada da Azul.`
       : `Passageiro ${cliente.nome} no assento ${assento} é nosso cliente ${cliente.tier_fidelidade} (${cliente.faixa_pareto}). Aborde discretamente agradecendo pela preferência constante na rota e deseje um excelente voo em nome do Comandante e da Azul.`,
     dados_cliente: cliente as unknown as Record<string, unknown>,
+  };
+}
+
+export const DEMO_MALHA_VOOS: ListaVoosResponse = {
+  total_voos: 5,
+  voos: [
+    {
+      id: "6002",
+      numero_voo: "AD 6002",
+      rota: "SBSP ➔ SBFI",
+      origem: "SBSP",
+      destino: "SBFI",
+      partida_prevista: "2026-08-01 12:05:00",
+      status_operacional: "REALIZADO",
+      total_passageiros: 60,
+      total_pnrs: 28,
+      passageiros_criticos: 8,
+      passageiros_vip: 10,
+      atraso_medio_minutos: 1.9,
+    },
+    {
+      id: "4409",
+      numero_voo: "AD 4409",
+      rota: "SBPJ ➔ SBCF",
+      origem: "SBPJ",
+      destino: "SBCF",
+      partida_prevista: "2026-08-01 03:15:00",
+      status_operacional: "REALIZADO",
+      total_passageiros: 60,
+      total_pnrs: 28,
+      passageiros_criticos: 7,
+      passageiros_vip: 12,
+      atraso_medio_minutos: 0.0,
+    },
+    {
+      id: "4066",
+      numero_voo: "AD 4066",
+      rota: "SBCF ➔ SBEG",
+      origem: "SBCF",
+      destino: "SBEG",
+      partida_prevista: "2026-08-01 08:15:00",
+      status_operacional: "REALIZADO",
+      total_passageiros: 58,
+      total_pnrs: 27,
+      passageiros_criticos: 6,
+      passageiros_vip: 9,
+      atraso_medio_minutos: 0.5,
+    },
+    {
+      id: "4991",
+      numero_voo: "AD 4991",
+      rota: "SBCX ➔ SBKP",
+      origem: "SBCX",
+      destino: "SBKP",
+      partida_prevista: "2026-08-01 11:10:00",
+      status_operacional: "REALIZADO",
+      total_passageiros: 57,
+      total_pnrs: 27,
+      passageiros_criticos: 5,
+      passageiros_vip: 7,
+      atraso_medio_minutos: 0.3,
+    },
+    {
+      id: "5024",
+      numero_voo: "AD 5024",
+      rota: "SBRF ➔ SBGL",
+      origem: "SBRF",
+      destino: "SBGL",
+      partida_prevista: "2026-08-01 08:15:00",
+      status_operacional: "REALIZADO",
+      total_passageiros: 56,
+      total_pnrs: 26,
+      passageiros_criticos: 5,
+      passageiros_vip: 6,
+      atraso_medio_minutos: 0.9,
+    },
+  ],
+};
+
+export function getDemoFlightDetail(flightId: string = "6002"): VooDetalheResponse {
+  const vooInfo =
+    DEMO_MALHA_VOOS.voos.find((v) => v.id === flightId) || DEMO_MALHA_VOOS.voos[0];
+  const sim = getDemoVooSimulado("A320neo");
+
+  // Adiciona PNR aos assentos simulados
+  const pnrList = ["WHXRES", "C5VQZV", "44BKA9", "934X5P", "FW2B4N", "AZ8912", "SOLO"];
+  const enrichedSeats = sim.assentos.map((s, idx) => {
+    const pnr = pnrList[idx % pnrList.length];
+    const isFamily = pnr !== "SOLO" && idx % 3 === 0;
+    return {
+      ...s,
+      dados_cliente: {
+        ...s.dados_cliente,
+        pnr,
+        tamanho_grupo: isFamily ? 3 : 1,
+        is_grupo_familiar: isFamily,
+      },
+    };
+  });
+
+  return {
+    id: vooInfo.id,
+    numero_voo: vooInfo.numero_voo,
+    rota: vooInfo.rota,
+    origem: vooInfo.origem,
+    destino: vooInfo.destino,
+    partida_prevista: vooInfo.partida_prevista,
+    status_operacional: vooInfo.status_operacional,
+    metadata_aeronave: sim.metadata_aeronave,
+    assentos: enrichedSeats,
+    lote_acoes: {
+      resumo: {
+        total_acoes: 5,
+        custo_total: 75.0,
+        retorno_liquido_total: 107721.0,
+        roi_projetado: 1436.28,
+      },
+      acoes: [
+        {
+          id_missao: `mis_1A_AD${vooInfo.id}`,
+          assento: "1A",
+          id_cliente: "cli_df43b497",
+          pnr: "WHXRES",
+          passageiro: "Vanessa Carvalho",
+          tier: "Safira",
+          persona: "Gestor Corporativo",
+          tipo: "atrito",
+          status_badge: "Alerta de Atrito",
+          gatilho: "Score de atrito elevado (4.3) • Risco 82%",
+          acao_sugerida: "Bebida Cortesia (Vinho / Cerveja / Suco Especial)",
+          custo_acao: 15.0,
+          retorno_liquido: 27626.04,
+          instrucao_comissario:
+            "Passageiro(a) no assento 1A enfrentou atrito operacional recente. Ao iniciar o serviço, ofereça uma bebida cortesia premium, peça desculpas em nome da Azul e agradeça pela fidelidade.",
+          valor_em_risco: 39487.2,
+        },
+        {
+          id_missao: `mis_1E_AD${vooInfo.id}`,
+          assento: "1E",
+          id_cliente: "cli_0da6cc24",
+          pnr: "C5VQZV",
+          passageiro: "André Ribeiro",
+          tier: "Diamante",
+          persona: "Viajante Solo Premium",
+          tipo: "atrito",
+          status_badge: "Alerta de Atrito",
+          gatilho: "Score de atrito elevado (28.2) • Risco 99%",
+          acao_sugerida: "Bebida Cortesia (Vinho / Cerveja / Suco Especial)",
+          custo_acao: 15.0,
+          retorno_liquido: 26815.42,
+          instrucao_comissario:
+            "Passageiro(a) Diamante no assento 1E com atrito operacional severo recente. Aborde com máxima cortesia e ofereça cortesia especial de bordo.",
+          valor_em_risco: 38329.17,
+        },
+        {
+          id_missao: `mis_2C_AD${vooInfo.id}`,
+          assento: "2C",
+          id_cliente: "cli_ae8e5f24",
+          pnr: "44BKA9",
+          passageiro: "Fábio Ferreira",
+          tier: "Diamante",
+          persona: "Gestor Corporativo",
+          tipo: "atrito",
+          status_badge: "Alerta de Atrito",
+          gatilho: "Score de atrito elevado (33.1) • Risco 98%",
+          acao_sugerida: "Bebida Cortesia (Vinho / Cerveja / Suco Especial)",
+          custo_acao: 15.0,
+          retorno_liquido: 26195.76,
+          instrucao_comissario:
+            "Passageiro(a) no assento 2C acumulou atrito considerável. Ofereça bebida cortesia e assegure uma experiência tranquila no voo de hoje.",
+          valor_em_risco: 37443.94,
+        },
+        {
+          id_missao: `mis_2F_AD${vooInfo.id}`,
+          assento: "2F",
+          id_cliente: "cli_5d1b02bb",
+          pnr: "934X5P",
+          passageiro: "Rafael Gomes",
+          tier: "Diamante",
+          persona: "Gestor Corporativo",
+          tipo: "atrito",
+          status_badge: "Alerta de Atrito",
+          gatilho: "Score de atrito elevado (20.5) • Risco 99%",
+          acao_sugerida: "Bebida Cortesia (Vinho / Cerveja / Suco Especial)",
+          custo_acao: 15.0,
+          retorno_liquido: 14624.27,
+          instrucao_comissario:
+            "Passageiro(a) no assento 2F demonstrou atrito recente. Aborde com atenção aos detalhes e ofereça serviço de bordo diferenciado.",
+          valor_em_risco: 20913.25,
+        },
+        {
+          id_missao: `mis_3A_AD${vooInfo.id}`,
+          assento: "3A",
+          id_cliente: "cli_cad18ffc",
+          pnr: "FW2B4N",
+          passageiro: "Aline Gomes",
+          tier: "Diamante",
+          persona: "Turista Eventual",
+          tipo: "vip",
+          status_badge: "Fidelização VIP",
+          gatilho: "Cliente de Alto Valor • Faixa Top 10% Receita",
+          acao_sugerida: "Bebida Cortesia (Vinho / Cerveja / Suco Especial)",
+          custo_acao: 15.0,
+          retorno_liquido: 12459.51,
+          instrucao_comissario:
+            "Passageiro(a) Diamante no assento 3A de alto valor para a Azul. Agradeça calorosamente pela preferência e ofereça uma cortesia especial de boas-vindas.",
+          valor_em_risco: 17820.73,
+        },
+      ],
+    },
   };
 }

@@ -45,67 +45,16 @@ export function useCrewFlight() {
       }
       return api.simularBordo(payload);
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
+      // Salva apenas o resultado da análise para visualização do gestor (sem sincronizar prematuramente com a cabine)
       setSimulationResult(data);
-
-      // Ponte de Comunicação: Despacha a missão gerada pela IA para a comissária (/crew) via localStorage
-      const activeSeat =
-        (flightQuery.data?.assentos || []).find((s) => s.assento === variables.assento) ||
-        selectedSeat;
-      const passengerName = activeSeat?.dados_cliente?.nome || `Passageiro Assento ${variables.assento}`;
-      addOrUpdateMission({
-        id: `mis_${variables.assento}_AD4231`,
-        id_voo: "AD4231",
-        assento: variables.assento,
-        passageiro: passengerName,
-        clienteNome: passengerName,
-        persona: activeSeat?.dados_cliente?.persona || "Cliente Especial",
-        tier: activeSeat?.dados_cliente?.tier_fidelidade || "Diamante",
-        tipo: activeSeat?.status === "critico" ? "atrito" : "vip",
-        statusBadge: activeSeat?.status === "critico" ? "Alerta de Atrito" : "Fidelização VIP",
-        gatilho: activeSeat?.status === "critico"
-          ? `Score de atrito elevado (${activeSeat.dados_cliente.score_atrito_acumulado}) • Risco ${Math.round(activeSeat.dados_cliente.risco_evasao * 100)}%`
-          : `Cliente de Alto Valor • Faixa Pareto ${activeSeat?.dados_cliente.faixa_pareto || "Top 10%"}`,
-        instrucao_ia: data.instrucao_comissario,
-        instrucaoIA: data.instrucao_comissario,
-        acaoSugerida: data.acao_sugerida,
-        status: "pendente",
-      });
-
-      // Sincroniza também no novo serviço de estado global (azul_active_missions e azul_active_flight)
-      addSyncMission({
-        id: `mis_${variables.assento}`,
-        assento: variables.assento,
-        passageiro: passengerName,
-        instrucao: data.instrucao_comissario,
-        status: "pendente",
-        tipo: activeSeat?.status === "critico" ? "atrito" : "vip",
-        persona: activeSeat?.dados_cliente?.persona || "Cliente Especial",
-        tier: activeSeat?.dados_cliente?.tier_fidelidade || "Diamante",
-        statusBadge: activeSeat?.status === "critico" ? "Alerta de Atrito" : "Fidelização VIP",
-        gatilho: activeSeat?.status === "critico"
-          ? `Score de atrito elevado (${activeSeat.dados_cliente.score_atrito_acumulado}) • Risco ${Math.round(activeSeat.dados_cliente.risco_evasao * 100)}%`
-          : `Cliente de Alto Valor • Faixa Pareto ${activeSeat?.dados_cliente.faixa_pareto || "Top 10%"}`,
-        acao: data.acao_sugerida,
-        criadaEm: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-      });
-
-      // Dispara explicitamente o evento para garantir sincronização em tempo real na comissária
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("local-storage-update"));
-      }
     },
   });
 
   const handleSelectSeat = (seat: AssentoVoo) => {
+    // Inspeção de passageiro: Seleciona o assento sem acionar simulação nem sincronização automática
     setSelectedSeatState(seat);
     setSimulationResult(null);
-
-    // Aciona imediatamente a simulação de bordo e despacho da IA para o assento selecionado
-    simularBordoMutation.mutate({
-      assento: seat.assento,
-      id_cliente: seat.dados_cliente?.id_cliente,
-    });
   };
 
   const clearSelection = () => {

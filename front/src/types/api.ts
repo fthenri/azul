@@ -146,6 +146,9 @@ export interface AssentoCliente {
   faixa_pareto: string;
   risco_evasao: number;
   score_atrito_acumulado: number;
+  pnr?: string;
+  tamanho_grupo?: number;
+  is_grupo_familiar?: boolean;
 }
 
 export interface AssentoVoo {
@@ -162,9 +165,75 @@ export interface MetadataAeronave {
   total_assentos: number;
 }
 
-export interface VooSimuladoResponse {
+export interface AcaoRecomendadaLote {
+  id_missao: string;
+  assento: string;
+  id_cliente: string;
+  pnr: string;
+  passageiro: string;
+  tier: string;
+  persona: string;
+  tipo: "atrito" | "vip";
+  status_badge: string;
+  gatilho: string;
+  acao_sugerida: string;
+  custo_acao: number;
+  retorno_liquido: number;
+  instrucao_comissario: string;
+  valor_em_risco?: number;
+}
+
+export interface ResumoLote {
+  total_acoes: number;
+  custo_total: number;
+  retorno_liquido_total: number;
+  roi_projetado: number;
+}
+
+export interface LoteAcoes {
+  resumo: ResumoLote;
+  acoes: AcaoRecomendadaLote[];
+}
+
+export interface VooMalhaResumo {
+  id: string;
+  numero_voo: string;
+  rota: string;
+  origem: string;
+  destino: string;
+  partida_prevista: string;
+  partida_real?: string | null;
+  status_operacional: string;
+  total_passageiros: number;
+  total_pnrs: number;
+  passageiros_criticos: number;
+  passageiros_vip: number;
+  atraso_medio_minutos: number;
+}
+
+export interface ListaVoosResponse {
+  total_voos: number;
+  voos: VooMalhaResumo[];
+}
+
+export interface VooDetalheResponse {
+  id: string;
+  numero_voo: string;
+  rota: string;
+  origem: string;
+  destino: string;
+  partida_prevista: string;
+  status_operacional: string;
   metadata_aeronave: MetadataAeronave;
   assentos: AssentoVoo[];
+  lote_acoes: LoteAcoes;
+}
+
+export interface VooSimuladoResponse {
+  flight_id?: string;
+  metadata_aeronave: MetadataAeronave;
+  assentos: AssentoVoo[];
+  lote_acoes?: LoteAcoes;
 }
 
 export interface SimularBordoPayload {

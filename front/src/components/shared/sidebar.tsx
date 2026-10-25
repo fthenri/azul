@@ -52,12 +52,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       active: pathname === "/audit-logs",
     },
     {
-      href: "/dashboard/dispatch",
-      label: "Despacho de Voo (Mapa)",
-      sublabel: "Simulador de Assentos & Ações",
+      href: "/dashboard/flights",
+      label: "Malha Aérea & Despacho",
+      sublabel: "Voos Comerciais & Lote IA",
       icon: Plane,
-      badge: "Ao Vivo",
+      badge: "DuckDB",
       active:
+        Boolean(pathname?.startsWith("/dashboard/flights")) ||
+        Boolean(pathname?.startsWith("/flights")) ||
         pathname === "/dashboard/dispatch" ||
         pathname === "/flight-dispatch" ||
         pathname === "/dispatch" ||

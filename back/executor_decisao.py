@@ -538,6 +538,114 @@ Responda EXCLUSIVAMENTE em formato JSON (sem formatações markdown adicionais) 
         return _obter_mock_bordo_padronizado(perfil_cliente, assento, acao_vencedora)
 
 
+def gerar_instrucoes_bordo_lote_llm(
+    itens_lote: list[dict[str, Any]],
+    numero_voo: str,
+    contexto_rag: str,
+) -> list[str]:
+    """Gera em lote (batch único) as instruções táticas para comissários para os passageiros prioritários."""
+    if not itens_lote:
+        return []
+
+    try:
+        load_dotenv(resolve_project_root() / ".env")
+        load_dotenv(resolve_project_root() / "back" / ".env")
+
+        gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+
+        if not gemini_key and not openai_key:
+            return [
+                _obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"]
+                for item in itens_lote
+            ]
+
+        linhas_pax = []
+        for i, item in enumerate(itens_lote):
+            p = item["perfil"]
+            nome_pax = p.get("nome", f"Passageiro {item['assento']}")
+            linhas_pax.append(
+                f"{i+1}. Assento {item['assento']} (PNR {item.get('pnr', 'N/A')}): {nome_pax}, "
+                f"Tier {p.get('tier_fidelidade', 'Basico')}, Persona {p.get('persona', 'Viajante')}, "
+                f"CLV R$ {float(p.get('clv_previsto', 0)):,.2f}, Risco Churn {float(p.get('risco_evasao', 0))*100:.1f}%, "
+                f"Atrito {float(p.get('score_atrito_acumulado', 0)):.2f}. Ação Arbitrada: {item['acao_vencedora']}."
+            )
+        pax_texto = "\n".join(linhas_pax)
+
+        prompt = f"""Você é o Copiloto de Inteligência da Tripulação de Cabine da Azul Linhas Aéreas.
+Para o voo {numero_voo}, aqui estão os {len(itens_lote)} passageiros de maior prioridade/risco identificados pelo modelo preditivo:
+
+### REGRAS DA AZUL (RAG):
+{contexto_rag}
+
+### PASSAGEIROS PRIORITÁRIOS:
+{pax_texto}
+
+### INSTRUÇÃO:
+Gere uma instrução tática, curta, humanizada e empática para o comissário abordar cada um dos {len(itens_lote)} passageiros no momento do serviço de bordo.
+Responda EXCLUSIVAMENTE em formato JSON com o seguinte formato exato:
+{{
+  "instrucoes": [
+    {{"assento": "...", "instrucao": "Instrução tática de abordagem..."}}
+  ]
+}}
+"""
+        conteudo_raw = ""
+        if gemini_key:
+            from google.generativeai.client import configure
+            from google.generativeai.generative_models import GenerativeModel
+
+            configure(api_key=gemini_key)
+            model = GenerativeModel(
+                model_name="gemini-1.5-flash",
+                generation_config={"response_mime_type": "application/json"},
+            )
+            response = model.generate_content(prompt)
+            conteudo_raw = response.text.strip()
+        elif openai_key:
+            from openai import OpenAI
+            client = OpenAI(api_key=openai_key)
+            completion = client.chat.completions.create(
+                model="gpt-4o-mini",
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": "Você é o Copiloto de Cabine da Azul Linhas Aéreas. Responda estritamente em JSON."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,
+            )
+            conteudo_raw = completion.choices[0].message.content or ""
+
+        if conteudo_raw.startswith("```"):
+            linhas = conteudo_raw.splitlines()
+            if linhas[0].startswith("```"):
+                linhas = linhas[1:]
+            if linhas and linhas[-1].startswith("```"):
+                linhas = linhas[:-1]
+            conteudo_raw = "\n".join(linhas).strip()
+
+        dados_json = json.loads(conteudo_raw)
+        lista_instrucoes = dados_json.get("instrucoes", [])
+        if isinstance(lista_instrucoes, list) and len(lista_instrucoes) == len(itens_lote):
+            res = []
+            for item, item_llm in zip(itens_lote, lista_instrucoes):
+                msg = item_llm.get("instrucao") if isinstance(item_llm, dict) else str(item_llm)
+                res.append(msg or _obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"])
+            return res
+
+        return [
+            _obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"]
+            for item in itens_lote
+        ]
+
+    except Exception as exc:
+        logger.warning("Falha na chamada LLM em lote: %s. Usando fallback padronizado.", exc)
+        return [
+            _obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"]
+            for item in itens_lote
+        ]
+
+
 def selecionar_clientes_teste_gold(
     data_lake_dir: Path | None = None,
     seed: int = DEFAULT_SEED,

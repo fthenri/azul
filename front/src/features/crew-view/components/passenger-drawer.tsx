@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Crown,
   User,
+  Users,
   Coffee,
   HeartHandshake,
   Cookie,
@@ -156,13 +157,25 @@ export function PassengerDrawer({
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+              <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5 mt-0.5">
                 <span className="font-medium text-foreground">{cliente.id_cliente}</span>
                 <span>•</span>
                 <span>Tier: <strong className="text-[#0077C8] dark:text-[#38BDF8]">{cliente.tier_fidelidade}</strong></span>
                 <span>•</span>
                 <span>{cliente.persona}</span>
+                {cliente.pnr && (
+                  <>
+                    <span>•</span>
+                    <span className="font-mono font-bold text-sky-600 dark:text-sky-400">PNR: {cliente.pnr}</span>
+                  </>
+                )}
               </p>
+              {cliente.is_grupo_familiar && (
+                <div className="mt-1.5 flex items-center gap-1.5 text-[11px] bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 px-2 py-1 rounded-md border border-sky-200 dark:border-sky-800">
+                  <Users className="h-3.5 w-3.5 shrink-0" />
+                  <span>Grupo Familiar: <strong>{cliente.tamanho_grupo} pessoas</strong> viajando juntas</span>
+                </div>
+              )}
             </div>
           </div>
 

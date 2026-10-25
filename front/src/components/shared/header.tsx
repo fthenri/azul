@@ -28,15 +28,17 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
       };
     }
     if (
+      pathname?.startsWith("/dashboard/flights") ||
+      pathname?.startsWith("/flights") ||
       pathname === "/dashboard/dispatch" ||
       pathname === "/flight-dispatch" ||
       pathname === "/dispatch" ||
       pathname === "/crew-view"
     ) {
       return {
-        title: "Despacho de Voo (Mapa)",
-        category: "Simulação de Cabine",
-        tag: "Mapa de Assentos",
+        title: "Malha Aérea & Despacho",
+        category: "Operações & Voo Real",
+        tag: "DuckDB + Batch IA",
       };
     }
     return {

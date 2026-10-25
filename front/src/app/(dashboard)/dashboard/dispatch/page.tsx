@@ -1,12 +1,12 @@
-import { CrewView } from "@/features/crew-view/components/crew-view";
+import { FlightsGrid } from "@/features/flights/components/flights-grid";
 
 export const metadata = {
-  title: "Despacho de Voo (Mapa) | Azul Retenção de Alto Valor",
+  title: "Malha Aérea & Despacho de Voos | Azul Retenção de Alto Valor",
   description:
-    "Simulação em tempo real de assentos e despacho tático de missões para a tripulação de bordo.",
+    "Gestão da malha aérea comercial, monitoramento de atrito de clientes e despacho em lote.",
 };
 
 export default function DashboardDispatchPage() {
-  return <CrewView />;
+  return <FlightsGrid />;
 }
 

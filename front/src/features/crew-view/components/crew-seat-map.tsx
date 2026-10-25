@@ -6,6 +6,7 @@ import {
   Crown,
   CheckCircle2,
   User,
+  Users,
   ShieldAlert,
   Sparkles,
   Plane,
@@ -290,6 +291,8 @@ export function CrewSeatMap({
       );
     }
 
+    const isFamily = Boolean(seat.dados_cliente?.is_grupo_familiar);
+
     return (
       <button
         key={seatCode}
@@ -298,17 +301,23 @@ export function CrewSeatMap({
         className={cn(
           "relative group flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border text-left transition-all duration-150 cursor-pointer",
           statusStyles,
+          isFamily && "ring-1 ring-sky-400/60 dark:ring-sky-500/50",
           !highlighted && "opacity-25 hover:opacity-100 scale-95",
           highlighted && "hover:scale-105 active:scale-95",
           isSelected && "scale-105 shadow-md z-10"
         )}
-        title={`${seatCode}: ${seat.dados_cliente.nome} (${seat.status.toUpperCase()}) - ${seat.dados_cliente.tier_fidelidade}`}
+        title={`${seatCode}: ${seat.dados_cliente.nome} (${seat.status.toUpperCase()}) - ${seat.dados_cliente.tier_fidelidade}${isFamily ? ` [Grupo Familiar / PNR ${seat.dados_cliente.pnr}: ${seat.dados_cliente.tamanho_grupo} pax]` : ""}`}
       >
-        {/* Header do Assento: Código + Ícone de Status */}
+        {/* Header do Assento: Código + Ícone de Grupo/Status */}
         <div className="flex items-center justify-between w-full">
-          <span className="font-mono text-[11px] sm:text-xs font-black tracking-tight">
-            {seatCode}
-          </span>
+          <div className="flex items-center gap-0.5">
+            <span className="font-mono text-[11px] sm:text-xs font-black tracking-tight">
+              {seatCode}
+            </span>
+            {isFamily && (
+              <Users className="h-2.5 w-2.5 text-sky-500 dark:text-sky-400 shrink-0" />
+            )}
+          </div>
           {indicatorIcon}
         </div>
 

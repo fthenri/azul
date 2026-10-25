@@ -9,6 +9,8 @@ import {
   ShapResponse,
   AssentoVoo,
   VooSimuladoResponse,
+  ListaVoosResponse,
+  VooDetalheResponse,
   SimularBordoPayload,
   SimularBordoResponse,
   LoginPayload,
@@ -120,7 +122,13 @@ export const api = {
   getDecisaoShap: (decisaoId: string): Promise<ShapResponse> =>
     request<ShapResponse>(`/auditoria/decisoes/${encodeURIComponent(decisaoId)}/shap`),
 
-  // Tela 4: Visão da Tripulação (Commissioner & Manager)
+  // Tela 4: Visão da Tripulação & Malha Aérea (Commissioner & Manager)
+  getFlights: (limit: number = 50): Promise<ListaVoosResponse> =>
+    request<ListaVoosResponse>(`/flights?limit=${limit}`),
+
+  getFlightById: (flightId: string): Promise<VooDetalheResponse> =>
+    request<VooDetalheResponse>(`/flights/${encodeURIComponent(flightId)}`),
+
   getVooSimulado: (modelo?: string): Promise<VooSimuladoResponse> =>
     request<VooSimuladoResponse>(`/voo-simulado${modelo ? `?modelo=${encodeURIComponent(modelo)}` : ""}`),
 
