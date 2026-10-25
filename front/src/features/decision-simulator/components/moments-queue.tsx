@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Momento } from "@/types/api";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
+import { UserAvatar } from "@/components/shared/user-avatar";
+import { CLIENT_INFO_MAP } from "../hooks/use-simulation";
 
 interface MomentsQueueProps {
   momentos?: Momento[];
@@ -373,6 +375,12 @@ export function MomentsQueue({
               const isBagagem = m.descricao.toLowerCase().includes("bagagem");
               const isCancelado = m.descricao.toLowerCase().includes("cancelamento");
 
+              const passengerName =
+                (m as any).nome ||
+                (m as any).passageiro ||
+                CLIENT_INFO_MAP[m.cliente_id]?.nome ||
+                null;
+
               return (
                 <div
                   key={`${m.id}-p${safeCurrentPage}`}
@@ -474,13 +482,21 @@ export function MomentsQueue({
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] pt-1">
-                      <div className="flex items-center gap-1.5 truncate max-w-[55%]">
-                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/10 text-azul-action dark:text-sky-400">
-                          <UserCheck className="h-3 w-3" />
-                        </div>
+                      <div className="flex items-center gap-2 truncate max-w-[55%]">
+                        {passengerName ? (
+                          <UserAvatar name={passengerName} size="xs" />
+                        ) : (
+                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/10 text-azul-action dark:text-sky-400">
+                            <UserCheck className="h-3 w-3" />
+                          </div>
+                        )}
                         <div className="truncate">
-                          <span className="font-bold text-foreground truncate block leading-tight">{m.persona}</span>
-                          <span className="font-mono text-[9px] text-muted-foreground block truncate leading-tight">#{m.cliente_id}</span>
+                          <span className="font-bold text-foreground truncate block leading-tight">
+                            {passengerName || m.persona}
+                          </span>
+                          <span className="font-mono text-[9px] text-muted-foreground block truncate leading-tight">
+                            {passengerName ? m.persona : `#${m.cliente_id}`}
+                          </span>
                         </div>
                       </div>
 
@@ -492,14 +508,13 @@ export function MomentsQueue({
                           </span>
                         </div>
                         <div
-                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl font-bold text-[10px] transition-all duration-200 ${
+                          className={`flex h-7 w-7 items-center justify-center rounded-xl transition-all duration-200 shrink-0 ${
                             isSelected
                               ? "bg-[#0077C8] text-white shadow-xs"
-                              : "bg-sky-500/10 text-[#0077C8] dark:text-sky-300 group-hover:bg-[#0077C8] group-hover:text-white"
+                              : "bg-muted text-muted-foreground group-hover:bg-sky-500/15 group-hover:text-[#0077C8] dark:group-hover:text-sky-300 group-hover:translate-x-0.5"
                           }`}
                         >
-                          <span className="hidden group-hover:inline transition-all">Simular</span>
-                          <ChevronRight className="h-3 w-3" />
+                          <ChevronRight className="h-4 w-4" />
                         </div>
                       </div>
                     </div>
