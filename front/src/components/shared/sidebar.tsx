@@ -81,8 +81,8 @@ export function Sidebar({
 
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r transition-all duration-300 ease-in-out",
-          "bg-card text-foreground border-border shadow-xs",
+          "fixed top-0 bottom-0 left-0 z-50 flex flex-col transition-all duration-300 ease-in-out",
+          "bg-card text-foreground shadow-xs",
           isCollapsed ? "w-20" : "w-72",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
@@ -90,8 +90,7 @@ export function Sidebar({
         {/* Top Header: Logo Azul + MOTOR DE RETENÇÃO (sem hambúrguer interno) */}
         <div
           className={cn(
-            "flex h-20 shrink-0 items-center border-b transition-all px-4",
-            "border-border bg-card",
+            "flex h-20 shrink-0 items-center transition-all px-4 bg-card",
             isCollapsed && "justify-center px-2"
           )}
         >
@@ -164,15 +163,12 @@ export function Sidebar({
                         ? "justify-center p-3 mx-auto"
                         : "justify-between px-3.5 py-3",
                       item.active
-                        ? "bg-secondary text-secondary-foreground border border-border font-bold shadow-xs"
+                        ? "bg-secondary text-secondary-foreground font-bold shadow-xs"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                     )}
                   >
                     {isCollapsed ? (
                       <div className="relative flex items-center justify-center">
-                        {item.active && (
-                          <span className="absolute -left-2 top-0 bottom-0 w-1 rounded-full bg-primary" />
-                        )}
                         <Icon
                           className={cn(
                             "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
@@ -185,9 +181,6 @@ export function Sidebar({
                     ) : (
                       <>
                         <div className="flex items-center gap-3">
-                          {item.active && (
-                            <span className="w-1.5 h-6 rounded-full bg-primary shrink-0 -ml-1 mr-0.5" />
-                          )}
                           <Icon
                             className={cn(
                               "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
