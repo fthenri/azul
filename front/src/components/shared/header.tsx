@@ -68,11 +68,38 @@ export function Header({
     role: "manager" as const,
   };
 
+  // Atalho de teclado global ⌘B / Ctrl+B para expandir/recolher sidebar (Padrão Linear / IDE)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        if (onToggleSidebar) {
+          onToggleSidebar();
+        } else if (onOpenMobileMenu) {
+          onOpenMobileMenu();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onToggleSidebar, onOpenMobileMenu]);
+
   return (
     <header
       className={cn(
         "fixed top-0 right-0 left-0 z-30 flex flex-col border-b border-border/80",
-        "bg-card/90 backdrop-blur-xl shadow-xs transition-all duration-300 ease-in-out",
+        "bg-card/10 backdrop-blur-xl shadow-xs transition-all duration-300 ease-in-out",
         isCollapsed ? "lg:left-20" : "lg:left-72"
       )}
     >
@@ -81,20 +108,20 @@ export function Header({
 
       {/* Header aumentado para 80px (h-20) com espaçamento executivo */}
       <div className="flex h-20 items-center justify-between px-4 sm:px-8 gap-4">
-        {/* Esquerda: Hambúrguer para Abrir/Fechar Sidebar + Contexto/Breadcrumb */}
+        {/* Esquerda: Menu Móvel (<lg) + Contexto/Breadcrumb (Desktop 100% limpo com floating pill na sidebar) */}
         <div className="flex items-center gap-3.5">
-          {/* Hambúrguer responsável por abrir e fechar/colapsar o sidebar (sem bordas) */}
+          {/* Mobile only: Botão para abrir o drawer da sidebar em telas pequenas */}
           <button
             type="button"
-            onClick={onToggleSidebar || onOpenMobileMenu}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-foreground hover:text-surface hover:bg-muted transition-colors cursor-pointer shrink-0"
-            aria-label={isCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
-            title={isCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
+            onClick={onOpenMobileMenu}
+            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-xl text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0 border border-border/80"
+            aria-label="Abrir menu lateral"
+            title="Abrir menu lateral"
           >
-            <Menu className="h-5 w-5 text-surface transition-transform duration-200" />
+            <Menu className="h-4.5 w-4.5 text-primary" />
           </button>
 
-          {/* Breadcrumb e Título da Página (sem o ícone prévio do começo) */}
+          {/* Breadcrumb e Título da Página */}
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5 text-xs">
               <Link

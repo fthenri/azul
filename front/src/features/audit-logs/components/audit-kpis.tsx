@@ -27,14 +27,14 @@ export function AuditKpis({ data = [], isLoading }: AuditKpisProps) {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="relative rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-5 shadow-xs space-y-3 min-h-[160px] flex flex-col justify-between"
+            className="relative rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-4 shadow-xs space-y-2 min-h-[128px] flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
               <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-9 w-9 rounded-xl" />
+              <Skeleton className="h-8 w-8 rounded-xl" />
             </div>
-            <Skeleton className="h-8 w-36" />
-            <Skeleton className="h-3 w-48" />
+            <Skeleton className="h-7 w-36" />
+            <Skeleton className="h-3 w-44" />
           </div>
         ))}
       </div>
@@ -109,7 +109,7 @@ export function AuditKpis({ data = [], isLoading }: AuditKpisProps) {
         return (
           <div
             key={idx}
-            className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-lg min-h-[160px] flex flex-col justify-between ${
+            className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-lg min-h-[128px] flex flex-col justify-between ${
               isSpecial
                 ? "border-emerald-500/40 bg-gradient-to-br from-card via-card to-emerald-500/5 dark:to-emerald-950/20 shadow-md hover:border-emerald-500/60"
                 : "border-border/80 bg-card/80 backdrop-blur-md hover:border-primary/30 shadow-xs"
@@ -122,9 +122,9 @@ export function AuditKpis({ data = [], isLoading }: AuditKpisProps) {
               />
             )}
 
-            <div className="p-5 flex flex-col justify-between h-full space-y-3">
+            <div className="p-4 flex flex-col justify-between h-full space-y-2.5">
               {/* Linha Superior: Título + Ícone */}
-              <div className="flex items-start justify-between gap-3 min-h-[42px]">
+              <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
                     <span
@@ -144,15 +144,15 @@ export function AuditKpis({ data = [], isLoading }: AuditKpisProps) {
                 </div>
 
                 <div
-                  className={`p-2.5 rounded-xl border shrink-0 transition-transform duration-300 group-hover:scale-105 shadow-xs ${kpi.iconBg}`}
+                  className={`p-2 rounded-xl border shrink-0 transition-transform duration-300 group-hover:scale-105 shadow-xs ${kpi.iconBg}`}
                 >
                   <Icon className={`h-4 w-4 ${kpi.iconColor}`} />
                 </div>
               </div>
 
               {/* Valor Principal com Altura Fixa */}
-              <div className="space-y-1">
-                <div className="flex items-baseline justify-between gap-2 overflow-hidden h-9">
+              <div className="space-y-0.5">
+                <div className="flex items-baseline justify-between gap-2 overflow-hidden h-8">
                   <span
                     title={kpi.value}
                     className={`font-black tracking-tight whitespace-nowrap truncate font-mono ${

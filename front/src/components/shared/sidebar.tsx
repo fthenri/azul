@@ -10,6 +10,7 @@ import {
   FileText,
   ShieldCheck,
   ChevronRight,
+  ChevronLeft,
   Database,
   Plane,
   LogOut,
@@ -18,6 +19,12 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { PulsoLogo } from "@/components/shared/pulso-logo";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -80,6 +87,7 @@ export function Sidebar({
         />
       )}
 
+    <TooltipProvider delayDuration={80} skipDelayDuration={150}>
       <aside
         className={cn(
           "fixed top-0 bottom-0 left-0 z-50 flex flex-col transition-all duration-300 ease-in-out",
@@ -88,6 +96,25 @@ export function Sidebar({
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
+        {/* Floating Pill Toggle na Borda da Sidebar (Estilo Figma / Stripe / Raycast) com nosso Tooltip */}
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className={cn(
+                "hidden lg:flex absolute -right-3 top-7 z-50 h-8 w-8 items-center justify-center rounded-full",
+                "bg-card text-muted-foreground hover:text-primary",
+                "border border-border/80 hover:border-primary/50 shadow-md hover:shadow-primary/20",
+                "transition-all duration-200 cursor-pointer active:scale-90 hover:scale-110 group"
+              )}
+              aria-label={isCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
+            >
+              {isCollapsed ? (
+                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+              ) : (
+                <ChevronLeft className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
+              )}
+            </button>
+
         {/* Top Header: Logo Oficial Pulso + Ecossistema Azul */}
         <div
           className={cn(
@@ -96,20 +123,29 @@ export function Sidebar({
           )}
         >
           {isCollapsed ? (
-            /* Ícone Pulso Oficial Centralizado no Colapso */
-            <Link
-              href="/dashboard"
-              className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-xl hover:bg-muted/70 transition-all"
-              title="pulso — Antecipe o risco. Preserve o valor."
-            >
-              <PulsoLogo width={72} height={48} priority />
-            </Link>
+            /* Ícone Pulso Oficial Centralizado no Colapso com nosso Tooltip */
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href="/dashboard"
+                  className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-xl hover:bg-muted/70 transition-all"
+                  aria-label="pulso — Antecipe o risco. Preserve o valor."
+                >
+                  <PulsoLogo width={72} height={48} priority />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={12}>
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-bold text-foreground">pulso</span>
+                  <span className="text-[11px] text-muted-foreground">Antecipe o risco. Preserve o valor.</span>
+                </div>
+              </TooltipContent>
+            </Tooltip>
           ) : (
             /* Logo Oficial Pulso + Separador + Branding Corporativo Azul */
             <Link
               href="/dashboard"
               className="flex items-center gap-2.5 group overflow-hidden transition-transform duration-200"
-              title="pulso — Antecipe o risco. Preserve o valor."
             >
               <div className="relative h-9 w-12 shrink-0 flex items-center justify-center">
                 <PulsoLogo width={46} height={30} priority />
@@ -142,12 +178,11 @@ export function Sidebar({
             <nav className="space-y-1.5">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                return (
+                const linkElement = (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={onClose}
-                    title={isCollapsed ? item.label : undefined}
                     className={cn(
                       "group relative flex items-center rounded-2xl text-xs transition-all duration-200 overflow-hidden",
                       isCollapsed
@@ -216,6 +251,22 @@ export function Sidebar({
                     )}
                   </Link>
                 );
+
+                if (isCollapsed) {
+                  return (
+                    <Tooltip key={item.href}>
+                      <TooltipTrigger asChild>{linkElement}</TooltipTrigger>
+                      <TooltipContent side="right" sideOffset={12}>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-bold text-foreground">{item.label}</span>
+                          <span className="text-[11px] text-muted-foreground">{item.sublabel}</span>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return linkElement;
               })}
             </nav>
           </div>
@@ -251,15 +302,33 @@ export function Sidebar({
               </div>
             ) : (
               <div className="flex flex-col items-center space-y-4">
-                <div
-                  className="cursor-help"
-                  title="Governança Analítica: ANAC VRA & Res. 400"
-                >
-                  <ShieldCheck className="h-5 w-5 text-azul-action dark:text-sky-400" />
-                </div>
-                <div title="Camada Gold (Feature Store)">
-                  <Database className="h-5 w-5 text-slate-400" />
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="cursor-help p-1 rounded-lg hover:bg-muted/60 transition-colors">
+                      <ShieldCheck className="h-5 w-5 text-azul-action dark:text-sky-400" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={12}>
+                    <div className="flex flex-col gap-0.5 max-w-[200px]">
+                      <span className="font-bold text-foreground">Governança Analítica</span>
+                      <span className="text-[11px] text-muted-foreground">Calibrado ANAC VRA & Regras Azul Fidelidade (Res. 400).</span>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="cursor-help p-1 rounded-lg hover:bg-muted/60 transition-colors">
+                      <Database className="h-5 w-5 text-slate-400" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={12}>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-bold text-foreground">Camada Gold</span>
+                      <span className="text-[11px] text-muted-foreground">Feature Store centralizado</span>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
           </div>
@@ -290,12 +359,19 @@ export function Sidebar({
               </span>
             </div>
           ) : (
-            <div
-              className="flex justify-center py-1"
-              title="Dados: DuckDB Gold (v2.4)"
-            >
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex justify-center py-1 cursor-help">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={12}>
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-bold text-foreground">DuckDB Gold</span>
+                  <span className="text-[11px] text-muted-foreground">Origem conectada (v2.4)</span>
+                </div>
+              </TooltipContent>
+            </Tooltip>
           )}
 
           {/* Botão de Exit / Encerrar Sessão */}
@@ -303,24 +379,31 @@ export function Sidebar({
             <button
               type="button"
               onClick={logout}
-              title="Encerrar sessão corporativa"
-              className="w-full flex items-center justify-center gap-2.5 h-10 px-3.5 rounded-xl  bg-muted/20 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all duration-200 cursor-pointer text-xs font-semibold shadow-sm group active:scale-[0.98]"
+              className="w-full flex items-center justify-center gap-2.5 h-10 px-3.5 rounded-xl bg-muted/20 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all duration-200 cursor-pointer text-xs font-semibold shadow-sm group active:scale-[0.98]"
             >
               <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
               <span>Encerrar Sessão</span>
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={logout}
-              title="Encerrar Sessão (Sair)"
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted/20 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all duration-200 cursor-pointer mx-auto shadow-sm group active:scale-95"
-            >
-              <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted/20 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all duration-200 cursor-pointer mx-auto shadow-sm group active:scale-95"
+                  aria-label="Encerrar Sessão"
+                >
+                  <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={12}>
+                <span className="font-semibold text-destructive">Encerrar Sessão</span>
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
       </aside>
+    </TooltipProvider>
     </>
   );
 }
