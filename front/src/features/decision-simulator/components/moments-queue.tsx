@@ -253,74 +253,104 @@ export function MomentsQueue({
         </div>
 
         {/* Pílulas de Filtro por Categoria com Contadores Dinâmicos */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-0.5 text-xs scrollbar-none border-t border-border/50">
+        <div className="flex items-center gap-1.5 overflow-x-auto p-1 rounded-2xl bg-muted/40 border border-border/60 text-xs scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveFilter("all")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap cursor-pointer flex items-center gap-2 ${
               activeFilter === "all"
-                ? "bg-primary text-primary-foreground shadow-xs"
-                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-background text-foreground shadow-xs border border-border/80"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
             }`}
           >
             <span>Todos os Casos</span>
-            <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-white/20 dark:bg-white/10 font-mono font-bold">
+            <span
+              className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold transition-colors ${
+                activeFilter === "all"
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "bg-muted/80 text-muted-foreground"
+              }`}
+            >
               {counts.all}
             </span>
           </button>
           <button
             type="button"
             onClick={() => setActiveFilter("reativa")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap cursor-pointer flex items-center gap-2 ${
               activeFilter === "reativa"
-                ? "bg-rose-600 text-white shadow-xs"
-                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
             }`}
           >
             <span>Atritos Operacionais</span>
-            <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-white/20 dark:bg-white/10 font-mono font-bold">
+            <span
+              className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold transition-colors ${
+                activeFilter === "reativa"
+                  ? "bg-rose-500/20 text-rose-600 dark:text-rose-300"
+                  : "bg-muted/80 text-muted-foreground"
+              }`}
+            >
               {counts.reativa}
             </span>
           </button>
           <button
             type="button"
             onClick={() => setActiveFilter("critico")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap cursor-pointer flex items-center gap-2 ${
               activeFilter === "critico"
-                ? "bg-amber-600 text-white shadow-xs"
-                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
             }`}
           >
             <span>Risco Crítico (≥70%)</span>
-            <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-white/20 dark:bg-white/10 font-mono font-bold">
+            <span
+              className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold transition-colors ${
+                activeFilter === "critico"
+                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-300"
+                  : "bg-muted/80 text-muted-foreground"
+              }`}
+            >
               {counts.critico}
             </span>
           </button>
           <button
             type="button"
             onClick={() => setActiveFilter("proativa")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap cursor-pointer flex items-center gap-2 ${
               activeFilter === "proativa"
-                ? "bg-blue-600 text-white shadow-xs"
-                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-primary/15 text-primary border border-primary/30 shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
             }`}
           >
             <span>Preditivo / Churn</span>
-            <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-white/20 dark:bg-white/10 font-mono font-bold">
+            <span
+              className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold transition-colors ${
+                activeFilter === "proativa"
+                  ? "bg-primary/20 text-primary"
+                  : "bg-muted/80 text-muted-foreground"
+              }`}
+            >
               {counts.proativa}
             </span>
           </button>
           <button
             type="button"
             onClick={() => setActiveFilter("alto_clv")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap cursor-pointer flex items-center gap-2 ${
               activeFilter === "alto_clv"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
             }`}
           >
             <span>Top CLV (&gt;R$ 5k)</span>
-            <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-white/20 dark:bg-white/10 font-mono font-bold">
+            <span
+              className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold transition-colors ${
+                activeFilter === "alto_clv"
+                  ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300"
+                  : "bg-muted/80 text-muted-foreground"
+              }`}
+            >
               {counts.alto_clv}
             </span>
           </button>
@@ -521,14 +551,14 @@ export function MomentsQueue({
             </div>
 
             {/* Centro: Controles Numéricos de Navegação */}
-            <div className="flex items-center justify-center gap-1">
+            <div className="flex items-center justify-center gap-1.5 flex-wrap">
               {/* Botão Primeira Página */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(1)}
                 disabled={safeCurrentPage === 1}
-                className="h-8 w-8 p-0 rounded-xl border-border/70 hover:bg-muted disabled:opacity-30 cursor-pointer hidden sm:flex items-center justify-center"
+                className="h-8 w-8 p-0 rounded-full border-border/70 hover:bg-muted disabled:opacity-25 cursor-pointer hidden sm:flex items-center justify-center transition-all"
                 title="Primeira Página"
               >
                 <ChevronsLeft className="h-3.5 w-3.5" />
@@ -540,14 +570,14 @@ export function MomentsQueue({
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={safeCurrentPage === 1}
-                className="h-8 px-2.5 rounded-xl border-border/70 hover:bg-muted disabled:opacity-30 cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                className="h-8 px-3 rounded-full border-border/70 hover:bg-muted disabled:opacity-25 cursor-pointer flex items-center gap-1 text-xs font-semibold transition-all"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 <span className="hidden xs:inline">Anterior</span>
               </Button>
 
               {/* Pílulas Numéricas */}
-              <div className="flex items-center gap-1 mx-1">
+              <div className="flex items-center gap-1 mx-0.5 p-0.5 rounded-full bg-muted/40 border border-border/60">
                 {paginationRange.map((page, idx) => {
                   if (page === "...") {
                     return (
@@ -565,10 +595,10 @@ export function MomentsQueue({
                       key={`page-${pageNum}`}
                       type="button"
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`h-8 w-8 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                      className={`h-7 w-7 rounded-full font-mono text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
                         isActive
                           ? "bg-primary text-primary-foreground shadow-xs scale-105"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          : "text-muted-foreground hover:bg-background/80 hover:text-foreground"
                       }`}
                     >
                       {pageNum}
@@ -583,7 +613,7 @@ export function MomentsQueue({
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={safeCurrentPage === totalPages}
-                className="h-8 px-2.5 rounded-xl border-border/70 hover:bg-muted disabled:opacity-30 cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                className="h-8 px-3 rounded-full border-border/70 hover:bg-muted disabled:opacity-25 cursor-pointer flex items-center gap-1 text-xs font-semibold transition-all"
               >
                 <span className="hidden xs:inline">Próximo</span>
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -595,7 +625,7 @@ export function MomentsQueue({
                 size="sm"
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={safeCurrentPage === totalPages}
-                className="h-8 w-8 p-0 rounded-xl border-border/70 hover:bg-muted disabled:opacity-30 cursor-pointer hidden sm:flex items-center justify-center"
+                className="h-8 w-8 p-0 rounded-full border-border/70 hover:bg-muted disabled:opacity-25 cursor-pointer hidden sm:flex items-center justify-center transition-all"
                 title="Última Página"
               >
                 <ChevronsRight className="h-3.5 w-3.5" />
@@ -603,15 +633,15 @@ export function MomentsQueue({
             </div>
 
             {/* Direita: Seletor de Densidade (Cards por Página) */}
-            <div className="flex items-center gap-1.5 self-end sm:self-auto text-xs text-muted-foreground">
-              <span className="hidden md:inline text-[11px]">Densidade:</span>
-              <div className="flex items-center rounded-xl border border-border/70 bg-background/60 p-0.5">
+            <div className="flex items-center gap-2 self-end sm:self-auto text-xs text-muted-foreground">
+              <span className="hidden md:inline text-[11px] font-medium">Densidade:</span>
+              <div className="flex items-center rounded-full border border-border/70 bg-background/60 p-0.5 shadow-xs">
                 {[6, 9, 12].map((size) => (
                   <button
                     key={`density-${size}`}
                     type="button"
                     onClick={() => setItemsPerPage(size)}
-                    className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-bold transition-all cursor-pointer ${
+                    className={`px-2.5 py-0.5 rounded-full font-mono text-[11px] font-bold transition-all cursor-pointer ${
                       itemsPerPage === size
                         ? "bg-primary text-primary-foreground shadow-xs"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"

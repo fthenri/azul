@@ -240,43 +240,47 @@ export function SimulationDrawer({
             </div>
 
             {/* Direita: Navegação Sequencial + Botão Fechar */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Botões Anterior e Próximo */}
-              <div className="flex items-center rounded-xl border border-border/80 bg-background/80 p-0.5 shadow-xs">
+            <div className="flex items-center gap-2.5 shrink-0">
+              {/* Cápsula de Navegação Moderna */}
+              <div className="inline-flex items-center gap-1 p-1 rounded-full bg-background/90 dark:bg-card/90 border border-border/80 shadow-xs backdrop-blur-md">
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={handlePrev}
                   disabled={!hasPrev}
-                  className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30"
+                  className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-20 transition-all cursor-pointer"
                   title="Caso Anterior (Seta Esquerda)"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-3.5 w-3.5" />
                 </Button>
-                <span className="text-[11px] font-mono px-2 text-muted-foreground font-semibold">
-                  {currentIndex + 1} de {allMomentos.length}
-                </span>
+
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-muted/60 text-[11px] font-mono select-none">
+                  <span className="font-bold text-foreground">{currentIndex + 1}</span>
+                  <span className="text-muted-foreground/40 text-[10px]">/</span>
+                  <span className="text-muted-foreground font-medium">{allMomentos.length}</span>
+                </div>
+
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={handleNext}
                   disabled={!hasNext}
-                  className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30"
+                  className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-20 transition-all cursor-pointer"
                   title="Próximo Caso (Seta Direita)"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
 
-              {/* Botão Fechar */}
+              {/* Botão Fechar Circular Moderno com Efeito Hover */}
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={onClose}
-                className="h-8 w-8 p-0 rounded-xl border-border/80 text-muted-foreground hover:text-foreground cursor-pointer"
+                className="h-8 w-8 rounded-full border border-border/80 bg-background/90 dark:bg-card/90 text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200 shadow-xs cursor-pointer group"
                 title="Fechar (Esc)"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 group-hover:rotate-90 transition-transform duration-200" />
               </Button>
             </div>
           </div>
@@ -736,7 +740,6 @@ export function SimulationDrawer({
                   {activeChannel === "whatsapp" && (
                     <div className="space-y-3">
                       <div className="rounded-2xl bg-card border border-border/80 p-4 space-y-3 shadow-xs">
-                        {/* WhatsApp Header Sem Gradiente */}
                         <div className="flex items-center justify-between pb-3 border-b border-border/60 text-xs">
                           <div className="flex items-center gap-2.5">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-black text-xs ring-2 ring-emerald-500/40 shadow-xs">
