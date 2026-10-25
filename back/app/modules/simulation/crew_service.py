@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import random
 from typing import Any, List
 
 from back.app.config import Settings, get_settings
@@ -111,21 +112,30 @@ def alocar_assentos_aeronave(
     layout: list[str],
     codigo_modelo: str = "A320neo",
 ) -> list[tuple[str, dict[str, Any]]]:
-    """Aloca passageiros na aeronave calibrando Espaço Azul (1-4), coesão de PNR e assentos vazios orgânicos."""
+    """Aloca passageiros na aeronave calibrando Espaço Azul (1-4), coesão de PNR,
+    distribuição de grupos no terço traseiro e desejabilidade de assento orgânica."""
     if not passageiros_raw:
         return []
 
     espaco_azul_max = 2 if codigo_modelo == "ATR 72-600" else 4
     is_6_seats = len(layout) == 6
 
-    # 1. Agrupamento por PNR e contagem de tamanho do grupo
-    pnr_groups: dict[str, list[dict[str, Any]]] = {}
+    # 1. Agrupamento por PNR (apenas PNRs reais são agrupados; SOLO é tratado individualmente)
+    all_groups: list[list[dict[str, Any]]] = []
+    pnr_map: dict[str, list[dict[str, Any]]] = {}
+
     for p in passageiros_raw:
-        pnr = str(p.get("pnr") or "SOLO")
-        pnr_groups.setdefault(pnr, []).append(p)
+        pnr = str(p.get("pnr") or "SOLO").strip()
+        if pnr and pnr != "SOLO":
+            pnr_map.setdefault(pnr, []).append(p)
+        else:
+            all_groups.append([p])
+
+    for grp in pnr_map.values():
+        all_groups.append(grp)
 
     # Ordena passageiros internamente em cada grupo por Tier/CLV
-    for pnr, grp in pnr_groups.items():
+    for grp in all_groups:
         grp.sort(key=calcular_prioridade_cliente, reverse=True)
 
     # Função de pontuação do grupo (definida pelo membro de maior prioridade comercial)
@@ -141,7 +151,7 @@ def alocar_assentos_aeronave(
 
     # Ordena todos os grupos colocando VIPs primeiro e ordenando por Tier/CLV
     sorted_groups = sorted(
-        pnr_groups.values(),
+        all_groups,
         key=lambda g: (is_vip_grupo(g), score_grupo(g)),
         reverse=True,
     )
@@ -156,7 +166,18 @@ def alocar_assentos_aeronave(
         if is_6_seats:
             left = ["A", "B", "C"]
             right = ["D", "E", "F"]
-            if size == 3:
+            if size == 6:
+                if all(grid[row][c] is None for c in layout):
+                    return layout
+            elif size == 5:
+                for cand in [["A", "B", "C", "D", "E"], ["B", "C", "D", "E", "F"]]:
+                    if all(grid[row][c] is None for c in cand):
+                        return cand
+            elif size == 4:
+                for cand in [["A", "B", "C", "D"], ["C", "D", "E", "F"], ["B", "C", "D", "E"]]:
+                    if all(grid[row][c] is None for c in cand):
+                        return cand
+            elif size == 3:
                 if all(grid[row][c] is None for c in left):
                     return left
                 if all(grid[row][c] is None for c in right):
@@ -171,10 +192,6 @@ def alocar_assentos_aeronave(
                     return ["B", "C"]
                 if grid[row]["D"] is None and grid[row]["E"] is None:
                     return ["D", "E"]
-            elif size == 4:
-                for cand in [["A", "B", "C", "D"], ["C", "D", "E", "F"], ["B", "C", "D", "E"]]:
-                    if all(grid[row][c] is None for c in cand):
-                        return cand
             elif size == 1:
                 # Preferência solo: Janela -> Corredor -> Meio
                 for c in ["A", "F", "C", "D", "B", "E"]:
@@ -184,7 +201,15 @@ def alocar_assentos_aeronave(
             # Layout 2x2 (A, B - C, D)
             left = ["A", "B"]
             right = ["C", "D"]
-            if size == 2:
+            if size == 4:
+                if all(grid[row][c] is None for c in layout):
+                    return layout
+            elif size == 3:
+                if grid[row]["A"] is None and grid[row]["B"] is None and grid[row]["C"] is None:
+                    return ["A", "B", "C"]
+                if grid[row]["B"] is None and grid[row]["C"] is None and grid[row]["D"] is None:
+                    return ["B", "C", "D"]
+            elif size == 2:
                 if all(grid[row][c] is None for c in left):
                     return left
                 if all(grid[row][c] is None for c in right):
@@ -193,14 +218,6 @@ def alocar_assentos_aeronave(
                 for c in ["A", "D", "B", "C"]:
                     if grid[row][c] is None:
                         return [c]
-            elif size == 4:
-                if all(grid[row][c] is None for c in layout):
-                    return layout
-            elif size == 3:
-                if grid[row]["A"] is None and grid[row]["B"] is None and grid[row]["C"] is None:
-                    return ["A", "B", "C"]
-                if grid[row]["B"] is None and grid[row]["C"] is None and grid[row]["D"] is None:
-                    return ["B", "C", "D"]
         return None
 
     # -------------------------------------------------------------------------
@@ -225,14 +242,14 @@ def alocar_assentos_aeronave(
 
     # -------------------------------------------------------------------------
     # REGRA 2 & 3: Cabine Principal & Coesão de Famílias (PNR)
-    # Grupos (size >= 2) distribuídos organicamente em assentos contíguos
+    # Grupos (size >= 2) distribuídos organicamente cobrindo também o último terço
     # -------------------------------------------------------------------------
     multi_groups = [g for g in remaining_groups if len(g) > 1]
     solo_groups = [g for g in remaining_groups if len(g) == 1]
 
-    # Distribui grupos com espaçamento dinâmico proporcional em toda a extensão da cabine principal
+    # Distribui grupos com espaçamento dinâmico até o último terço do avião
     main_start = espaco_azul_max + 1
-    main_end = max(fileiras - 4, main_start)
+    main_end = max(fileiras - 1, main_start)
     num_multi = len(multi_groups)
     if num_multi > 1:
         stride_rows = [
@@ -249,7 +266,7 @@ def alocar_assentos_aeronave(
         if not block:
             for offset in range(1, fileiras):
                 for candidate_r in (target_r - offset, target_r + offset):
-                    if main_start <= candidate_r <= fileiras - 2:
+                    if main_start <= candidate_r <= fileiras:
                         block = find_contiguous_block(candidate_r, sz)
                         if block:
                             chosen_row = candidate_r
@@ -263,37 +280,48 @@ def alocar_assentos_aeronave(
                     chosen_row = r
                     break
         if block:
-            for pax, col in zip(g, block):
+            for pax, col in zip(g[:len(block)], block):
                 grid[chosen_row][col] = pax
+            if len(g) > len(block):
+                for pax in g[len(block):]:
+                    solo_groups.append([pax])
+        else:
+            for pax in g:
+                solo_groups.append([pax])
 
     # -------------------------------------------------------------------------
-    # REGRA 2: Alocação Orgânica de Assentos Vazios (Passageiros Solo)
-    # Passageiros solo escolhem Janela e Corredor primeiro.
-    # Assentos vazios sobram organicamente nos assentos do meio ('B' e 'E') e fundo!
+    # REGRA 1 & 2: Alocação Orgânica de Assentos Vazios (Passageiros Solo)
+    # Fórmula de Desejabilidade com Weight & Balance suave e alta variância randômica
     # -------------------------------------------------------------------------
     def seat_desirability(r: int, c: str) -> float:
         score = 0.0
         # Sobras do Espaço Azul têm altíssima preferência para solo
         if r <= espaco_azul_max:
-            score += 500.0
+            score += 250.0
 
         if is_6_seats:
             if c in ("A", "F"):
-                score += 150.0  # Janela
+                score += 120.0  # Janela
             elif c in ("C", "D"):
-                score += 120.0  # Corredor
+                score += 90.0   # Corredor
             else:
                 score += 15.0   # Assento do meio (B/E) evitado por solo travelers
         else:
             if c in ("A", "D"):
-                score += 150.0  # Janela
+                score += 120.0  # Janela
             else:
-                score += 120.0  # Corredor
+                score += 90.0   # Corredor
 
-        # Preferência por fileiras dianteiras e médias sobre as últimas fileiras
-        score += (fileiras - r) * 2.5
-        if r >= fileiras - 2:
-            score -= 100.0  # Penalidade para as últimas fileiras (banheiro/galley)
+        # Penalidade suave de Weight & Balance (- 0.3 * Fileira)
+        score -= 0.3 * r
+
+        # Leve penalidade apenas para a última fileira absoluta (banheiro/galley traseiro)
+        if r == fileiras:
+            score -= 15.0
+
+        # Variância randômica com ruído Gaussiano N(0, 30.0)
+        # Permite que janelas e corredores no fundo tenham chance de serem preenchidos antes de assentos do meio na frente
+        score += random.gauss(0.0, 30.0)
 
         return score
 
@@ -391,7 +419,11 @@ class CrewService:
             )
         return ListaVoosResponse(total_voos=len(voos), voos=voos)
 
-    def get_flight_details(self, flight_id: str) -> VooDetalheResponse:
+    def get_flight_details(
+        self,
+        flight_id: str,
+        modelo_aeronave: str | None = None,
+    ) -> VooDetalheResponse:
         """Recupera os passageiros reais de um voo com alocação inteligente por PNR e ações de bordo em lote."""
         flight_clean = str(flight_id).upper().replace("AD", "").replace(" ", "").strip()
         if not flight_clean:
@@ -434,8 +466,12 @@ class CrewService:
         partida = str(first_row.get("partida_prevista") or "2026-08-01 12:05:00")
         status_op = str(first_row.get("status_operacional") or "REALIZADO")
 
-        # Seleciona aeronave (A320neo como padrão para malha de 60 pax)
-        aeronave = FROTA_AZUL["A320neo"]
+        # Seleciona aeronave (A320neo como padrão para malha principal)
+        if modelo_aeronave and modelo_aeronave in FROTA_AZUL:
+            aeronave = FROTA_AZUL[modelo_aeronave]
+        else:
+            aeronave = FROTA_AZUL["A320neo"]
+
         fileiras = int(aeronave["fileiras"])
         layout = list(aeronave["layout"])
         assentos_codigos: list[str] = [
@@ -443,11 +479,59 @@ class CrewService:
         ]
         total_assentos_aeronave = len(assentos_codigos)
 
-        # 1. Contagem de grupos por PNR
+        # Meta de ocupação comercial realista entre 75% e 85% (média ~78-80%)
+        # Ex: A320neo (174 assentos) -> ~136 passageiros (78.1%)
+        #     E195-E2 (136 assentos) -> ~102 passageiros (75.0%)
+        #     ATR 72-600 (72 assentos) -> ~56 passageiros (77.8%)
+        fator_ocupacao = 0.78 if total_assentos_aeronave > 150 else 0.75
+        meta_passageiros = round(total_assentos_aeronave * fator_ocupacao)
+
+        if len(rows) < meta_passageiros:
+            needed = meta_passageiros - len(rows)
+            sql_additional = """
+            SELECT 
+                s.id_cliente,
+                'SOLO' AS pnr,
+                ? AS numero_voo,
+                ? AS origem,
+                ? AS destino,
+                ? AS partida_prevista,
+                NULL AS partida_real,
+                'CONFIRMADO' AS status_operacional,
+                s.tier_fidelidade,
+                p.persona,
+                ROUND(c.clv_previsto, 2) AS clv_previsto,
+                c.faixa_pareto,
+                ROUND(e.risco_evasao, 4) AS risco_evasao,
+                ROUND(e.score_atrito_acumulado, 2) AS score_atrito_acumulado,
+                ROUND(COALESCE(c.clv_previsto, 0) * COALESCE(e.risco_evasao, 0), 2) AS valor_em_risco
+            FROM silver_clientes s
+            JOIN gold_clv c ON s.id_cliente = c.id_cliente
+            JOIN gold_evasao e ON s.id_cliente = e.id_cliente
+            JOIN gold_personas p ON s.id_cliente = p.id_cliente
+            WHERE s.id_cliente NOT IN (SELECT id_cliente FROM silver_viagens WHERE numero_voo = ?)
+            ORDER BY hash(s.id_cliente || ?)
+            LIMIT ?
+            """
+            supp = self.duckdb_client.query(
+                sql_additional,
+                [flight_clean, origem, destino, partida, flight_clean, flight_clean, needed],
+            )
+            for idx, p in enumerate(supp):
+                if idx % 8 in (0, 1):
+                    p["pnr"] = f"GRP_FAM_{flight_clean}_{idx // 8}"
+                elif idx % 15 in (0, 1, 2):
+                    p["pnr"] = f"GRP_TRIO_{flight_clean}_{idx // 15}"
+            rows.extend(supp)
+        elif len(rows) > meta_passageiros:
+            rows = rows[:meta_passageiros]
+
+        # 1. Contagem de grupos por PNR (desconsiderando 'SOLO')
         pnr_counts: dict[str, int] = {}
         for r in rows:
-            pnr = str(r.get("pnr") or "SOLO")
-            pnr_counts[pnr] = pnr_counts.get(pnr, 0) + 1
+            pnr = str(r.get("pnr") or "SOLO").strip()
+            if pnr and pnr != "SOLO":
+                pnr_counts[pnr] = pnr_counts.get(pnr, 0) + 1
 
         # 2. Alocação Inteligente com Espaço Azul (1-4), Coesão de PNR e Assentos Vazios Orgânicos
         allocated_passengers = alocar_assentos_aeronave(
@@ -459,9 +543,13 @@ class CrewService:
 
         assentos_voo: List[AssentoVoo] = []
         for seat_code, p in allocated_passengers:
-            pnr = str(p.get("pnr") or "SOLO")
-            tamanho_grupo = pnr_counts.get(pnr, 1)
-            is_grupo_familiar = tamanho_grupo > 1
+            pnr = str(p.get("pnr") or "SOLO").strip()
+            if pnr and pnr != "SOLO":
+                tamanho_grupo = pnr_counts.get(pnr, 1)
+                is_grupo_familiar = tamanho_grupo > 1
+            else:
+                tamanho_grupo = 1
+                is_grupo_familiar = False
 
             risco = float(p.get("risco_evasao") or 0.0)
             pareto = str(p.get("faixa_pareto") or "Cauda Longa")
@@ -617,42 +705,7 @@ class CrewService:
 
     def get_simulated_flight(self, modelo_aeronave: str | None = None) -> VooSimuladoResponse:
         """Gera o mapa de assentos para o voo de demonstração baseado na malha real."""
-        detalhe = self.get_flight_details("6002")
-
-        if modelo_aeronave and modelo_aeronave in FROTA_AZUL:
-            aeronave = FROTA_AZUL[modelo_aeronave]
-            fileiras = int(aeronave["fileiras"])
-            layout = list(aeronave["layout"])
-            assentos_codigos = [
-                f"{row}{col}" for row in range(1, fileiras + 1) for col in layout
-            ]
-            total_assentos = len(assentos_codigos)
-
-            assentos_adaptados: List[AssentoVoo] = []
-            base_pax = detalhe.assentos
-            for idx, seat_code in enumerate(assentos_codigos):
-                template = base_pax[idx % len(base_pax)]
-                assentos_adaptados.append(
-                    AssentoVoo(
-                        assento=seat_code,
-                        status=template.status,
-                        dados_cliente=template.dados_cliente,
-                    )
-                )
-
-            metadata = MetadataAeronave(
-                modelo=str(aeronave["modelo"]),
-                codigo=str(aeronave["codigo"]),
-                fileiras=fileiras,
-                layout=layout,
-                total_assentos=total_assentos,
-            )
-            return VooSimuladoResponse(
-                flight_id=detalhe.id,
-                metadata_aeronave=metadata,
-                assentos=assentos_adaptados,
-                lote_acoes=detalhe.lote_acoes,
-            )
+        detalhe = self.get_flight_details("6002", modelo_aeronave=modelo_aeronave)
 
         total_aeronave = detalhe.metadata_aeronave.total_assentos
         if len(detalhe.assentos) < total_aeronave:

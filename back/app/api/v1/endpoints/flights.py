@@ -34,9 +34,10 @@ async def list_flights(
 )
 async def get_flight_by_id(
     id: str,
+    modelo: Optional[str] = Query(default=None, description="Modelo de aeronave (opcional: A320neo, E195-E2, ATR 72-600)"),
     _user: RequireCommissionerOrManagerDep = None,
     crew_service: CrewService = Depends(get_crew_service),
 ) -> VooDetalheResponse:
     """Retorna passageiros reais alocados por PNR e as Top 5 ações recomendadas pré-geradas em lote."""
-    return crew_service.get_flight_details(flight_id=id)
+    return crew_service.get_flight_details(flight_id=id, modelo_aeronave=modelo)
 
