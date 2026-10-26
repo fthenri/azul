@@ -670,11 +670,11 @@ class CrewService:
                     acao_sugerida=rotulo_acao,
                     custo_acao=custo,
                     retorno_liquido=retorno,
-                    instrucao_comissario=instrucao,
+                    instrucao_comissario=p.get("llm_mensagem_comissaria") or instrucao,
                     valor_em_risco=float(p.get("valor_em_risco") or 0.0),
                     contexto_narrativo_llm=str(p.get("contexto_narrativo_llm") or "Sem ocorrências recentes"),
-                mensagem_llm_batch=p.get("llm_mensagem_comissaria"),
-                llm_mensagem_comissaria=p.get("llm_mensagem_comissaria"),
+                    mensagem_llm_batch=p.get("llm_mensagem_comissaria"),
+                    llm_mensagem_comissaria=p.get("llm_mensagem_comissaria"),
                 )
             )
 

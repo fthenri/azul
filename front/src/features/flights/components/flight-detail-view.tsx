@@ -157,20 +157,34 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
     const layout = metadata?.layout?.length === 4 ? "2x2" : "3x3";
     const totalRows = metadata?.fileiras || 29;
 
-    const missionsToDispatch: Partial<SyncMission>[] = loteAcoes.acoes.map((acao) => ({
-      id: acao.id_missao,
-      assento: acao.assento,
-      passageiro: acao.passageiro,
-      instrucao: acao.instrucao_comissario,
-      status: "pendente",
-      tipo: acao.tipo,
-      persona: acao.persona,
-      tier: acao.tier,
-      statusBadge: acao.status_badge,
-      gatilho: acao.gatilho,
-      acao: acao.acao_sugerida,
-      criadaEm: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    }));
+    const missionsToDispatch: Partial<SyncMission>[] = loteAcoes.acoes.map((acao) => {
+      const matchingSeat = seats.find((s) => s.assento === acao.assento);
+      const passenger = matchingSeat?.dados_cliente;
+      const rawBatchMsg =
+        passenger?.mensagem_llm_batch ||
+        (passenger as any)?.llm_mensagem_comissaria ||
+        acao.mensagem_llm_batch ||
+        acao.llm_mensagem_comissaria;
+      const instrucaoTexto =
+        rawBatchMsg && typeof rawBatchMsg === "string" && rawBatchMsg.trim().length > 0
+          ? rawBatchMsg.trim()
+          : (acao.instrucao_comissario || "Instrução pendente. Siga o protocolo padrão do Tier.");
+
+      return {
+        id: acao.id_missao,
+        assento: acao.assento,
+        passageiro: acao.passageiro,
+        instrucao: instrucaoTexto,
+        status: "pendente",
+        tipo: acao.tipo,
+        persona: acao.persona,
+        tier: acao.tier,
+        statusBadge: acao.status_badge,
+        gatilho: acao.gatilho,
+        acao: acao.acao_sugerida,
+        criadaEm: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+      };
+    });
 
     dispatchBatchFlightAndMissions(
       {
@@ -451,6 +465,17 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                 {loteAcoes?.acoes.map((acao, idx) => {
                   const isCritico = acao.tipo === "atrito";
                   const matchingSeat = seats.find((s) => s.assento === acao.assento);
+                  const passenger = matchingSeat?.dados_cliente;
+                  const rawBatchMsg =
+                    passenger?.mensagem_llm_batch ||
+                    (passenger as any)?.llm_mensagem_comissaria ||
+                    acao.mensagem_llm_batch ||
+                    acao.llm_mensagem_comissaria;
+                  const instrucaoTexto =
+                    rawBatchMsg && typeof rawBatchMsg === "string" && rawBatchMsg.trim().length > 0
+                      ? rawBatchMsg.trim()
+                      : "Instrução pendente. Siga o protocolo padrão do Tier.";
+
                   return (
                     <div
                       key={acao.id_missao || idx}
@@ -511,7 +536,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                       {/* Instrução Tática Gerada pela IA */}
                       <div className="text-[11px] text-muted-foreground leading-relaxed bg-background/50 p-2 rounded-lg border border-dashed border-border/80 flex items-start gap-1.5">
                         <Sparkles className="h-3.5 w-3.5 text-[#0077C8] dark:text-[#38BDF8] shrink-0 mt-0.5" />
-                        <span>{acao.instrucao_comissario}</span>
+                        <span>{instrucaoTexto}</span>
                       </div>
                     </div>
                   );

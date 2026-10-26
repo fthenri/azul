@@ -136,6 +136,10 @@ class AcaoRecomendadaLote(BaseModel):
         default=None,
         description="Instrução tática gerada pelo pipeline Batch AI para a tripulação",
     )
+    llm_mensagem_comissaria: Optional[str] = Field(
+        default=None,
+        description="Instrução tática gerada pelo pipeline Batch AI para a tripulação (alias)",
+    )
 
 
 class ResumoLote(BaseModel):
