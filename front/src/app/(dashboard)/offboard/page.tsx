@@ -122,6 +122,11 @@ export default function OffBoardPage() {
             ? "Acolhimento Pessoal + Voucher 1000pts"
             : "Bebida Premium Cortesia");
 
+        const isFallback =
+          Boolean(!c.mensagem_llm_offboard ||
+          c.mensagem_llm_offboard.includes("Mensagem pendente") ||
+          c.mensagem_llm_offboard.includes("régua de relacionamento padrão"));
+
         const msgOffboard =
           c.mensagem_llm_offboard && c.mensagem_llm_offboard.startsWith("[RAG: Azul Fidelidade Res. 400]")
             ? c.mensagem_llm_offboard
@@ -143,6 +148,7 @@ export default function OffBoardPage() {
           acao: acaoRecomendada,
           custo: c.custo_acao || 50.0,
           mensagem: msgOffboard,
+          isFallback,
           isEnviado,
         };
       });
@@ -509,9 +515,15 @@ export default function OffBoardPage() {
                         <Smartphone className="h-3.5 w-3.5 text-emerald-600" />
                         Mensagem Humanizada WhatsApp (Pronta para Cópia e Disparo):
                       </span>
-                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-                        Resolução 400 ANAC
-                      </span>
+                      {p.isFallback ? (
+                        <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 font-mono">
+                          Protocolo Padrão (Fallback)
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 font-mono">
+                          RAG Resolução 400 ANAC
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="relative rounded-xl p-3.5 bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/25 text-xs text-foreground leading-relaxed font-sans shadow-inner">
@@ -546,7 +558,7 @@ export default function OffBoardPage() {
                         ) : (
                           <>
                             <Copy className="h-3.5 w-3.5" />
-                            <span>Copiar Texto</span>
+                            <span>Copiar Mensagem</span>
                           </>
                         )}
                       </Button>
@@ -565,7 +577,7 @@ export default function OffBoardPage() {
                         {p.isEnviado ? (
                           <>
                             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                            <span>Registrado no MLOps</span>
+                            <span>Registrado</span>
                           </>
                         ) : confirmMutation.isPending ? (
                           <>
@@ -575,7 +587,7 @@ export default function OffBoardPage() {
                         ) : (
                           <>
                             <Send className="h-3.5 w-3.5" />
-                            <span>Confirmar Envio</span>
+                            <span>Confirmar Disparo</span>
                           </>
                         )}
                       </Button>
