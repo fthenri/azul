@@ -2,21 +2,16 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from typing import Optional
 from dotenv import load_dotenv
 from openai import OpenAI
 
 logger = logging.getLogger("azul.ai.real_client")
 
-# Constantes de configuração e prompts oficiais
-SYSTEM_PROMPT_AZUL = (
-    "Você é o motor de CRM de bordo da Azul. Redija a instrução de abordagem para a comissária "
-    "de forma empática e direta (máximo de 3 linhas), cruzando o contexto do cliente com a ação recomendada. "
-    "Sua resposta DEVE começar obrigatoriamente com o prefixo exato: \"[RAG: Azul Fidelidade Res. 400] \"."
-)
-
 FALLBACK_PADRAO_TIER = "Instrução pendente. Siga o protocolo padrão do Tier."
 MODELO_DEFAULT = "google/gemini-2.5-flash"
+PREFIXO_RAG = "[RAG: Azul Fidelidade Res. 400] "
 
 
 class RealLLMClient:
@@ -45,35 +40,72 @@ class RealLLMClient:
             },
         )
 
-    def generate(self, prompt: str) -> str:
-        """Gera a instrução tática de bordo via OpenRouter / Gemini 2.5 Flash.
+    def gerar_instrucao_comissaria(
+        self,
+        nome_cliente: str,
+        contexto_passageiro: str,
+        acao_vencedora: str,
+    ) -> str:
+        """Gera roteiro exato (fala direta) humanizado para a comissária de bordo.
 
         Args:
-            prompt: Texto do contexto do cliente e ação prescrita.
+            nome_cliente: Nome real do passageiro (ex: 'Lucas Pereira').
+            contexto_passageiro: Contexto operacional (SSR, bagagem, fidelidade, etc.).
+            acao_vencedora: Ação recomendada pelo árbitro matemático.
 
         Returns:
-            String contendo a instrução iniciada por '[RAG: Azul Fidelidade Res. 400] ',
-            ou fallback corporativo seguro em caso de falha.
+            Fala direta para a comissária iniciada pelo prefixo obrigatório,
+            ou fallback em caso de erro.
         """
-        if not prompt or not str(prompt).strip():
+        nome_limpo = str(nome_cliente or "").strip()
+        if not nome_limpo or nome_limpo.lower() in ("none", "null", "n/a"):
+            nome_limpo = "Passageiro"
+
+        ctx_limpo = str(contexto_passageiro or "Sem ocorrências recentes").strip()
+        acao_limpa = str(acao_vencedora or "Atendimento humanizado prioritário").strip()
+
+        # Validação de triggers de teste / simulação de erro
+        if ctx_limpo in ("EMPTY_PROMPT", "SIMULAR_ERRO") or not ctx_limpo:
             return FALLBACK_PADRAO_TIER
+
+        system_prompt = (
+            f"Você é o motor de CRM de bordo da Azul. Escreva OBRIGATORIAMENTE o roteiro exato (fala direta) que a comissária dirá ao passageiro. "
+            f"Chame-o pelo nome fornecido: {nome_limpo}. NUNCA mencione UUIDs, hashes, IDs de voo ou placeholders. "
+            f"Seja elegante, empático e hospitalar (máximo 3 frases). Integre a ação recomendada de forma sutil. "
+            f'Comece OBRIGATORIAMENTE com o prefixo: "[RAG: Azul Fidelidade Res. 400] ".'
+        )
+
+        user_content = (
+            f"Passageiro: {nome_limpo}\n"
+            f"Contexto Operacional: {ctx_limpo}\n"
+            f"Ação Recomendada: {acao_limpa}\n\n"
+            f"Redija a fala direta e humanizada da comissária iniciando pelo prefixo."
+        )
 
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT_AZUL},
-                    {"role": "user", "content": str(prompt).strip()},
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content},
                 ],
                 temperature=0.3,
-                max_tokens=200,
+                max_tokens=180,
             )
             raw_text = response.choices[0].message.content or ""
             texto = raw_text.strip()
 
-            prefixo = "[RAG: Azul Fidelidade Res. 400] "
-            if not texto.startswith(prefixo):
-                texto = f"{prefixo}{texto}"
+            if not texto:
+                return FALLBACK_PADRAO_TIER
+
+            # Higienização de eventuais placeholders ou UUIDs que a LLM possa alucinar
+            texto = texto.replace("[Nome do Cliente]", nome_limpo)
+            texto = texto.replace("[Sobrenome do Cliente]", nome_limpo.split()[-1] if nome_limpo else "")
+            texto = texto.replace("[Nome]", nome_limpo)
+            texto = re.sub(r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}", "", texto)
+
+            if not texto.startswith(PREFIXO_RAG):
+                texto = f"{PREFIXO_RAG}{texto}"
 
             return texto
         except Exception as exc:
@@ -84,8 +116,25 @@ class RealLLMClient:
             )
             return FALLBACK_PADRAO_TIER
 
+    def generate(self, prompt: str) -> str:
+        """Método de compatibilidade para chamadas genéricas de prompt."""
+        if not prompt or not str(prompt).strip():
+            return FALLBACK_PADRAO_TIER
+
+        prompt_str = str(prompt).strip()
+        nome = "Cliente"
+        if "Cliente:" in prompt_str:
+            parte = prompt_str.split("Cliente:")[1].split(",")[0].strip()
+            if not re.match(r"^[a-f0-9-]{30,}$", parte):
+                nome = parte
+
+        return self.gerar_instrucao_comissaria(
+            nome_cliente=nome,
+            contexto_passageiro=prompt_str,
+            acao_vencedora="Acolhimento e prioridade",
+        )
+
 
 def get_real_llm_client() -> RealLLMClient:
     """Fábrica para obtenção de instância do cliente LLM real."""
     return RealLLMClient()
-

@@ -12,6 +12,8 @@ import duckdb
 import pandas as pd
 
 from back.app.infrastructure.ai.real_llm_client import RealLLMClient
+from back.app.modules.simulation.crew_service import gerar_nome_passageiro
+from back.executor_decisao import ROTULOS_ACOES_BORDO, arbitrar_acao_bordo
 
 # Configuração de logging estruturado
 logging.basicConfig(
@@ -144,10 +146,31 @@ def run_batch_pipeline(
 
     for _, row in pending_df.iterrows():
         pax = row.to_dict()
-        prompt = build_prompt_for_passenger(pax)
+        nome_cliente = (
+            pax.get("nome")
+            or pax.get("passageiro")
+            or (pax.get("dados_cliente") or {}).get("nome")
+            or gerar_nome_passageiro(str(pax.get("id_cliente") or ""))
+        )
+        contexto_passageiro = str(pax.get("contexto_narrativo_llm") or "Sem ocorrências recentes")
+
+        # Resolve ação recomendada a partir do contexto ou perfil
+        perfil = {
+            "id_cliente": str(pax.get("id_cliente")),
+            "nome": nome_cliente,
+            "contexto_narrativo_llm": contexto_passageiro,
+            "tier_fidelidade": str(pax.get("tier_fidelidade") or "Azul"),
+        }
+        decisao = arbitrar_acao_bordo(perfil)
+        acao_tecnica = decisao.get("acao_vencedora", "ABORDAGEM_CHEFE_CABINE")
+        rotulo_acao = ROTULOS_ACOES_BORDO.get(acao_tecnica, acao_tecnica)
 
         try:
-            mensagem = llm_client.generate(prompt)
+            mensagem = llm_client.gerar_instrucao_comissaria(
+                nome_cliente=nome_cliente,
+                contexto_passageiro=contexto_passageiro,
+                acao_vencedora=rotulo_acao,
+            )
         except Exception as exc:
             logger.warning(
                 "Falha na inferência LLM para cliente %s (%s). Injetando fallback de segurança.",

@@ -36,7 +36,11 @@ def test_real_llm_client_generation_with_prefix() -> None:
     mock_response.choices = [mock_choice]
 
     with patch.object(client.client.chat.completions, "create", return_value=mock_response):
-        result = client.generate("Prompt de teste")
+        result = client.gerar_instrucao_comissaria(
+            nome_cliente="João Silva",
+            contexto_passageiro="Cliente Diamante",
+            acao_vencedora="Bebida Premium Cortesia",
+        )
         assert result.startswith("[RAG: Azul Fidelidade Res. 400] ")
         assert "Sr. João" in result
 
