@@ -152,3 +152,65 @@ def test_post_simular_bordo_validation_error(client: TestClient) -> None:
     """Valida rejeição de payload inválido."""
     response = client.post("/api/v1/motor/simular-bordo", json={"id_cliente": ""})
     assert response.status_code == 422
+
+
+def test_post_acao_concluida_endpoint_offboard_crm(client: TestClient) -> None:
+    """Valida o registro de ação concluída via canal OFFBOARD_CRM no SQLite transacional."""
+    payload = {
+        "flight_id": "AD4409",
+        "assento": "14C",
+        "id_cliente": "CLI_OFFBOARD_TEST_01",
+        "acao": "Acolhimento Pessoal + Voucher 1000pts",
+        "custo": 50.0,
+        "origem": "OFFBOARD_CRM",
+    }
+    response = client.post("/api/v1/motor/acao-concluida", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "sucesso"
+    assert data["origem"] == "OFFBOARD_CRM"
+    assert data["acao_executada"] == "Acolhimento Pessoal + Voucher 1000pts"
+    assert data["flight_id"] == "AD4409"
+    assert data["assento"] == "14C"
+    assert data["custo"] == 50.0
+    assert data["registro_id"] is not None
+    assert data["ciclo_mlops"]["status"] == "INGESTED_INTO_SQLITE_LOGS"
+
+
+def test_post_acao_concluida_anti_duplicacao_idempotente(client: TestClient) -> None:
+    """Valida trava anti-duplicação no SQLite quando a mesma ação é submetida repetidamente."""
+    payload = {
+        "flight_id": "AD4409",
+        "assento": "18B",
+        "id_cliente": "CLI_OFFBOARD_TEST_DUP",
+        "acao": "Bebida Premium Cortesia",
+        "custo": 15.0,
+        "origem": "OFFBOARD_CRM",
+    }
+    # 1º Envio: Sucesso
+    resp1 = client.post("/api/v1/motor/acao-concluida", json=payload)
+    assert resp1.status_code == 200
+    data1 = resp1.json()
+    assert data1["status"] == "sucesso"
+    registro_id1 = data1["registro_id"]
+
+    # 2º Envio: Duplicado (Idempotente)
+    resp2 = client.post("/api/v1/motor/acao-concluida", json=payload)
+    assert resp2.status_code == 200
+    data2 = resp2.json()
+    assert data2["status"] == "duplicado"
+    assert "já registrada" in data2["mensagem"]
+    assert data2["registro_id"] == registro_id1
+    assert data2["ciclo_mlops"]["status"] == "ALREADY_INGESTED"
+
+
+def test_post_acao_concluida_validation_error(client: TestClient) -> None:
+    """Valida rejeição de origem inválida com erro 422."""
+    payload = {
+        "flight_id": "AD4409",
+        "assento": "10A",
+        "acao": "Bebida Premium Cortesia",
+        "origem": "CANAL_INEXISTENTE",
+    }
+    response = client.post("/api/v1/motor/acao-concluida", json=payload)
+    assert response.status_code == 422

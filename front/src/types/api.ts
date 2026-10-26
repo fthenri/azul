@@ -263,6 +263,36 @@ export interface SimularBordoResponse {
   dados_cliente: Record<string, unknown>;
 }
 
+export interface RegistrarAcaoPayload {
+  flight_id: string;
+  assento: string;
+  id_cliente?: string;
+  acao: string;
+  custo?: number;
+  origem: "ONBOARD_CREW" | "OFFBOARD_CRM";
+}
+
+export interface AcaoConcluidaResponse {
+  status: string;
+  mensagem: string;
+  registro_id?: number | null;
+  flight_id: string;
+  assento: string;
+  id_cliente?: string | null;
+  acao_executada: string;
+  custo: number;
+  origem: string;
+  timestamp: string;
+  ciclo_mlops?: {
+    status: string;
+    banco: string;
+    tabela: string;
+    registro_id: number;
+    grupo_controle: string;
+    total_registros_persistidos: number;
+  };
+}
+
 export interface ApiErrorResponse {
   detail?: string | Array<{ msg: string; loc?: string[] }>;
   message?: string;

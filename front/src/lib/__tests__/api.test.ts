@@ -45,7 +45,7 @@ describe("API Client Integration Tests (contract.md compliance)", () => {
       expect.anything()
     );
     expect(data).toHaveLength(DEMO_PERSONAS.length);
-    expect(data[0].persona).toBe("Executivo Frequente");
+    expect(data[0].persona).toBe("Gestor Corporativo");
   });
 
   it("getPareto deve chamar GET /api/v1/dashboard/pareto", async () => {
@@ -154,5 +154,44 @@ describe("API Client Integration Tests (contract.md compliance)", () => {
       expect(err.statusCode).toBe(0);
       expect(err.message).toContain("Falha de conexão com o backend");
     }
+  });
+
+  it("registrarAcaoConcluida deve chamar POST /api/v1/motor/acao-concluida com payload tipado", async () => {
+    const mockResponse = {
+      status: "sucesso",
+      mensagem: "Ação registrada",
+      registro_id: 1,
+      flight_id: "AD4409",
+      assento: "14C",
+      id_cliente: "CLI_TEST_01",
+      acao_executada: "Acolhimento Pessoal + Voucher 1000pts",
+      custo: 50.0,
+      origem: "OFFBOARD_CRM",
+      timestamp: "2026-10-26T00:00:00Z",
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response);
+
+    const result = await api.registrarAcaoConcluida({
+      flight_id: "AD4409",
+      assento: "14C",
+      id_cliente: "CLI_TEST_01",
+      acao: "Acolhimento Pessoal + Voucher 1000pts",
+      custo: 50.0,
+      origem: "OFFBOARD_CRM",
+    });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/motor/acao-concluida"),
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"origem":"OFFBOARD_CRM"'),
+      })
+    );
+    expect(result.status).toBe("sucesso");
+    expect(result.origem).toBe("OFFBOARD_CRM");
   });
 });

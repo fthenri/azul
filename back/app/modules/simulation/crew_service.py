@@ -885,6 +885,10 @@ class CrewService:
 
     def _get_mlops_db_path(self) -> Path:
         """Retorna o caminho do banco SQLite transacional de MLOps."""
+        if getattr(self.settings, "mlops_db_path", None) is not None:
+            p = Path(self.settings.mlops_db_path)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            return p
         db_dir = self.settings.project_root / "back"
         db_dir.mkdir(parents=True, exist_ok=True)
         return db_dir / "mlops_logs.db"
@@ -922,13 +926,20 @@ class CrewService:
         self._init_mlops_db()
         db_path = self._get_mlops_db_path()
 
-        assento = str(payload.get("assento") or "").strip()
-        id_cliente = str(payload.get("id_cliente") or "").strip()
-        acao = str(payload.get("acao") or "Bebida Premium Cortesia").strip()
-        origem = str(payload.get("origem") or "ONBOARD_CREW").strip()
+        if hasattr(payload, "model_dump"):
+            p_dict = payload.model_dump()
+        elif isinstance(payload, dict):
+            p_dict = payload
+        else:
+            p_dict = dict(payload)
+
+        assento = str(p_dict.get("assento") or "").strip()
+        id_cliente = str(p_dict.get("id_cliente") or "").strip()
+        acao = str(p_dict.get("acao") or "Bebida Premium Cortesia").strip()
+        origem = str(p_dict.get("origem") or "ONBOARD_CREW").strip()
 
         # Mapeia custo real pelo catálogo
-        custo = float(payload.get("custo") or 0.0)
+        custo = float(p_dict.get("custo") or 0.0)
         if custo <= 0.0:
             if "kids" in acao.lower():
                 custo = 12.00
@@ -942,7 +953,60 @@ class CrewService:
         ts = datetime.now(timezone.utc).isoformat()
 
         with sqlite3.connect(str(db_path)) as con:
+            con.row_factory = sqlite3.Row
             cur = con.cursor()
+
+            # Verificação prévia contra confirmações duplicadas (idempotência transacional MLOps)
+            cur.execute(
+                """
+                SELECT id, flight_id, assento, id_cliente, acao_executada, custo, timestamp, status, grupo_controle, origem
+                FROM mlops_feedback
+                WHERE flight_id = ?
+                  AND assento = ?
+                  AND (id_cliente = ? OR (id_cliente IS NULL AND ? = ''))
+                  AND acao_executada = ?
+                  AND origem = ?
+                  AND status = 'CONCLUIDA'
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (flight_id, assento, id_cliente, id_cliente, acao, origem),
+            )
+            existing = cur.fetchone()
+            if existing:
+                cur.execute("SELECT count(*) FROM mlops_feedback")
+                total_persistidos = cur.fetchone()[0]
+                logger.info(
+                    "MLOps Feedback Loop duplicado ignorado [ID=%s | Total=%s]: voo=%s, assento=%s, cliente=%s, acao=%s, origem=%s",
+                    existing["id"],
+                    total_persistidos,
+                    flight_id,
+                    assento,
+                    id_cliente,
+                    acao,
+                    origem,
+                )
+                return {
+                    "status": "duplicado",
+                    "mensagem": "Ação já registrada previamente",
+                    "registro_id": existing["id"],
+                    "flight_id": flight_id,
+                    "assento": assento,
+                    "id_cliente": existing["id_cliente"] or id_cliente,
+                    "acao_executada": existing["acao_executada"],
+                    "custo": float(existing["custo"]),
+                    "origem": existing["origem"] or origem,
+                    "timestamp": existing["timestamp"],
+                    "ciclo_mlops": {
+                        "status": "ALREADY_INGESTED",
+                        "banco": "mlops_logs.db",
+                        "tabela": "mlops_feedback",
+                        "registro_id": existing["id"],
+                        "grupo_controle": existing["grupo_controle"] if "grupo_controle" in existing.keys() else "HOLDOUT_10PCT",
+                        "total_registros_persistidos": total_persistidos,
+                    },
+                }
+
             cur.execute(
                 """
                 INSERT INTO mlops_feedback (flight_id, assento, id_cliente, acao_executada, custo, timestamp, status, origem)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
@@ -272,3 +272,39 @@ class SimularBordoResponse(BaseModel):
     retorno_liquido: float
     instrucao_comissario: str
     dados_cliente: dict[str, Any]
+
+
+class AcaoConcluidaPayload(BaseModel):
+    """Payload para registro de ação concluída (MLOps Feedback Loop)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    flight_id: str = Field(..., description="Identificador do voo (ex: 'AD4409')", min_length=1)
+    assento: str = Field(..., description="Código do assento no voo (ex: '12A')", min_length=1)
+    id_cliente: Optional[str] = Field(default=None, description="Identificador único do passageiro")
+    acao: str = Field(..., description="Ação executada", min_length=1)
+    custo: Optional[float] = Field(default=0.0, description="Custo financeiro realizado da ação (R$)")
+    origem: Literal["ONBOARD_CREW", "OFFBOARD_CRM"] = Field(
+        default="ONBOARD_CREW",
+        description="Canal de execução da ação (Tripulação a bordo ou Gestor de CRM pós-voo)",
+    )
+
+
+class AcaoConcluidaResponse(BaseModel):
+    """Resposta padronizada do registro de ação no SQLite transacional de MLOps."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    status: str = Field(..., description="Status do registro ('sucesso' ou 'duplicado')")
+    mensagem: str = Field(..., description="Mensagem descritiva do resultado")
+    registro_id: Optional[int] = Field(default=None, description="ID do registro no SQLite")
+    flight_id: str = Field(..., description="Identificador do voo")
+    assento: str = Field(..., description="Código do assento")
+    id_cliente: Optional[str] = Field(default=None, description="Identificador do passageiro")
+    acao_executada: str = Field(..., description="Ação que foi executada")
+    custo: float = Field(..., description="Custo financeiro registrado (R$)")
+    origem: str = Field(..., description="Canal de origem (ONBOARD_CREW ou OFFBOARD_CRM)")
+    timestamp: str = Field(..., description="Timestamp ISO da operação")
+    ciclo_mlops: Optional[dict[str, Any]] = Field(
+        default=None, description="Metadados do ciclo de vida MLOps"
+    )
