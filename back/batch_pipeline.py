@@ -124,12 +124,38 @@ def run_batch_pipeline(
             FROM read_parquet('{gold_contexto_path.as_posix()}')
         """)
 
-    # 3. Query idempotente: apenas registros onde llm_mensagem_comissaria IS NULL ou vazio
+    # Registra views analíticas auxiliares para cálculo de risco e priorização por voo
+    evasao_path = gold_dir / "evasao_clientes.parquet"
+    clv_path = gold_dir / "clv_clientes.parquet"
+    if evasao_path.exists():
+        con.execute(f"CREATE OR REPLACE VIEW gold_evasao AS SELECT * FROM read_parquet('{evasao_path.as_posix()}')")
+    else:
+        con.execute("CREATE OR REPLACE VIEW gold_evasao AS SELECT '' AS id_cliente, 0.0 AS risco_evasao")
+
+    if clv_path.exists():
+        con.execute(f"CREATE OR REPLACE VIEW gold_clv AS SELECT * FROM read_parquet('{clv_path.as_posix()}')")
+    else:
+        con.execute("CREATE OR REPLACE VIEW gold_clv AS SELECT '' AS id_cliente, 0.0 AS clv_previsto")
+
+    # 3. Query idempotente: Top 5 clientes prioritários por voo onde llm_mensagem_comissaria IS NULL ou vazio
     query = """
-        SELECT *
-        FROM gold_contexto_passageiro
-        WHERE llm_mensagem_comissaria IS NULL
-           OR TRIM(COALESCE(llm_mensagem_comissaria, '')) = ''
+        WITH ranked AS (
+            SELECT 
+                g.*,
+                COALESCE(e.risco_evasao, 0.0) AS risco_evasao,
+                COALESCE(c.clv_previsto, 0.0) * COALESCE(e.risco_evasao, 0.0) AS valor_em_risco
+            FROM gold_contexto_passageiro g
+            LEFT JOIN gold_evasao e ON g.id_cliente = e.id_cliente
+            LEFT JOIN gold_clv c ON g.id_cliente = c.id_cliente
+            WHERE g.numero_voo IS NOT NULL 
+              AND TRIM(g.numero_voo) != ''
+              AND (g.llm_mensagem_comissaria IS NULL OR TRIM(COALESCE(g.llm_mensagem_comissaria, '')) = '')
+            QUALIFY ROW_NUMBER() OVER(
+                PARTITION BY g.numero_voo 
+                ORDER BY (COALESCE(c.clv_previsto, 0.0) * COALESCE(e.risco_evasao, 0.0)) DESC, g.id_cliente
+            ) <= 5
+        )
+        SELECT * FROM ranked
     """
     if limit is not None and limit > 0:
         query += f" LIMIT {limit}"
