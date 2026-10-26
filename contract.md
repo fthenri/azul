@@ -225,10 +225,24 @@ Retorna a distribuição de passageiros da Camada Gold com instruções táticas
 ```
 
 ### 4.2. Registrar Ação Concluída para Feedback Loop (MLOps)
-Registra a conclusão de uma ação de retenção realizada pela tripulação (`ONBOARD_CREW`) ou disparada pelo gestor de CRM (`OFFBOARD_CRM`). Persiste no banco transacional SQLite (`mlops_logs.db`) com **trava anti-duplicação** para garantir idempotência e alimentar os pipelines de retreinamento de modelos (Uplift e Churn).
+Registra a conclusão de uma ação de retenção realizada pela tripulação de bordo (`ONBOARD_CREW`) ou disparada pelo gestor de CRM (`OFFBOARD_CRM`). Persiste no banco transacional SQLite (`mlops_logs.db`) com **trava anti-duplicação** para garantir idempotência e alimentar os pipelines de retreinamento de modelos (Uplift e Churn).
 
-- **Endpoint:** `POST /motor/acao-concluida`
-- **Body:**
+- **Endpoint:** `POST /api/v1/motor/acao-concluida`
+- **Headers:** `Content-Type: application/json`
+
+#### Payload de Requisição (`AcaoConcluidaPayload`)
+- `flight_id` (string, obrigatório): Identificador do voo (ex: `"AD4409"`).
+- `assento` (string, obrigatório): Código do assento (ex: `"12A"`).
+- `id_cliente` (string, opcional): ID do cliente no Data Lake.
+- `acao` (string, obrigatório): Ação executada ou benefício concedido.
+- `custo` (float, opcional, default: `0.0`): Custo financeiro da ação concedida.
+- `origem` (string, opcional, default: `"ONBOARD_CREW"`): Canal da ação: `"ONBOARD_CREW"` ou `"OFFBOARD_CRM"`.
+
+---
+
+#### Cenário 1: Confirmação pelo Gestor de CRM (`origem = "OFFBOARD_CRM"`)
+
+**Requisição (POST):**
 ```json
 {
   "flight_id": "AD4409",
@@ -239,7 +253,8 @@ Registra a conclusão de uma ação de retenção realizada pela tripulação (`
   "origem": "OFFBOARD_CRM"
 }
 ```
-- **Resposta Sucesso (200 OK):**
+
+**Resposta Sucesso (200 OK):**
 ```json
 {
   "status": "sucesso",
@@ -262,7 +277,54 @@ Registra a conclusão de uma ação de retenção realizada pela tripulação (`
   }
 }
 ```
-- **Resposta Idempotente / Duplicado (200 OK):**
+
+---
+
+#### Cenário 2: Confirmação pela Tripulação a Bordo (`origem = "ONBOARD_CREW"`)
+
+**Requisição (POST):**
+```json
+{
+  "flight_id": "AD4409",
+  "assento": "3B",
+  "id_cliente": "cli_456",
+  "acao": "Kit Sobrevivência Kids",
+  "custo": 12.00,
+  "origem": "ONBOARD_CREW"
+}
+```
+
+**Resposta Sucesso (200 OK):**
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Ação registrada no Data Lake para Feedback Loop (Holdout Group)",
+  "registro_id": 43,
+  "flight_id": "AD4409",
+  "assento": "3B",
+  "id_cliente": "cli_456",
+  "acao_executada": "Kit Sobrevivência Kids",
+  "custo": 12.00,
+  "origem": "ONBOARD_CREW",
+  "timestamp": "2026-10-26T21:05:00Z",
+  "ciclo_mlops": {
+    "status": "INGESTED_INTO_SQLITE_LOGS",
+    "banco": "mlops_logs.db",
+    "tabela": "mlops_feedback",
+    "registro_id": 43,
+    "grupo_controle": "HOLDOUT_10PCT",
+    "total_registros_persistidos": 106
+  }
+}
+```
+
+---
+
+#### Cenário 3: Tentativa de Envio Duplicado (Trava Idempotente)
+
+Se a mesma tupla `(flight_id, assento, id_cliente, acao, origem, status='CONCLUIDA')` for submetida novamente, a API retorna `status="duplicado"` sem duplicar linhas no SQLite de retreinamento:
+
+**Resposta Idempotente (200 OK):**
 ```json
 {
   "status": "duplicado",
@@ -281,7 +343,7 @@ Registra a conclusão de uma ação de retenção realizada pela tripulação (`
     "tabela": "mlops_feedback",
     "registro_id": 42,
     "grupo_controle": "HOLDOUT_10PCT",
-    "total_registros_persistidos": 105
+    "total_registros_persistidos": 106
   }
 }
 ```
