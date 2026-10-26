@@ -486,7 +486,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                           variant={isCritico ? "destructive" : "default"}
                           className={cn(
                             "text-[9px] py-0 px-1.5 shrink-0",
-                            !isCritico && "bg-slate-800 hover:bg-slate-900 text-white"
+                            !isCritico && "bg-indigo-900 hover:bg-indigo-950 text-white dark:bg-indigo-600"
                           )}
                         >
                           {acao.status_badge}
@@ -563,7 +563,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                   variant={filter === "vip" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setFilter("vip")}
-                  className={cn("text-xs h-7 px-2.5", filter === "vip" && "bg-slate-800 text-white")}
+                  className={cn("text-xs h-7 px-2.5", filter === "vip" && "bg-indigo-900 text-white dark:bg-indigo-600 dark:text-white")}
                 >
                   Diamante / Safira ({seatCounts.vips})
                 </Button>
@@ -578,19 +578,19 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                   <span>Crítico (Risco &gt; 60%)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-xs bg-slate-800 border border-slate-900" />
+                  <span className="h-3 w-3 rounded-xs bg-indigo-900 border border-indigo-950 dark:bg-indigo-500/20 dark:border-indigo-400" />
                   <span>Diamante</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-xs bg-blue-200 border border-blue-500" />
+                  <span className="h-3 w-3 rounded-xs bg-blue-200 border border-blue-500 dark:bg-blue-800/40 dark:border-blue-600" />
                   <span>Safira</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-xs bg-cyan-100 border border-cyan-400" />
+                  <span className="h-3 w-3 rounded-xs bg-cyan-100 border border-cyan-400 dark:bg-cyan-900/30 dark:border-cyan-700" />
                   <span>Topázio</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-xs bg-sky-100 border border-sky-300" />
+                  <span className="h-3 w-3 rounded-xs bg-sky-100 border border-sky-300 dark:bg-sky-900/30 dark:border-sky-800" />
                   <span>Azul Fidelidade</span>
                 </div>
                 <div className="flex items-center gap-1.5">

@@ -201,18 +201,18 @@ export function FlightsGrid() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 shadow-xs">
+        <Card className="border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/20 shadow-xs">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-300 uppercase">
+              <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-300 uppercase">
                 Clientes Alto Valor (Tiers)
               </span>
-              <Crown className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+              <Crown className="h-4 w-4 text-indigo-700 dark:text-indigo-400" />
             </div>
-            <div className="mt-2 text-2xl font-black text-slate-900 dark:text-slate-100">
+            <div className="mt-2 text-2xl font-black text-indigo-950 dark:text-indigo-200">
               {metrics.totalVips}
             </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+            <p className="text-[11px] text-indigo-800/80 dark:text-indigo-400 mt-0.5">
               Diamante & Safira (Top Pareto)
             </p>
           </CardContent>
@@ -255,7 +255,7 @@ export function FlightsGrid() {
               variant={selectedFilter === "vips" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedFilter("vips")}
-              className={cn("text-xs h-8", selectedFilter === "vips" && "bg-slate-800 hover:bg-slate-900 text-white")}
+              className={cn("text-xs h-8", selectedFilter === "vips" && "bg-indigo-900 hover:bg-indigo-950 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:text-white")}
             >
               Diamante / Safira ({flights.filter((f) => f.passageiros_vip > 0).length})
             </Button>
@@ -362,7 +362,7 @@ export function FlightsGrid() {
                     <TableCell className="text-center">
                       {flight.passageiros_vip > 0 ? (
                         <Badge
-                          className="bg-slate-800 hover:bg-slate-900 text-white font-mono font-bold text-[11px] px-2 py-0.5"
+                          className="bg-indigo-900 hover:bg-indigo-950 text-white dark:bg-indigo-500/20 dark:border-indigo-400 dark:text-indigo-200 border font-mono font-bold text-[11px] px-2 py-0.5"
                         >
                           {flight.passageiros_vip}
                         </Badge>

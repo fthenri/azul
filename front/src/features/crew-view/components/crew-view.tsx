@@ -265,14 +265,14 @@ export function CrewView() {
           </span>
         </Card>
 
-        <Card className="p-4 bg-card border border-border shadow-xs border-l-4 border-l-slate-800">
+        <Card className="p-4 bg-card border border-border shadow-xs border-l-4 border-l-indigo-900 dark:border-l-indigo-500">
           <div className="flex items-center justify-between text-muted-foreground mb-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-300">
+            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-900 dark:text-indigo-300">
               Clientes Alto Valor (Tiers)
             </span>
-            <Crown className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+            <Crown className="h-4 w-4 text-indigo-700 dark:text-indigo-400" />
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-slate-100">
+          <div className="text-2xl font-black text-indigo-950 dark:text-indigo-200">
             {totalVips}
           </div>
           <span className="text-[10px] text-muted-foreground">
@@ -335,25 +335,33 @@ export function CrewView() {
             variant={filter === "vip" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter("vip")}
-            className={cn("h-7 text-xs px-2.5 gap-1", filter === "vip" && "bg-slate-800 text-white")}
+            className={cn("h-7 text-xs px-2.5 gap-1", filter === "vip" && "bg-indigo-900 text-white dark:bg-indigo-600 dark:text-white")}
           >
             <Crown className="h-3 w-3" />
             <span>Diamante / Safira ({totalVips})</span>
           </Button>
         </div>
 
-        {/* Legenda Visual */}
+        {/* Legenda Visual com Categorias Oficiais Azul Fidelidade */}
         <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-rose-500" />
+            <span className="h-3 w-3 rounded-xs bg-rose-500" />
             <span>Crítico (Risco &gt; 60%)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-slate-800" />
-            <span>Diamante / Safira</span>
+            <span className="h-3 w-3 rounded-xs bg-indigo-900 border border-indigo-950 dark:bg-indigo-500/20 dark:border-indigo-400" />
+            <span>Diamante</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-sky-200 dark:bg-sky-800" />
+            <span className="h-3 w-3 rounded-xs bg-blue-200 border border-blue-500 dark:bg-blue-800/40 dark:border-blue-600" />
+            <span>Safira</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-xs bg-cyan-100 border border-cyan-400 dark:bg-cyan-900/30 dark:border-cyan-700" />
+            <span>Topázio</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-xs bg-sky-100 border border-sky-300 dark:bg-sky-900/30 dark:border-sky-800" />
             <span>Azul Fidelidade</span>
           </div>
         </div>

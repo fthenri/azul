@@ -249,7 +249,14 @@ export function CrewSeatMap({
             ) : isAtrito ? (
               <AlertTriangle className="h-3 w-3 text-rose-600 dark:text-rose-400 shrink-0" />
             ) : (
-              <Sparkles className="h-3 w-3 text-sky-600 dark:text-sky-400 shrink-0" />
+              <Sparkles
+                className={cn(
+                  "h-3 w-3 shrink-0",
+                  missionTierConfig.key === "diamante"
+                    ? "text-white dark:text-indigo-200"
+                    : "text-sky-600 dark:text-sky-400"
+                )}
+              />
             )}
           </div>
 
@@ -322,19 +329,19 @@ export function CrewSeatMap({
       );
       if (tierConfig.key === "diamante") {
         indicatorIcon = (
-          <Crown className="h-3 w-3 text-slate-200 dark:text-slate-300 shrink-0" />
+          <Crown className="h-3 w-3 text-white dark:text-indigo-200 shrink-0" />
         );
       } else if (tierConfig.key === "safira") {
         indicatorIcon = (
-          <Crown className="h-3 w-3 text-blue-900 dark:text-blue-300 shrink-0" />
+          <Crown className="h-3 w-3 text-blue-900 dark:text-blue-200 shrink-0" />
         );
       } else if (tierConfig.key === "topazio") {
         indicatorIcon = (
-          <Sparkles className="h-2.5 w-2.5 text-cyan-800 dark:text-cyan-300 shrink-0" />
+          <Sparkles className="h-2.5 w-2.5 text-cyan-900 dark:text-cyan-300 shrink-0" />
         );
       } else {
         indicatorIcon = (
-          <User className="h-2.5 w-2.5 text-sky-800 dark:text-sky-300 shrink-0" />
+          <User className="h-2.5 w-2.5 text-sky-900 dark:text-sky-300 shrink-0" />
         );
       }
     }
@@ -370,7 +377,9 @@ export function CrewSeatMap({
                   "h-2.5 w-2.5 shrink-0 transition-colors duration-200",
                   isGroupMember
                     ? "text-blue-600 dark:text-blue-300 font-bold animate-pulse"
-                    : "text-sky-500 dark:text-sky-400"
+                    : tierConfig.key === "diamante"
+                    ? "text-indigo-200 dark:text-indigo-300"
+                    : "text-sky-600 dark:text-sky-400"
                 )}
               />
             )}
@@ -396,7 +405,14 @@ export function CrewSeatMap({
               {Math.round(seat.dados_cliente.risco_evasao * 100)}%
             </span>
           ) : isEspacoAzul ? (
-            <span className="text-[7px] text-[#0077C8] dark:text-[#38BDF8] font-bold">
+            <span
+              className={cn(
+                "text-[7px] font-bold",
+                tierConfig.key === "diamante"
+                  ? "text-indigo-200 dark:text-indigo-300"
+                  : "text-sky-700 dark:text-sky-300"
+              )}
+            >
               ESP
             </span>
           ) : null}
