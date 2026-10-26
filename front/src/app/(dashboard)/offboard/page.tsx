@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   MessageSquare,
@@ -46,6 +46,13 @@ export default function OffBoardPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [enviados, setEnviados] = useState<Set<string>>(new Set());
   const [expandedXaiId, setExpandedXaiId] = useState<string | null>(null);
+
+  // Abre automaticamente a explicabilidade do primeiro passageiro em destaque
+  useEffect(() => {
+    if (expandedXaiId === null && passageirosOffboard.length > 0) {
+      setExpandedXaiId(passageirosOffboard[0].seatKey);
+    }
+  }, [passageirosOffboard, expandedXaiId]);
 
   // Consulta analítica dos dados de passageiros e recomendações
   const {
