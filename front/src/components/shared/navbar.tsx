@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plane, BarChart3 } from "lucide-react";
+import { Plane, BarChart3, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
@@ -18,12 +18,19 @@ export function Navbar() {
     },
     {
       href: "/dashboard/flights",
-      label: "Malha Aérea & Despacho",
+      label: "Ações On-Board (Em Voo)",
       icon: Plane,
-      description: "Voos Comerciais & Lote IA",
+      description: "IA na Cabine & Mapa de Assentos",
       active:
         Boolean(pathname?.startsWith("/dashboard/flights")) ||
         Boolean(pathname?.startsWith("/flights")),
+    },
+    {
+      href: "/offboard",
+      label: "Ações Off-Board (Fora do Voo)",
+      icon: MessageSquare,
+      description: "IA no Pós-Voo & Canais Digitais",
+      active: Boolean(pathname?.startsWith("/offboard")),
     },
   ];
 

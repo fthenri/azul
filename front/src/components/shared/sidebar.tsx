@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Database,
   Plane,
+  MessageSquare,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,8 +36,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       href: "/dashboard/flights",
-      label: "Malha Aérea & Despacho",
-      sublabel: "Voos Comerciais & Lote IA",
+      label: "Ações On-Board (Em Voo)",
+      sublabel: "IA na Cabine & Mapa de Assentos",
       icon: Plane,
       badge: "DuckDB",
       active:
@@ -46,6 +47,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         pathname === "/flight-dispatch" ||
         pathname === "/dispatch" ||
         pathname === "/crew-view",
+    },
+    {
+      href: "/offboard",
+      label: "Ações Off-Board (Fora do Voo)",
+      sublabel: "IA no Pós-Voo & Canais Digitais",
+      icon: MessageSquare,
+      badge: "Multicanal",
+      active: Boolean(pathname?.startsWith("/offboard")),
     },
   ];
 
@@ -143,7 +152,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <span>Governança Analítica</span>
             </div>
             <p className="text-white/70 text-[10px] leading-relaxed">
-              Modelagem calibrada ANAC VRA & Regras Azul Fidelidade (Res. 400).
+              Modelagem calibrada ANAC VRA, Regras Azul Fidelidade & Sentimento Público. Conformidade LGPD (Zero Viés).
             </p>
             <div className="flex items-center gap-1.5 text-[10px] text-white/60 pt-1 border-t border-white/10">
               <Database className="h-3 w-3" />

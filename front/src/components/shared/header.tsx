@@ -13,6 +13,13 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
   const pathname = usePathname();
 
   const getPageContext = () => {
+    if (Boolean(pathname?.startsWith("/offboard"))) {
+      return {
+        title: "Ações Off-Board (Fora do Voo)",
+        category: "IA no Pós-Voo & Canais Digitais",
+        tag: "Multicanal + LGPD",
+      };
+    }
     if (
       pathname?.startsWith("/dashboard/flights") ||
       pathname?.startsWith("/flights") ||
@@ -22,8 +29,8 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
       pathname === "/crew-view"
     ) {
       return {
-        title: "Malha Aérea & Despacho",
-        category: "Operações & Voo Real",
+        title: "Ações On-Board (Em Voo)",
+        category: "IA na Cabine & Mapa de Assentos",
         tag: "DuckDB + Batch IA",
       };
     }
