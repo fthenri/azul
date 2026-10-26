@@ -47,13 +47,6 @@ export default function OffBoardPage() {
   const [enviados, setEnviados] = useState<Set<string>>(new Set());
   const [expandedXaiId, setExpandedXaiId] = useState<string | null>(null);
 
-  // Abre automaticamente a explicabilidade do primeiro passageiro em destaque
-  useEffect(() => {
-    if (expandedXaiId === null && passageirosOffboard.length > 0) {
-      setExpandedXaiId(passageirosOffboard[0].seatKey);
-    }
-  }, [passageirosOffboard, expandedXaiId]);
-
   // Consulta analítica dos dados de passageiros e recomendações
   const {
     data: vooData,
@@ -185,6 +178,13 @@ export default function OffBoardPage() {
       return true;
     });
   }, [passageirosOffboard, filter, searchTerm]);
+
+  // Abre automaticamente a explicabilidade do primeiro passageiro em destaque
+  useEffect(() => {
+    if (expandedXaiId === null && passageirosOffboard.length > 0) {
+      setExpandedXaiId(passageirosOffboard[0].seatKey);
+    }
+  }, [passageirosOffboard, expandedXaiId]);
 
   // Estatísticas do cabeçalho
   const totalElegiveis = passageirosOffboard.length;
