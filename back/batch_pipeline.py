@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import logging
 import os
 from pathlib import Path
 import sys
+import time
 from typing import Any, Dict, List
 
 import duckdb
@@ -169,48 +171,23 @@ def run_batch_pipeline(
     else:
         con.execute("CREATE OR REPLACE VIEW silver_clientes AS SELECT '' AS id_cliente, 'Basico' AS tier_fidelidade")
 
-    # 3. Query: Top 5 clientes prioritários por voo + passageiros com risco financeiro / ROI negativo / Veto de Política
+    # 3. Query: Varredura completa da base para clientes elegíveis sem limite por voo
     query = """
-        WITH ranked AS (
-            SELECT 
-                g.*,
-                COALESCE(s.tier_fidelidade, 'Basico') AS tier_fidelidade,
-                COALESCE(p.persona, 'Turista Eventual') AS persona,
-                COALESCE(e.risco_evasao, 0.0) AS risco_evasao,
-                COALESCE(e.score_atrito_acumulado, 0.0) AS score_atrito_acumulado,
-                COALESCE(c.clv_previsto, 0.0) AS clv_previsto,
-                COALESCE(c.clv_previsto, 0.0) * COALESCE(e.risco_evasao, 0.0) AS valor_em_risco,
-                ROW_NUMBER() OVER(
-                    PARTITION BY g.numero_voo 
-                    ORDER BY (COALESCE(c.clv_previsto, 0.0) * COALESCE(e.risco_evasao, 0.0)) DESC, g.id_cliente
-                ) AS ranking_voo
-            FROM gold_contexto_passageiro g
-            LEFT JOIN gold_evasao e ON g.id_cliente = e.id_cliente
-            LEFT JOIN gold_clv c ON g.id_cliente = c.id_cliente
-            LEFT JOIN gold_personas p ON g.id_cliente = p.id_cliente
-            LEFT JOIN silver_clientes s ON g.id_cliente = s.id_cliente
-            WHERE g.numero_voo IS NOT NULL 
-              AND TRIM(g.numero_voo) != ''
-              AND (
-                  g.llm_mensagem_comissaria IS NULL 
-                  OR TRIM(COALESCE(g.llm_mensagem_comissaria, '')) = ''
-                  OR g.llm_mensagem_comissaria LIKE '[GERADO VIA BATCH]%'
-                  OR (
-                      g.llm_mensagem_comissaria NOT LIKE 'Decisão Analítica:%'
-                      AND COALESCE(s.tier_fidelidade, 'Basico') IN ('Basico', 'Básico')
-                      AND COALESCE(e.score_atrito_acumulado, 0.0) <= 0.0
-                      AND (g.contexto_narrativo_llm IS NULL OR g.contexto_narrativo_llm = 'Sem ocorrências recentes')
-                  )
-              )
-        )
-        SELECT * FROM ranked
-        WHERE ranking_voo <= 5
-           OR ((COALESCE(clv_previsto, 0.0) * COALESCE(risco_evasao, 0.0) * 0.15) - 5.0 <= 0)
-           OR (
-               (tier_fidelidade IN ('Basico', 'Básico') OR persona = 'Turista Eventual')
-               AND score_atrito_acumulado <= 0.0
-               AND (contexto_narrativo_llm IS NULL OR contexto_narrativo_llm = 'Sem ocorrências recentes')
-           )
+        SELECT 
+            g.*,
+            COALESCE(s.tier_fidelidade, 'Basico') AS tier_fidelidade,
+            COALESCE(p.persona, 'Turista Eventual') AS persona,
+            COALESCE(e.risco_evasao, 0.0) AS risco_evasao,
+            COALESCE(e.score_atrito_acumulado, 0.0) AS score_atrito_acumulado,
+            COALESCE(c.clv_previsto, 0.0) AS clv_previsto,
+            COALESCE(c.clv_previsto, 0.0) * COALESCE(e.risco_evasao, 0.0) AS valor_em_risco
+        FROM gold_contexto_passageiro g
+        LEFT JOIN gold_evasao e ON g.id_cliente = e.id_cliente
+        LEFT JOIN gold_clv c ON g.id_cliente = c.id_cliente
+        LEFT JOIN gold_personas p ON g.id_cliente = p.id_cliente
+        LEFT JOIN silver_clientes s ON g.id_cliente = s.id_cliente
+        WHERE (g.acao_vencedora != 'Nenhuma Ação' OR g.acao_vencedora IS NULL)
+          AND (g.llm_mensagem_comissaria LIKE '%[GERADO VIA BATCH]%' OR g.llm_mensagem_comissaria IS NULL)
     """
     if limit is not None and limit > 0:
         query += f" LIMIT {limit}"
@@ -222,11 +199,8 @@ def run_batch_pipeline(
     # 4. Configuração do Real LLM Client
     llm_client = RealLLMClient()
 
-    # 5. Processamento em loop isolado (Graceful Degradation)
-    staging_records: List[Dict[str, Any]] = []
-
-    for _, row in pending_df.iterrows():
-        pax = row.to_dict()
+    # 5. Processamento concorrente isolado (Graceful Degradation e Proteção de Caixa)
+    def processar_passageiro(pax: Dict[str, Any]) -> Dict[str, Any]:
         nome_cliente = (
             pax.get("nome")
             or pax.get("passageiro")
@@ -276,6 +250,9 @@ def run_batch_pipeline(
             curr_msg = str(pax.get("llm_mensagem_comissaria") or "").strip()
             curr_off = str(pax.get("mensagem_llm_offboard") or "").strip()
 
+            if delay_seconds and delay_seconds > 0:
+                time.sleep(delay_seconds)
+
             if curr_msg.startswith("[RAG: Azul Fidelidade Res. 400]"):
                 mensagem = curr_msg
             else:
@@ -310,14 +287,32 @@ def run_batch_pipeline(
                     )
                     mensagem_offboard = FALLBACK_OFFBOARD
 
-        staging_records.append({
+        return {
             "id_cliente": pax["id_cliente"],
             "acao_vencedora": acao_vencedora,
             "custo_acao": custo_acao,
             "llm_mensagem_comissaria": mensagem,
             "mensagem_llm_offboard": mensagem_offboard,
             "data_atualizacao": datetime.now(timezone.utc).isoformat(),
-        })
+        }
+
+    rows_data = [row.to_dict() for _, row in pending_df.iterrows()]
+    staging_records: List[Dict[str, Any]] = []
+    max_workers = 1 if (delay_seconds and delay_seconds > 0) else min(20, max(1, len(rows_data)))
+
+    if max_workers > 1 and len(rows_data) > 1:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for idx, res in enumerate(executor.map(processar_passageiro, rows_data), 1):
+                staging_records.append(res)
+                if idx % 250 == 0 or idx == len(rows_data):
+                    logger.info("Progresso do processamento em lote: %d/%d registros concluídos", idx, len(rows_data))
+                    print(f"Progresso: {idx}/{len(rows_data)} registros concluídos")
+    else:
+        for idx, r in enumerate(rows_data, 1):
+            staging_records.append(processar_passageiro(r))
+            if idx % 250 == 0 or idx == len(rows_data):
+                logger.info("Progresso do processamento em lote: %d/%d registros concluídos", idx, len(rows_data))
+                print(f"Progresso: {idx}/{len(rows_data)} registros concluídos")
 
     # Log obrigatório: Registros processados: X
     num_processados = len(staging_records)
