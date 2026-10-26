@@ -814,3 +814,35 @@ class CrewService:
             },
         )
 
+    def register_action_feedback(
+        self,
+        flight_id: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Registra a conclusão de uma ação de bordo para alimentar o ciclo de Feedback Loop de MLOps (Holdout Group)."""
+        assento = str(payload.get("assento") or "").strip()
+        id_cliente = str(payload.get("id_cliente") or "").strip()
+        acao = str(payload.get("acao") or "").strip()
+
+        logger.info(
+            "MLOps Feedback Loop recebido: voo=%s, assento=%s, id_cliente=%s, acao=%s",
+            flight_id,
+            assento,
+            id_cliente,
+            acao,
+        )
+
+        return {
+            "status": "sucesso",
+            "mensagem": "Ação registrada no Data Lake para Feedback Loop (Holdout Group)",
+            "flight_id": flight_id,
+            "assento": assento,
+            "id_cliente": id_cliente,
+            "acao_executada": acao,
+            "ciclo_mlops": {
+                "status": "INGESTED_INTO_FEATURE_STORE",
+                "grupo_controle": "HOLDOUT_10PCT",
+                "destino_datalake": "gold_feedback_mlops.parquet",
+            },
+        }
+

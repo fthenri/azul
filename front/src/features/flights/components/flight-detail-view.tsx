@@ -380,6 +380,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
             <div className="max-h-[calc(100vh-10rem)] flex flex-col">
               <PassengerDrawer
                 seat={selectedSeat}
+                flightId={flight?.id || id}
                 loteAcoes={loteAcoes}
                 simulationResult={null}
                 isSimulating={false}
@@ -624,6 +625,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
           <div className="w-12 h-1.5 bg-muted rounded-full mx-auto my-2" />
           <PassengerDrawer
             seat={selectedSeat}
+            flightId={flight?.id || id}
             loteAcoes={loteAcoes}
             simulationResult={null}
             isSimulating={false}

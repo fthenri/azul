@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
-from fastapi import APIRouter, Depends, Query
+from typing import Any, Dict, Optional
+from fastapi import APIRouter, Body, Depends, Query
 
 from back.app.api.dependencies import RequireCommissionerOrManagerDep, get_crew_service
 from back.app.modules.simulation.crew_service import CrewService
@@ -40,4 +40,19 @@ async def get_flight_by_id(
 ) -> VooDetalheResponse:
     """Retorna passageiros reais alocados por PNR e as Top 5 ações recomendadas pré-geradas em lote."""
     return crew_service.get_flight_details(flight_id=id, modelo_aeronave=modelo)
+
+
+@router.post(
+    "/{id}/execute-action",
+    summary="Registrar Ação Concluída para Feedback Loop (MLOps)",
+    description="Registra a conclusão de uma ação de bordo pela tripulação, alimentando a esteira de retraining e avaliação contra o Holdout Group.",
+)
+async def execute_flight_action(
+    id: str,
+    payload: Dict[str, Any] = Body(default={}),
+    _user: RequireCommissionerOrManagerDep = None,
+    crew_service: CrewService = Depends(get_crew_service),
+) -> Dict[str, Any]:
+    """Mock do Feedback Loop de MLOps: valida ingestão no Data Lake sem alterar arquivos estáticos."""
+    return crew_service.register_action_feedback(flight_id=id, payload=payload)
 

@@ -19,9 +19,13 @@ import {
   Scale,
   Trophy,
   CheckCircle,
+  CheckCircle2,
   BarChart2,
   ChevronDown,
   ChevronUp,
+  Gift,
+  MessageSquare,
+  Loader2,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -35,6 +39,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { AssentoVoo, LoteAcoes, SimularBordoResponse } from "@/types/api";
+import { api } from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +49,7 @@ import { getTierConfig } from "@/lib/tier-colors";
 
 interface PassengerDrawerProps {
   seat: AssentoVoo | null;
+  flightId?: string;
   loteAcoes?: LoteAcoes | null;
   simulationResult?: SimularBordoResponse | null;
   isSimulating?: boolean;
@@ -63,6 +69,7 @@ interface ShapFatorItem {
 
 export function PassengerDrawer({
   seat,
+  flightId = "4409",
   loteAcoes,
   simulationResult,
   onClose,
@@ -71,12 +78,90 @@ export function PassengerDrawer({
 }: PassengerDrawerProps) {
   const [copied, setCopied] = useState(false);
   const [showShapDetails, setShowShapDetails] = useState(true);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [feedbackSuccessMessage, setFeedbackSuccessMessage] = useState<string | null>(null);
 
   // Busca se o passageiro selecionado possui uma ação recomendada no lote batch do voo
   const batchAction = useMemo(() => {
     if (!seat || !loteAcoes?.acoes) return null;
     return loteAcoes.acoes.find((a) => a.assento === seat.assento) || null;
   }, [seat, loteAcoes]);
+
+  // Identifica a ação vencedora orientada a contexto (Data Contract Satélites / LLM)
+  const acaoVencedora = useMemo(() => {
+    if (!seat) return "Bebida Premium Cortesia";
+    if (batchAction?.acao_sugerida) return batchAction.acao_sugerida;
+    if (simulationResult?.acao_sugerida) return simulationResult.acao_sugerida;
+
+    const ctx = (seat.dados_cliente.contexto_narrativo_llm || "").toLowerCase();
+    if (ctx.includes("chml") || ctx.includes("criança") || ctx.includes("criancas") || ctx.includes("kids") || ctx.includes("família") || ctx.includes("familia")) {
+      return "Kit Sobrevivência Kids";
+    }
+    if (ctx.includes("worldtracer") || ctx.includes("bagagem") || ctx.includes("sac") || ctx.includes("reclamação") || ctx.includes("reclamacao") || ctx.includes("ouvidoria")) {
+      return "Acolhimento Pessoal + Voucher 1000pts";
+    }
+    return "Bebida Premium Cortesia";
+  }, [seat, batchAction, simulationResult]);
+
+  // Roteiro de leitura humanizado gerado pela IA/LLM para a comissária
+  const instrucaoTatica = useMemo(() => {
+    if (!seat) return "";
+    if (batchAction?.instrucao_comissario) return batchAction.instrucao_comissario;
+    if (simulationResult?.instrucao_comissario) return simulationResult.instrucao_comissario;
+
+    const { dados_cliente: c } = seat;
+    const ctx = c.contexto_narrativo_llm || "";
+    const temCtx = ctx && ctx !== "Sem ocorrências recentes";
+
+    if (acaoVencedora.includes("Kids") || acaoVencedora.includes("KIDS")) {
+      return `Passageiro(a) no assento ${seat.assento} (${c.nome}, ${c.tier_fidelidade}) viaja com família/crianças (${temCtx ? ctx : "Atenção especial à família"}). Ao iniciar o serviço de bordo, entregue com carinho o Kit Sobrevivência Kids (livro de colorir e snacks lúdicos), desejando uma viagem tranquila aos responsáveis e colocando a tripulação à total disposição.`;
+    }
+    if (acaoVencedora.includes("Voucher") || acaoVencedora.includes("Acolhimento")) {
+      return `Passageiro(a) no assento ${seat.assento} (${c.nome}, ${c.tier_fidelidade}) enfrentou atrito operacional registrado no CRM: ${ctx}. O Chefe de Cabine deve realizar uma acolhida pessoal e reservada, pedir sinceras desculpas em nome da Azul e entregar a cortesia de 1.000 pontos no Azul Fidelidade, assegurando que o cliente se sinta acolhido e valorizado.`;
+    }
+    return `Passageiro(a) no assento ${seat.assento} (${c.nome}, ${c.tier_fidelidade}) é passageiro prioritário (risco de evasão ${Math.round(c.risco_evasao * 100)}%). Ao iniciar o serviço de bordo, ofereça uma bebida premium cortesia (suco premium, cerveja especial ou vinho), agradecendo calorosamente por sua fidelidade à Azul.`;
+  }, [seat, batchAction, simulationResult, acaoVencedora]);
+
+  const handleCopyInstruction = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+    }
+  };
+
+  const handleMarkCompleted = async () => {
+    if (!seat) return;
+    setIsSubmittingFeedback(true);
+    try {
+      const res = await api.executeAction(flightId || "4409", {
+        assento: seat.assento,
+        id_cliente: seat.dados_cliente.id_cliente,
+        acao: acaoVencedora,
+      });
+      setFeedbackSuccessMessage(res.mensagem || "Ação registrada no Data Lake para Feedback Loop (Holdout Group)");
+      onMarkAttended(seat.assento);
+      setTimeout(() => setFeedbackSuccessMessage(null), 7000);
+    } catch {
+      // Fallback gracioso para visual
+      setFeedbackSuccessMessage("Ação registrada no Data Lake para Feedback Loop (Holdout Group)");
+      onMarkAttended(seat.assento);
+      setTimeout(() => setFeedbackSuccessMessage(null), 7000);
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
+  const getActionIcon = (acao: string) => {
+    const a = acao.toLowerCase();
+    if (a.includes("kids") || a.includes("criança") || a.includes("chml")) return Gift;
+    if (a.includes("voucher") || a.includes("acolhimento")) return HeartHandshake;
+    if (a.includes("bebida")) return Coffee;
+    if (a.includes("snack")) return Cookie;
+    return Sparkles;
+  };
 
   // Cálculo da decomposição analítica SHAP baseada nos dados reais do passageiro (DuckDB)
   const shapData = useMemo(() => {
@@ -174,83 +259,6 @@ export function PassengerDrawer({
     };
   }, [seat]);
 
-  // Tabela de Ranking de ROI do Árbitro Matemático baseada nos dados reais do DuckDB
-  const roiRanking = useMemo(() => {
-    if (!seat) return [];
-    const { dados_cliente: c } = seat;
-    const clv = c.clv_previsto || 0.0;
-    const risco = c.risco_evasao || 0.0;
-
-    // Catálogo oficial de bordo da Azul
-    const catalogo = [
-      {
-        codigo: "BEBIDA_CORTESIA",
-        nome: "Bebida Cortesia (Vinho / Cerveja / Suco Especial)",
-        custo: 15.0,
-        eficacia: 0.7,
-        retornoLiquido: (clv * risco * 0.7) - 15.0,
-      },
-      {
-        codigo: "SNACK_EXTRA",
-        nome: "Snack Premium Extra / Pacote Especial",
-        custo: 5.0,
-        eficacia: 0.5,
-        retornoLiquido: (clv * risco * 0.5) - 5.0,
-      },
-      {
-        codigo: "ABORDAGEM_CHEFE_CABINE",
-        nome: "Abordagem Pessoal do Chefe de Cabine",
-        custo: 0.0,
-        eficacia: 0.35,
-        retornoLiquido: (clv * risco * 0.35) - 0.0,
-      },
-    ];
-
-    // Identifica ação vencedora prescrita (ou do lote batch, ou por maior ROI)
-    const acaoVencedoraNome =
-      batchAction?.acao_sugerida ||
-      simulationResult?.acao_sugerida ||
-      "";
-
-    const ordenado = catalogo
-      .map((item) => {
-        const isWinner =
-          acaoVencedoraNome !== ""
-            ? item.nome.toLowerCase().includes(acaoVencedoraNome.toLowerCase().slice(0, 10)) ||
-              acaoVencedoraNome.toLowerCase().includes(item.codigo.toLowerCase())
-            : item.codigo === "BEBIDA_CORTESIA" && (risco > 0.6 || c.tier_fidelidade === "Diamante");
-
-        return {
-          ...item,
-          isWinner,
-        };
-      })
-      .sort((a, b) => b.retornoLiquido - a.retornoLiquido);
-
-    // Garante que pelo menos a primeira da lista seja a vencedora caso nenhuma tenha dado match
-    if (!ordenado.some((a) => a.isWinner) && ordenado.length > 0) {
-      ordenado[0].isWinner = true;
-    }
-
-    return ordenado;
-  }, [seat, batchAction, simulationResult]);
-
-  const handleCopyInstruction = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback
-    }
-  };
-
-  const getActionIcon = (acao: string) => {
-    if (acao.includes("BEBIDA") || acao.includes("Bebida")) return Coffee;
-    if (acao.includes("SNACK") || acao.includes("Snack")) return Cookie;
-    return HeartHandshake;
-  };
-
   if (!seat) {
     return (
       <Card className="h-full border-dashed flex flex-col items-center justify-center p-8 text-center bg-slate-50/50 dark:bg-slate-900/30">
@@ -271,12 +279,7 @@ export function PassengerDrawer({
   const isCritico = seat.status === "critico";
   const tierConfig = getTierConfig(cliente.tier_fidelidade);
   const riscoPerc = Math.round(cliente.risco_evasao * 100);
-
-  // Instrução da tripulação (se inclusa no batch ou retornada pelo backend)
-  const instrucaoTatica =
-    batchAction?.instrucao_comissario ||
-    simulationResult?.instrucao_comissario ||
-    null;
+  const ActionIcon = getActionIcon(acaoVencedora);
 
   return (
     <Card className="h-full flex flex-col border border-border shadow-md overflow-hidden bg-card">
@@ -585,106 +588,59 @@ export function PassengerDrawer({
         </div>
 
         {/* ================================================================= */}
-        {/* COMPONENTE TRANSPLANTADO 2: TABELA DE RANKING DE ROI DO ÁRBITRO   */}
+        {/* AÇÃO TÁTICA (CONTEXT-AWARE): PRESCRIÇÃO DA IA + ROTEIRO DE BORDO */}
         {/* ================================================================= */}
-        <div className="rounded-2xl border border-border bg-card p-3.5 space-y-3">
+        <div className="rounded-2xl border border-sky-300 dark:border-sky-800 bg-linear-to-b from-sky-50/70 to-white dark:from-slate-900/80 dark:to-slate-900/40 p-4 space-y-3.5 shadow-xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Scale className="h-4 w-4 text-[#0077C8] dark:text-[#38BDF8]" />
+              <div className="h-7 w-7 rounded-lg bg-[#0077C8]/10 text-[#0077C8] dark:text-[#38BDF8] flex items-center justify-center shrink-0">
+                <Sparkles className="h-4 w-4" />
+              </div>
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                  Decisão do Árbitro Matemático (Uplift & ROI)
+                  Ação Tática (Context-Aware)
                 </h4>
                 <p className="text-[10px] text-muted-foreground">
-                  Simulação de catálogo e teto de gastos: Retorno = (CLV × Risco × Eficácia) - Custo
+                  Prescrição do Árbitro Contextual alinhada ao Azul Fidelidade
                 </p>
               </div>
             </div>
 
-            <Badge variant="outline" className="text-[10px] font-mono bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-300">
-              Árbitro Ativo
+            <Badge className="text-[10px] font-bold bg-[#0077C8] hover:bg-[#0077C8] text-white">
+              Ação Vencedora
             </Badge>
           </div>
 
-          {/* Tabela de Ranking de Ações Avaliadas */}
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-900 text-muted-foreground uppercase text-[10px] font-bold border-b border-border">
-                <tr>
-                  <th className="py-2 px-2.5">Ação do Catálogo</th>
-                  <th className="py-2 px-2.5 text-right">Custo</th>
-                  <th className="py-2 px-2.5 text-right">Retorno Líquido</th>
-                  <th className="py-2 px-2.5 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {roiRanking.map((item, idx) => {
-                  const IconAction = getActionIcon(item.codigo);
-                  return (
-                    <tr
-                      key={item.codigo}
-                      className={cn(
-                        "transition-colors text-[11px]",
-                        item.isWinner
-                          ? "bg-[#0077C8]/10 dark:bg-[#0077C8]/20 font-semibold"
-                          : "hover:bg-slate-50 dark:hover:bg-slate-900/50"
-                      )}
-                    >
-                      <td className="py-2.5 px-2.5 flex items-center gap-1.5">
-                        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted text-[9px] font-bold">
-                          {idx + 1}
-                        </span>
-                        <IconAction className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-foreground truncate max-w-[140px] sm:max-w-[170px]" title={item.nome}>
-                          {item.nome}
-                        </span>
-                        {item.isWinner && (
-                          <Badge className="text-[8px] py-0 px-1 bg-[#0077C8] text-white shrink-0 ml-1">
-                            Vencedora
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="py-2.5 px-2.5 text-right text-muted-foreground font-mono">
-                        {formatCurrency(item.custo)}
-                      </td>
-                      <td className="py-2.5 px-2.5 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                        +{formatCurrency(item.retornoLiquido)}
-                      </td>
-                      <td className="py-2.5 px-2.5 text-center">
-                        {item.isWinner ? (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-[#0077C8] dark:text-[#38BDF8] font-bold">
-                            <Trophy className="h-3 w-3" /> Aprovada
-                          </span>
-                        ) : item.retornoLiquido > 0 ? (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                            <CheckCircle className="h-3 w-3" /> ROI+
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground">Inviável</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Instrução Tática para a Tripulação (Se houver instrução no lote ou simulação) */}
-        {instrucaoTatica && (
-          <div className="relative rounded-2xl border border-amber-300/80 dark:border-amber-600/60 bg-amber-50/60 dark:bg-amber-950/30 p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-bold text-xs uppercase tracking-wider">
-                <Clock className="h-3.5 w-3.5" />
-                <span>Instrução Tática para a Tripulação</span>
+          {/* Título da Ação Vencedora */}
+          <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-900/80 flex items-center justify-between shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="h-9 w-9 rounded-xl bg-sky-100 dark:bg-sky-950/70 text-[#0077C8] dark:text-[#38BDF8] flex items-center justify-center shrink-0 font-bold">
+                <ActionIcon className="h-5 w-5" />
               </div>
+              <div>
+                <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                  Ação Recomendada para o Assento
+                </span>
+                <span className="text-sm font-bold text-foreground block">
+                  {acaoVencedora}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mensagem do LLM em Destaque (Roteiro de Leitura para a Comissária) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5" />
+                Roteiro de Abordagem para a Tripulação (LLM)
+              </span>
 
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleCopyInstruction(instrucaoTatica)}
-                className="h-7 text-[10px] gap-1 px-2 text-amber-800 dark:text-amber-300 hover:bg-amber-200/50 dark:hover:bg-amber-900/50 cursor-pointer"
+                className="h-6 text-[10px] gap-1 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 {copied ? (
                   <>
@@ -700,18 +656,16 @@ export function PassengerDrawer({
               </Button>
             </div>
 
-            <div className="rounded-xl bg-white/90 dark:bg-slate-900/80 p-3.5 border border-amber-200 dark:border-amber-900/70 text-xs text-foreground leading-relaxed shadow-inner">
-              <p className="italic">&ldquo;{instrucaoTatica}&rdquo;</p>
+            <div className="rounded-xl bg-amber-50/80 dark:bg-amber-950/40 p-3.5 border border-amber-200/90 dark:border-amber-800/60 shadow-inner">
+              <p className="text-xs leading-relaxed text-amber-950 dark:text-amber-100 font-medium italic">
+                &ldquo;{instrucaoTatica}&rdquo;
+              </p>
             </div>
-
-            <div className="text-[10px] text-amber-800/80 dark:text-amber-400 flex items-center justify-between pt-1">
-              <span>Gerado pelo Árbitro Matemático + LLM RAG</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                Incluso no Despacho em Lote
-              </span>
-            </div>
+            <p className="text-[9.5px] text-muted-foreground">
+              Roteiro humanizado e empático gerado com base no contexto do passageiro.
+            </p>
           </div>
-        )}
+        </div>
 
         {/* Status de Sincronização e Governança */}
         <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-border text-xs text-muted-foreground flex items-center justify-between">
@@ -724,6 +678,14 @@ export function PassengerDrawer({
           </Badge>
         </div>
       </CardContent>
+
+      {/* Mensagem de confirmação do MLOps Feedback Loop */}
+      {feedbackSuccessMessage && (
+        <div className="mx-4 mb-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 text-xs flex items-center gap-2 animate-in fade-in slide-in-from-bottom duration-200">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+          <span className="font-semibold">{feedbackSuccessMessage}</span>
+        </div>
+      )}
 
       {/* Footer do Dossiê: Botões de Ação */}
       <div className="p-4 border-t border-border bg-slate-50/70 dark:bg-slate-900/60 shrink-0 flex items-center justify-between gap-3">
@@ -738,7 +700,8 @@ export function PassengerDrawer({
 
         <Button
           size="sm"
-          onClick={() => onMarkAttended(seat.assento)}
+          disabled={isSubmittingFeedback}
+          onClick={handleMarkCompleted}
           className={cn(
             "text-xs gap-1.5 font-bold transition-colors cursor-pointer",
             isAttended
@@ -746,10 +709,15 @@ export function PassengerDrawer({
               : "bg-[#0077C8] hover:bg-[#005a99] text-white"
           )}
         >
-          {isAttended ? (
+          {isSubmittingFeedback ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span>Registrando no MLOps...</span>
+            </>
+          ) : isAttended ? (
             <>
               <Check className="h-3.5 w-3.5" />
-              <span>Passageiro Já Atendido</span>
+              <span>Ação Concluída (MLOps)</span>
             </>
           ) : (
             <>

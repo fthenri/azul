@@ -137,4 +137,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+  executeAction: (
+    flightId: string,
+    payload: { assento: string; id_cliente?: string; acao?: string }
+  ): Promise<{ status: string; mensagem: string; mlops_status?: string }> =>
+    request<{ status: string; mensagem: string; mlops_status?: string }>(
+      `/flights/${encodeURIComponent(flightId)}/execute-action`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    ),
 };

@@ -22,24 +22,28 @@ logger = logging.getLogger("azul.gold.executor")
 DEFAULT_SEED: int = 42
 
 CATALOGO_ACOES: dict[str, dict[str, float]] = {
-    "UPGRADE_EXECUTIVA": {"custo": 1500.00, "eficacia": 0.90},
-    "ACESSO_LOUNGE_VCP": {"custo": 120.00, "eficacia": 0.70},
-    "BONUS_5000_PONTOS": {"custo": 150.00, "eficacia": 0.60},
-    "ISENCAO_BAGAGEM_EXTRA": {"custo": 100.00, "eficacia": 0.50},
-    "CORTESIA_ESPACO_AZUL": {"custo": 50.00, "eficacia": 0.40},
-    "MENSAGEM_EXECUTIVA_VIP": {"custo": 1.00, "eficacia": 0.20},
+    "UPGRADE_EXECUTIVA": {"custo": 1500.00, "eficacia": 0.08},
+    "ACESSO_LOUNGE_VCP": {"custo": 120.00, "eficacia": 0.06},
+    "BONUS_5000_PONTOS": {"custo": 150.00, "eficacia": 0.05},
+    "ISENCAO_BAGAGEM_EXTRA": {"custo": 100.00, "eficacia": 0.04},
+    "CORTESIA_ESPACO_AZUL": {"custo": 50.00, "eficacia": 0.04},
+    "MENSAGEM_EXECUTIVA_VIP": {"custo": 1.00, "eficacia": 0.02},
     "NAO_FAZER_NADA": {"custo": 0.00, "eficacia": 0.00},
 }
 
 CATALOGO_ACOES_BORDO: dict[str, dict[str, float]] = {
-    "BEBIDA_CORTESIA": {"custo": 15.00, "eficacia": 0.70},
-    "SNACK_EXTRA": {"custo": 5.00, "eficacia": 0.50},
-    "ABORDAGEM_CHEFE_CABINE": {"custo": 0.00, "eficacia": 0.35},
+    "KIT_KIDS": {"custo": 12.00, "eficacia": 0.06},
+    "ACOLHIMENTO_VOUCHER": {"custo": 50.00, "eficacia": 0.08},
+    "BEBIDA_CORTESIA": {"custo": 15.00, "eficacia": 0.05},
+    "SNACK_EXTRA": {"custo": 5.00, "eficacia": 0.03},
+    "ABORDAGEM_CHEFE_CABINE": {"custo": 0.00, "eficacia": 0.02},
 }
 
 ROTULOS_ACOES_BORDO: dict[str, str] = {
-    "BEBIDA_CORTESIA": "Bebida Cortesia (Vinho / Cerveja / Suco Especial)",
-    "SNACK_EXTRA": "Snack Premium Extra / Pacote Especial",
+    "KIT_KIDS": "Kit Sobrevivência Kids",
+    "ACOLHIMENTO_VOUCHER": "Acolhimento Pessoal + Voucher 1000pts",
+    "BEBIDA_CORTESIA": "Bebida Premium Cortesia",
+    "SNACK_EXTRA": "Snack Premium Extra",
     "ABORDAGEM_CHEFE_CABINE": "Abordagem Pessoal do Chefe de Cabine",
 }
 
@@ -382,30 +386,30 @@ Responda ESTRITAMENTE em formato JSON (sem nenhum texto ou formatação fora do 
 def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
     clv_previsto = float(perfil_cliente.get("clv_previsto", 0.0))
     risco_evasao = float(perfil_cliente.get("risco_evasao", 0.0))
-    tier = str(perfil_cliente.get("tier_fidelidade", "Basico")).strip()
-    faixa_pareto = str(perfil_cliente.get("faixa_pareto", "Cauda Longa")).strip()
+    ctx = str(perfil_cliente.get("contexto_narrativo_llm") or "").lower()
 
     avaliacoes: dict[str, float] = {}
     for nome_acao, dados in CATALOGO_ACOES_BORDO.items():
         custo = dados["custo"]
         eficacia = dados["eficacia"]
+        # Fórmula de Uplift realista (2% a 8% de eficácia): Retorno Líquido = (CLV * Risco * Eficácia) - Custo
         retorno = (clv_previsto * risco_evasao * eficacia) - custo
         avaliacoes[nome_acao] = round(retorno, 2)
 
-    acoes_ordenadas = sorted(avaliacoes.items(), key=lambda x: x[1], reverse=True)
-
-    if (risco_evasao > 0.60 or "Top 10%" in faixa_pareto or tier == "Diamante") and "BEBIDA_CORTESIA" in avaliacoes:
-        melhor_acao = "BEBIDA_CORTESIA"
-        retorno_escolhido = avaliacoes["BEBIDA_CORTESIA"]
-        custo_escolhido = CATALOGO_ACOES_BORDO["BEBIDA_CORTESIA"]["custo"]
-    elif acoes_ordenadas and acoes_ordenadas[0][1] > 0:
-        melhor_acao = acoes_ordenadas[0][0]
-        retorno_escolhido = acoes_ordenadas[0][1]
-        custo_escolhido = CATALOGO_ACOES_BORDO[melhor_acao]["custo"]
+    # Roteamento Contextual Inteligente (Context-Aware / Data Contract Satélites)
+    if any(k in ctx for k in ["chml", "criança", "criancas", "kids", "infantil", "família", "familia"]):
+        melhor_acao = "KIT_KIDS"
+    elif any(k in ctx for k in ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria"]):
+        melhor_acao = "ACOLHIMENTO_VOUCHER"
     else:
-        melhor_acao = "ABORDAGEM_CHEFE_CABINE"
-        retorno_escolhido = avaliacoes.get("ABORDAGEM_CHEFE_CABINE", 0.0)
-        custo_escolhido = 0.0
+        # Se não houver contexto anômalo: Ação Vencedora = 'Bebida Premium Cortesia'
+        melhor_acao = "BEBIDA_CORTESIA"
+
+    retorno_escolhido = avaliacoes.get(
+        melhor_acao,
+        (clv_previsto * risco_evasao * CATALOGO_ACOES_BORDO[melhor_acao]["eficacia"]) - CATALOGO_ACOES_BORDO[melhor_acao]["custo"]
+    )
+    custo_escolhido = CATALOGO_ACOES_BORDO[melhor_acao]["custo"]
 
     return {
         "acao_vencedora": melhor_acao,
@@ -426,33 +430,32 @@ def _obter_mock_bordo_padronizado(
     ctx_narrativo = str(perfil_cliente.get("contexto_narrativo_llm") or "").strip()
     tem_contexto = ctx_narrativo and ctx_narrativo != "Sem ocorrências recentes"
 
-    if tem_contexto:
-        if acao_vencedora == "BEBIDA_CORTESIA":
+    if acao_vencedora in ("KIT_KIDS", "Kit Sobrevivência Kids"):
+        msg = (
+            f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) viaja com família/crianças ({ctx_narrativo if tem_contexto else 'Atenção especial à família'}). "
+            "Ao iniciar o serviço de bordo, entregue carinhosamente o Kit Sobrevivência Kids (livro de colorir e snacks lúdicos), "
+            "desejando uma viagem tranquila aos responsáveis e colocando a tripulação à total disposição."
+        )
+    elif acao_vencedora in ("ACOLHIMENTO_VOUCHER", "Acolhimento Pessoal + Voucher 1000pts"):
+        msg = (
+            f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) enfrentou atrito operacional registrado no CRM: {ctx_narrativo}. "
+            "O Chefe de Cabine deve realizar uma acolhida pessoal e reservada, pedir sinceras desculpas em nome da Azul "
+            "e entregar a cortesia de 1.000 pontos no Azul Fidelidade, assegurando que o cliente se sinta acolhido e valorizado."
+        )
+    elif acao_vencedora in ("BEBIDA_CORTESIA", "Bebida Premium Cortesia"):
+        if tem_contexto:
             msg = (
-                f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) possui ocorrência operacional recente: {ctx_narrativo}. "
-                "Ao iniciar o serviço de bordo, ofereça uma bebida cortesia (suco premium, cerveja especial ou refrigerante), "
-                "peça sinceras desculpas em nome da Azul pelos imprevistos e assegure acompanhamento prioritário da tripulação."
-            )
-        elif acao_vencedora == "SNACK_EXTRA":
-            msg = (
-                f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) possui registro operacional ativo: {ctx_narrativo}. "
-                "Durante a passagem da tripulação, ofereça um snack premium extra como cortesia personalizada, "
-                "demonstrando atenção aos detalhes e confirmando se suas necessidades de bordo foram acolhidas."
+                f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) possui registro operacional: {ctx_narrativo}. "
+                "Ao passar o serviço de bordo, ofereça uma bebida premium cortesia (cerveja especial, vinho selecionado ou suco premium), "
+                "agradecendo por voar Azul e desejando um excelente voo."
             )
         else:
             msg = (
-                f"Passageiro(a) no assento {assento} (#{id_curto}, categoria {tier}) possui atenção especial registrada: {ctx_narrativo}. "
-                "O Chefe de Cabine deve realizar uma acolhida nominal cordial durante o voo, prestar assistência dedicada "
-                "e colocar toda a equipe à disposição para assegurar uma experiência perfeita."
+                f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) é passageiro prioritário (risco de evasão {risco * 100:.1f}%). "
+                "Ao iniciar o serviço de bordo, ofereça uma bebida premium cortesia (suco premium, cerveja especial ou vinho), "
+                "agradecendo calorosamente por sua fidelidade à Azul."
             )
-    elif acao_vencedora == "BEBIDA_CORTESIA":
-        msg = (
-            f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) enfrentou atrito operacional em voo recente "
-            f"(risco de evasão {risco * 100:.1f}%). Ao iniciar o serviço de bordo, ofereça uma bebida cortesia "
-            "(suco premium, cerveja especial ou refrigerante), peça desculpas em nome da Azul pelos imprevistos passados "
-            "e agradeça calorosamente por sua fidelidade."
-        )
-    elif acao_vencedora == "SNACK_EXTRA":
+    elif acao_vencedora in ("SNACK_EXTRA", "Snack Premium Extra"):
         msg = (
             f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) demonstrou atrito recente com a malha. "
             "Durante a passagem da tripulação, ofereça um snack premium extra como cortesia personalizada, "
@@ -497,6 +500,8 @@ def gerar_instrucao_bordo_llm(
             else ""
         )
 
+        rotulo_acao = ROTULOS_ACOES_BORDO.get(acao_vencedora, acao_vencedora)
+
         prompt = f"""Você é o Assistente Digital da Tripulação de Cabine da Azul Linhas Aéreas (Guest Service Tool).
 Sua missão é instruir diretamente os comissários de voo e o chefe de cabine sobre como agir presencialmente com o passageiro no assento {assento}.
 
@@ -512,7 +517,7 @@ Sua missão é instruir diretamente os comissários de voo e o chefe de cabine s
 - Histórico de Atrito: {atrito:.2f}
 {ctx_prompt}
 ### AÇÃO DE BORDO ARBITRADA:
-- Ação: {acao_vencedora}
+- Ação: {rotulo_acao}
 
 ### INSTRUÇÕES OBRIGATÓRIAS:
 Responda EXCLUSIVAMENTE em formato JSON (sem formatações markdown adicionais) com a seguinte chave:
@@ -597,11 +602,12 @@ def gerar_instrucoes_bordo_lote_llm(
                 if ctx_narrativo and ctx_narrativo != "Sem ocorrências recentes"
                 else ""
             )
+            acao_label = ROTULOS_ACOES_BORDO.get(item['acao_vencedora'], item['acao_vencedora'])
             linhas_pax.append(
                 f"{i+1}. Assento {item['assento']} (PNR {item.get('pnr', 'N/A')}): {nome_pax}, "
                 f"Tier {p.get('tier_fidelidade', 'Basico')}, Persona {p.get('persona', 'Viajante')}, "
                 f"CLV R$ {float(p.get('clv_previsto', 0)):,.2f}, Risco Churn {float(p.get('risco_evasao', 0))*100:.1f}%, "
-                f"Atrito {float(p.get('score_atrito_acumulado', 0)):.2f}{ctx_str}. Ação Arbitrada: {item['acao_vencedora']}."
+                f"Atrito {float(p.get('score_atrito_acumulado', 0)):.2f}{ctx_str}. Ação Arbitrada: {acao_label}."
             )
         pax_texto = "\n".join(linhas_pax)
 
