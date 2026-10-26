@@ -81,6 +81,7 @@ def build_gold_contexto(
                     )
                 ELSE 'Sem ocorrências recentes'
             END AS contexto_narrativo_llm,
+            NULL::VARCHAR AS llm_mensagem_comissaria,
             CURRENT_TIMESTAMP AS data_atualizacao
         FROM clientes_silver c
         LEFT JOIN active_pax ap ON c.id_cliente = ap.id_cliente
