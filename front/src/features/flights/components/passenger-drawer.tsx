@@ -89,112 +89,121 @@ export function PassengerDrawer({
     return loteAcoes.acoes.find((a) => a.assento === seat.assento) || null;
   }, [seat, loteAcoes]);
 
-  // Identifica a ação vencedora orientada a contexto e ROI (Data Contract Satélites / LLM / Proteção de Caixa)
-  const acaoVencedora = useMemo(() => {
-    if (!seat) return "Bebida Premium Cortesia";
-    if (batchAction?.acao_sugerida) return batchAction.acao_sugerida;
-    if (simulationResult?.acao_sugerida) return simulationResult.acao_sugerida;
-    if (seat.dados_cliente?.acao_vencedora) return seat.dados_cliente.acao_vencedora;
-
-    const msg =
-      seat.dados_cliente?.mensagem_llm_batch ||
-      (seat.dados_cliente as any)?.llm_mensagem_comissaria;
-    if (msg && msg.includes("Decisão Analítica")) {
-      return "Nenhuma Ação";
-    }
-
-    const tier = (seat.dados_cliente.tier_fidelidade || "Basico").toLowerCase();
-    const persona = (seat.dados_cliente.persona || "").toLowerCase();
-    const atrito = Number(seat.dados_cliente.score_atrito_acumulado || 0);
-    const ctx = (seat.dados_cliente.contexto_narrativo_llm || "").toLowerCase();
-
-    // Roteamento Contextual Inteligente
-    const isPet = ctx.includes("petc") || ctx.includes("pet na cabine") || ctx.includes("animal") || ctx.includes("pet");
-    const temFalha = ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria", "atraso", "cancelamento"].some(k => ctx.includes(k));
-    const isBase = tier.includes("basic") || tier.includes("básic") || tier.includes("azul") || persona.includes("turista");
-
-    // REGRA 1 (Hard Gate): Clientes da base sem histórico de atrito são inelegíveis a cortesias proativas
-    if (isBase && atrito <= 0 && !temFalha && !isPet) {
-      return "Nenhuma Ação";
-    }
-
-    // Avalia a nova regra matemática financeira:
-    // Valor_Recuperado = CLV * Probabilidade_Evasao * Taxa_Recuperacao_Acao
-    // Retorno_Liquido = Valor_Recuperado - Custo_Acao
-    const clv = Number(seat.dados_cliente.clv_previsto || 0);
-    const risco = Number(seat.dados_cliente.risco_evasao || 0);
-
-    let acao = "Bebida Premium Cortesia";
-    let taxa = 0.05;
-    let custo = 15.0;
-
-    if (isPet) {
-      acao = "Kit Snack Premium + Atenção Pet";
-      taxa = 0.15;
-      custo = 10.0;
-    } else if (ctx.includes("chml") || ctx.includes("criança") || ctx.includes("criancas") || ctx.includes("kids") || ctx.includes("família") || ctx.includes("familia")) {
-      acao = "Kit Sobrevivência Kids";
-      taxa = 0.12;
-      custo = 12.0;
-    } else if (temFalha) {
-      acao = "Acolhimento Pessoal + Voucher 1000pts";
-      taxa = 0.15;
-      custo = 50.0;
-    }
-
-    const valorRecuperado = clv * risco * taxa;
-    const retornoLiquido = valorRecuperado - custo;
-
-    // Se Retorno_Liquido <= 0, o sistema veta a intervenção para proteger o caixa
-    if (retornoLiquido <= 0) {
-      return "Nenhuma Ação";
-    }
-
-    return acao;
-  }, [seat, batchAction, simulationResult]);
-
-  // Identifica se a ação foi vetada por política comercial ou por ROI negativo
-  const isVetoPolitica = useMemo(() => {
-    if (!seat || acaoVencedora !== "Nenhuma Ação") return false;
+  // Roteiro ou mensagem recebida do backend
+  const roteiroAbordagem = useMemo(() => {
+    if (!seat) return "";
     const msg =
       seat.dados_cliente?.mensagem_llm_batch ||
       (seat.dados_cliente as any)?.llm_mensagem_comissaria ||
+      batchAction?.instrucao_comissario ||
+      simulationResult?.instrucao_comissario ||
       "";
-    if (msg.includes("Veto de Política") || msg.includes("Categoria Básico")) {
+    return typeof msg === "string" ? msg.trim() : "";
+  }, [seat, batchAction, simulationResult]);
+
+  // Identifica se a ação foi vetada por política comercial
+  const isVetoPolitica = useMemo(() => {
+    if (!seat) return false;
+    if (
+      roteiroAbordagem.includes("Veto de Política") ||
+      roteiroAbordagem.includes("Categoria Básico")
+    ) {
       return true;
     }
     const tier = (seat.dados_cliente?.tier_fidelidade || "Basico").toLowerCase();
     const persona = (seat.dados_cliente?.persona || "").toLowerCase();
     const atrito = Number(seat.dados_cliente?.score_atrito_acumulado || 0);
     const ctx = (seat.dados_cliente?.contexto_narrativo_llm || "").toLowerCase();
-    const temFalha = ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria", "atraso", "cancelamento"].some(k => ctx.includes(k));
-    const isPet = ctx.includes("petc") || ctx.includes("pet na cabine") || ctx.includes("animal") || ctx.includes("pet");
-    const isBase = tier.includes("basic") || tier.includes("básic") || tier.includes("azul") || persona.includes("turista");
+    const temFalha = [
+      "worldtracer",
+      "bagagem",
+      "sac",
+      "reclamação",
+      "reclamacao",
+      "ouvidoria",
+      "extravio",
+      "avaria",
+      "atraso",
+      "cancelamento",
+    ].some((k) => ctx.includes(k));
+    const isPet =
+      ctx.includes("petc") ||
+      ctx.includes("pet na cabine") ||
+      ctx.includes("animal") ||
+      ctx.includes("pet");
+    const isBase =
+      tier.includes("basic") ||
+      tier.includes("básic") ||
+      tier.includes("azul") ||
+      persona.includes("turista");
 
     return isBase && atrito <= 0 && !temFalha && !isPet;
-  }, [seat, acaoVencedora]);
+  }, [seat, roteiroAbordagem]);
+
+  // Guarda lógica universal à prova de falhas: isAcaoVetada
+  const isAcaoVetada = useMemo(() => {
+    if (!seat) return false;
+    if (isVetoPolitica) return true;
+    if (
+      roteiroAbordagem.includes("Decisão Analítica") ||
+      roteiroAbordagem.includes("Intervenção cancelada") ||
+      roteiroAbordagem.includes("Veto")
+    ) {
+      return true;
+    }
+    if (seat.dados_cliente?.acao_vencedora === "Nenhuma Ação") return true;
+    if (batchAction?.acao_sugerida === "Nenhuma Ação") return true;
+    if (simulationResult?.acao_sugerida === "Nenhuma Ação") return true;
+
+    // Checagem de ROI negativo
+    const clv = Number(seat.dados_cliente?.clv_previsto || 0);
+    const risco = Number(seat.dados_cliente?.risco_evasao || 0);
+    const retornoLiquido = (clv * risco * 0.05) - 15.0;
+    if (retornoLiquido <= 0 && !seat.dados_cliente?.contexto_narrativo_llm) {
+      return true;
+    }
+
+    return false;
+  }, [seat, isVetoPolitica, roteiroAbordagem, batchAction, simulationResult]);
+
+  // Identifica a ação vencedora (Forçada rigorosamente para 'Nenhuma Ação' caso isAcaoVetada seja TRUE)
+  const acaoVencedora = useMemo(() => {
+    if (isAcaoVetada) {
+      return "Nenhuma Ação";
+    }
+    if (batchAction?.acao_sugerida && batchAction.acao_sugerida !== "Nenhuma Ação") {
+      return batchAction.acao_sugerida;
+    }
+    if (simulationResult?.acao_sugerida && simulationResult.acao_sugerida !== "Nenhuma Ação") {
+      return simulationResult.acao_sugerida;
+    }
+    if (seat?.dados_cliente?.acao_vencedora && seat.dados_cliente.acao_vencedora !== "Nenhuma Ação") {
+      return seat.dados_cliente.acao_vencedora;
+    }
+
+    const ctx = (seat?.dados_cliente?.contexto_narrativo_llm || "").toLowerCase();
+    const isPet = ctx.includes("petc") || ctx.includes("pet na cabine") || ctx.includes("animal") || ctx.includes("pet");
+    const temFalha = ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria", "atraso", "cancelamento"].some((k) => ctx.includes(k));
+
+    if (isPet) return "Kit Snack Premium + Atenção Pet";
+    if (ctx.includes("chml") || ctx.includes("criança") || ctx.includes("kids") || ctx.includes("família")) return "Kit Sobrevivência Kids";
+    if (temFalha) return "Acolhimento Pessoal + Voucher 1000pts";
+    return "Bebida Premium Cortesia";
+  }, [isAcaoVetada, batchAction, simulationResult, seat]);
 
   // Roteiro de leitura gerado pelo Batch AI com fallback corporativo seguro e trava analítica
   const instrucaoTatica = useMemo(() => {
-    if (!seat) return "";
-    const msg =
-      seat.dados_cliente?.mensagem_llm_batch ||
-      (seat.dados_cliente as any)?.llm_mensagem_comissaria;
-
-    if (msg && typeof msg === "string" && msg.trim().length > 0) {
-      return msg.trim();
+    if (roteiroAbordagem && roteiroAbordagem.length > 0) {
+      return roteiroAbordagem;
     }
-
     if (isVetoPolitica) {
       return "Decisão Analítica: Veto de Política. Categoria Básico sem histórico de atrito operacional não é elegível a cortesias proativas.";
     }
-
-    if (acaoVencedora === "Nenhuma Ação") {
+    if (isAcaoVetada) {
       return "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo).";
     }
-
     return "Instrução pendente. Siga o protocolo padrão do Tier.";
-  }, [seat, acaoVencedora, isVetoPolitica]);
+  }, [roteiroAbordagem, isVetoPolitica, isAcaoVetada]);
 
   const handleCopyInstruction = async (text: string) => {
     try {
@@ -667,7 +676,7 @@ export function PassengerDrawer({
         {/* AÇÃO TÁTICA (CONTEXT-AWARE): PRESCRIÇÃO DA IA + ROTEIRO DE BORDO */}
         {/* ================================================================= */}
         {(() => {
-          const isVetada = acaoVencedora === "Nenhuma Ação";
+          const isVetada = isAcaoVetada;
 
           return (
             <div
@@ -723,9 +732,9 @@ export function PassengerDrawer({
                   )}
                 >
                   {isVetoPolitica
-                    ? "Veto de Política Comercial"
+                    ? "Status: Intervenção Cancelada (Veto de Política)"
                     : isVetada
-                    ? "Veto Analítico (ROI Negativo)"
+                    ? "Status: Intervenção Cancelada (Veto Analítico)"
                     : "Ação Vencedora"}
                 </Badge>
               </div>
@@ -768,11 +777,7 @@ export function PassengerDrawer({
                           : "text-foreground"
                       )}
                     >
-                      {isVetoPolitica
-                        ? "Nenhuma Ação (Veto de Política Comercial)"
-                        : isVetada
-                        ? "Nenhuma Ação (Intervenção Cancelada)"
-                        : acaoVencedora}
+                      {isVetada ? "Nenhuma Ação" : acaoVencedora}
                     </span>
                   </div>
                 </div>
@@ -907,21 +912,21 @@ export function PassengerDrawer({
 
         <Button
           size="sm"
-          disabled={isSubmittingFeedback || acaoVencedora === "Nenhuma Ação"}
+          disabled={isSubmittingFeedback || isAcaoVetada}
           onClick={handleMarkCompleted}
           className={cn(
-            "text-xs gap-1.5 font-bold transition-colors cursor-pointer",
-            acaoVencedora === "Nenhuma Ação"
+            "text-xs gap-1.5 font-bold transition-colors",
+            isAcaoVetada
               ? "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed border border-border"
               : isAttended
-              ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-              : "bg-[#0077C8] hover:bg-[#005a99] text-white"
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+              : "bg-[#0077C8] hover:bg-[#005a99] text-white cursor-pointer"
           )}
         >
-          {acaoVencedora === "Nenhuma Ação" ? (
+          {isAcaoVetada ? (
             <>
-              <ShieldCheck className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              <span>Intervenção Dispensada (Caixa Protegido)</span>
+              <ShieldCheck className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+              <span>Intervenção Dispensada</span>
             </>
           ) : isSubmittingFeedback ? (
             <>

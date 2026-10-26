@@ -156,15 +156,15 @@ def test_arbitrar_acao_bordo_roi_negativo_veto() -> None:
         "contexto_narrativo_llm": "Passageiro corporativo sem ocorrências recentes",
     }
     decisao = arbitrar_acao_bordo(perfil_safira_baixo_clv)
-    assert decisao["acao_vencedora"] == "NENHUMA_ACAO"
+    assert decisao["acao_vencedora"] in ("NENHUMA_ACAO", "Nenhuma Ação")
     assert decisao["custo_acao"] == 0.0
-    assert decisao["retorno_liquido"] <= 0.0
+    assert decisao["retorno_liquido"] == 0.0
 
     rotulo = ROTULOS_ACOES_BORDO[decisao["acao_vencedora"]]
     assert rotulo == "Nenhuma Ação"
 
     mock_res = _obter_mock_bordo_padronizado(
-        perfil_safira_baixo_clv, assento="14B", acao_vencedora="NENHUMA_ACAO"
+        perfil_safira_baixo_clv, assento="14B", acao_vencedora=decisao["acao_vencedora"]
     )
     assert "Decisão Analítica" in mock_res["instrucao_comissario"]
     assert "Intervenção cancelada" in mock_res["instrucao_comissario"]
@@ -190,14 +190,14 @@ def test_arbitrar_acao_bordo_hard_gate_politica_veto() -> None:
         "contexto_narrativo_llm": "Sem ocorrências recentes",
     }
     decisao = arbitrar_acao_bordo(perfil_leticia_costa)
-    assert decisao["acao_vencedora"] == "NENHUMA_ACAO"
+    assert decisao["acao_vencedora"] in ("NENHUMA_ACAO", "Nenhuma Ação")
     assert decisao["custo_acao"] == 0.0
     assert decisao["retorno_liquido"] == 0.0
     assert decisao["tipo_veto"] == "POLITICA"
     assert decisao["motivo_bloqueio"] == MENSAGEM_VETO_POLITICA
 
     mock_res = _obter_mock_bordo_padronizado(
-        perfil_leticia_costa, assento="12A", acao_vencedora="NENHUMA_ACAO"
+        perfil_leticia_costa, assento="12A", acao_vencedora=decisao["acao_vencedora"]
     )
     assert mock_res["instrucao_comissario"] == MENSAGEM_VETO_POLITICA
     assert "Veto de Política" in mock_res["instrucao_comissario"]

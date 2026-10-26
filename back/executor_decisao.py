@@ -483,7 +483,7 @@ def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
     # force a ação para 'Nenhuma Ação' e defina o custo como 0.
     if is_base and not has_friction and not is_pet:
         return {
-            "acao_vencedora": "NENHUMA_ACAO",
+            "acao_vencedora": "Nenhuma Ação",
             "retorno_liquido": 0.0,
             "custo_acao": 0.0,
             "tipo_veto": "POLITICA",
@@ -529,7 +529,8 @@ def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
     tipo_veto = None
     motivo_bloqueio = None
     if retorno_escolhido <= 0.0:
-        melhor_acao = "NENHUMA_ACAO"
+        melhor_acao = "Nenhuma Ação"
+        retorno_escolhido = 0.0
         custo_escolhido = 0.0
         tipo_veto = "ROI_NEGATIVO"
         motivo_bloqueio = FALLBACK_ROI_NEGATIVO

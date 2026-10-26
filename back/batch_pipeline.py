@@ -262,11 +262,13 @@ def run_batch_pipeline(
         if decisao.get("tipo_veto") == "POLITICA" or motivo_bloqueio == MENSAGEM_VETO_POLITICA:
             acao_vencedora = "Nenhuma Ação"
             custo_acao = 0.0
+            retorno_liquido = 0.0
             mensagem = MENSAGEM_VETO_POLITICA
             mensagem_offboard = MENSAGEM_VETO_POLITICA
-        elif retorno_liquido <= 0.0 or acao_tecnica in ("NENHUMA_ACAO", "Nenhuma Ação"):
+        elif retorno_liquido <= 0.0 or acao_tecnica in ("NENHUMA_ACAO", "Nenhuma Ação") or rotulo_acao == "Nenhuma Ação":
             acao_vencedora = "Nenhuma Ação"
             custo_acao = 0.0
+            retorno_liquido = 0.0
             mensagem = FALLBACK_ROI_NEGATIVO
             mensagem_offboard = FALLBACK_ROI_NEGATIVO
         else:
@@ -349,8 +351,16 @@ def run_batch_pipeline(
                 g.sac_motivo,
                 g.sac_status,
                 g.contexto_narrativo_llm,
-                COALESCE(s.acao_vencedora, {("g.acao_vencedora" if has_acao_col else "CAST(NULL AS VARCHAR)")}) AS acao_vencedora,
-                COALESCE(s.custo_acao, {("g.custo_acao" if has_custo_col else "CAST(NULL AS DOUBLE)")}) AS custo_acao,
+                CASE
+                    WHEN s.id_cliente IS NOT NULL THEN s.acao_vencedora
+                    WHEN {("g.llm_mensagem_comissaria LIKE 'Decisão Analítica:%' OR g.llm_mensagem_comissaria LIKE '%Intervenção cancelada%' OR g.llm_mensagem_comissaria LIKE '%Veto%'" if has_llm_col else "FALSE")} THEN 'Nenhuma Ação'
+                    ELSE {("g.acao_vencedora" if has_acao_col else "CAST(NULL AS VARCHAR)")}
+                END AS acao_vencedora,
+                CASE
+                    WHEN s.id_cliente IS NOT NULL THEN s.custo_acao
+                    WHEN {("g.llm_mensagem_comissaria LIKE 'Decisão Analítica:%' OR g.llm_mensagem_comissaria LIKE '%Intervenção cancelada%' OR g.llm_mensagem_comissaria LIKE '%Veto%'" if has_llm_col else "FALSE")} THEN 0.0
+                    ELSE {("g.custo_acao" if has_custo_col else "CAST(NULL AS DOUBLE)")}
+                END AS custo_acao,
                 COALESCE(s.llm_mensagem_comissaria, {("g.llm_mensagem_comissaria" if has_llm_col else "CAST(NULL AS VARCHAR)")}) AS llm_mensagem_comissaria,
                 COALESCE(s.mensagem_llm_offboard, {("g.mensagem_llm_offboard" if has_offboard_col else "CAST(NULL AS VARCHAR)")}) AS mensagem_llm_offboard,
                 CASE 

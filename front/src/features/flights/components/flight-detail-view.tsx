@@ -165,10 +165,19 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
         passenger?.mensagem_llm_batch ||
         (passenger as any)?.llm_mensagem_comissaria ||
         acao.mensagem_llm_batch ||
-        acao.llm_mensagem_comissaria;
+        acao.llm_mensagem_comissaria ||
+        acao.instrucao_comissario;
+      const rawMsgStr = typeof rawBatchMsg === "string" ? rawBatchMsg : "";
+      const isVetada =
+        acao.acao_sugerida === "Nenhuma Ação" ||
+        acao.retorno_liquido <= 0 ||
+        rawMsgStr.includes("Decisão Analítica") ||
+        rawMsgStr.includes("Intervenção cancelada") ||
+        rawMsgStr.includes("Veto");
+
       const instrucaoTexto =
-        rawBatchMsg && typeof rawBatchMsg === "string" && rawBatchMsg.trim().length > 0
-          ? rawBatchMsg.trim()
+        rawMsgStr.trim().length > 0
+          ? rawMsgStr.trim()
           : (acao.instrucao_comissario || "Instrução pendente. Siga o protocolo padrão do Tier.");
 
       return {
@@ -176,13 +185,13 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
         assento: acao.assento,
         passageiro: acao.passageiro,
         instrucao: instrucaoTexto,
-        status: "pendente",
+        status: isVetada ? "concluida" : "pendente",
         tipo: acao.tipo,
         persona: acao.persona,
         tier: acao.tier,
-        statusBadge: acao.status_badge,
+        statusBadge: isVetada ? "Intervenção Dispensada" : acao.status_badge,
         gatilho: acao.gatilho,
-        acao: acao.acao_sugerida,
+        acao: isVetada ? "Nenhuma Ação" : acao.acao_sugerida,
         criadaEm: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
       };
     });
@@ -464,28 +473,40 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
 
               <CardContent className="p-4 space-y-3">
                 {loteAcoes?.acoes.map((acao, idx) => {
-                  const isCritico = acao.tipo === "atrito";
-                  const isVetada = acao.acao_sugerida === "Nenhuma Ação" || acao.retorno_liquido <= 0;
                   const matchingSeat = seats.find((s) => s.assento === acao.assento);
                   const passenger = matchingSeat?.dados_cliente;
                   const rawBatchMsg =
                     passenger?.mensagem_llm_batch ||
                     (passenger as any)?.llm_mensagem_comissaria ||
                     acao.mensagem_llm_batch ||
-                    acao.llm_mensagem_comissaria;
+                    acao.llm_mensagem_comissaria ||
+                    acao.instrucao_comissario;
 
-                  const isVetoPolitica = isVetada && (
-                    (typeof rawBatchMsg === "string" && (rawBatchMsg.includes("Veto de Política") || rawBatchMsg.includes("Categoria Básico"))) ||
-                    (typeof acao.instrucao_comissario === "string" && (acao.instrucao_comissario.includes("Veto de Política") || acao.instrucao_comissario.includes("Categoria Básico"))) ||
-                    ((acao.tier === "Basico" || acao.tier === "Básico" || acao.persona === "Turista Eventual") && (passenger?.score_atrito_acumulado ?? 0) <= 0)
-                  );
+                  const rawMsgStr = typeof rawBatchMsg === "string" ? rawBatchMsg : "";
+
+                  const isVetoPolitica =
+                    rawMsgStr.includes("Veto de Política") ||
+                    rawMsgStr.includes("Categoria Básico") ||
+                    (acao.acao_sugerida === "Nenhuma Ação" &&
+                      (acao.tier === "Basico" || acao.tier === "Básico" || acao.persona === "Turista Eventual") &&
+                      (passenger?.score_atrito_acumulado ?? 0) <= 0);
+
+                  const isAcaoVetada =
+                    isVetoPolitica ||
+                    acao.acao_sugerida === "Nenhuma Ação" ||
+                    acao.retorno_liquido <= 0 ||
+                    rawMsgStr.includes("Decisão Analítica") ||
+                    rawMsgStr.includes("Intervenção cancelada") ||
+                    rawMsgStr.includes("Veto");
+
+                  const isCritico = acao.tipo === "atrito" && !isAcaoVetada;
 
                   const instrucaoTexto =
-                    rawBatchMsg && typeof rawBatchMsg === "string" && rawBatchMsg.trim().length > 0
-                      ? rawBatchMsg.trim()
+                    rawMsgStr.trim().length > 0
+                      ? rawMsgStr.trim()
                       : isVetoPolitica
                       ? "Decisão Analítica: Veto de Política. Categoria Básico sem histórico de atrito operacional não é elegível a cortesias proativas."
-                      : isVetada
+                      : isAcaoVetada
                       ? "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
                       : "Instrução pendente. Siga o protocolo padrão do Tier.";
 
@@ -497,7 +518,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                         "p-3 rounded-xl border text-xs space-y-2 transition-all hover:shadow-xs cursor-pointer hover:border-primary/50",
                         isVetoPolitica
                           ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/80 dark:border-purple-900/60"
-                          : isVetada
+                          : isAcaoVetada
                           ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-300/80 dark:border-amber-900/60"
                           : isCritico
                           ? "bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50"
@@ -530,14 +551,14 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                             variant="outline"
                             className="text-[9px] py-0 px-1.5 shrink-0 bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-800 font-bold"
                           >
-                            Veto de Política
+                            Status: Intervenção Cancelada (Veto de Política)
                           </Badge>
-                        ) : isVetada ? (
+                        ) : isAcaoVetada ? (
                           <Badge
                             variant="outline"
                             className="text-[9px] py-0 px-1.5 shrink-0 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 font-bold"
                           >
-                            Veto ROI Negativo
+                            Status: Intervenção Cancelada (Veto Analítico)
                           </Badge>
                         ) : (
                           <Badge
@@ -556,14 +577,14 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                       <div className="flex items-center justify-between text-[11px] bg-background/80 p-2 rounded-lg border border-border/60">
                         <div>
                           <span className="text-muted-foreground text-[10px] block">Ação do Árbitro:</span>
-                          <strong className={isVetoPolitica ? "text-purple-700 dark:text-purple-400" : isVetada ? "text-amber-700 dark:text-amber-400" : "text-foreground"}>
-                            {isVetoPolitica ? "Nenhuma Ação (Veto Política)" : isVetada ? "Nenhuma Ação (Veto ROI)" : acao.acao_sugerida}
+                          <strong className={isVetoPolitica ? "text-purple-700 dark:text-purple-400" : isAcaoVetada ? "text-amber-700 dark:text-amber-400" : "text-foreground"}>
+                            {isAcaoVetada ? "Nenhuma Ação" : acao.acao_sugerida}
                           </strong>
                         </div>
                         <div className="text-right">
                           <span className="text-[10px] text-muted-foreground block">Retorno Líquido:</span>
-                          <strong className={isVetoPolitica ? "text-purple-600 dark:text-purple-400" : isVetada ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}>
-                            {formatCurrency(acao.retorno_liquido)}
+                          <strong className={isAcaoVetada ? "text-slate-500 dark:text-slate-400" : "text-emerald-600 dark:text-emerald-400"}>
+                            {isAcaoVetada ? "R$ 0,00" : formatCurrency(acao.retorno_liquido)}
                           </strong>
                         </div>
                       </div>
@@ -573,13 +594,13 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                         "text-[11px] leading-relaxed p-2 rounded-lg border flex items-start gap-1.5",
                         isVetoPolitica
                           ? "text-purple-950 dark:text-purple-200 bg-purple-100/60 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800/60 font-medium"
-                          : isVetada
+                          : isAcaoVetada
                           ? "text-amber-900 dark:text-amber-200 bg-amber-100/60 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 font-medium"
                           : "text-muted-foreground bg-background/50 border-dashed border-border/80"
                       )}>
                         {isVetoPolitica ? (
                           <ShieldAlert className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
-                        ) : isVetada ? (
+                        ) : isAcaoVetada ? (
                           <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                         ) : (
                           <Sparkles className="h-3.5 w-3.5 text-[#0077C8] dark:text-[#38BDF8] shrink-0 mt-0.5" />
