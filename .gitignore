@@ -28,3 +28,4 @@ powershell.cmd
 !data_lake/silver/*.parquet
 !data_lake/gold/*.parquet
 
+.vscode/
