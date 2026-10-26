@@ -17,6 +17,7 @@ import {
   DollarSign,
   TrendingUp,
   RefreshCw,
+  ShieldAlert,
   ShieldCheck,
   Check,
   Eye,
@@ -472,11 +473,20 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                     (passenger as any)?.llm_mensagem_comissaria ||
                     acao.mensagem_llm_batch ||
                     acao.llm_mensagem_comissaria;
+
+                  const isVetoPolitica = isVetada && (
+                    (typeof rawBatchMsg === "string" && (rawBatchMsg.includes("Veto de Política") || rawBatchMsg.includes("Categoria Básico"))) ||
+                    (typeof acao.instrucao_comissario === "string" && (acao.instrucao_comissario.includes("Veto de Política") || acao.instrucao_comissario.includes("Categoria Básico"))) ||
+                    ((acao.tier === "Basico" || acao.tier === "Básico" || acao.persona === "Turista Eventual") && (passenger?.score_atrito_acumulado ?? 0) <= 0)
+                  );
+
                   const instrucaoTexto =
-                    isVetada
-                      ? "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
-                      : rawBatchMsg && typeof rawBatchMsg === "string" && rawBatchMsg.trim().length > 0
+                    rawBatchMsg && typeof rawBatchMsg === "string" && rawBatchMsg.trim().length > 0
                       ? rawBatchMsg.trim()
+                      : isVetoPolitica
+                      ? "Decisão Analítica: Veto de Política. Categoria Básico sem histórico de atrito operacional não é elegível a cortesias proativas."
+                      : isVetada
+                      ? "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
                       : "Instrução pendente. Siga o protocolo padrão do Tier.";
 
                   return (
@@ -485,7 +495,9 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                       onClick={() => matchingSeat && handleSelectSeat(matchingSeat)}
                       className={cn(
                         "p-3 rounded-xl border text-xs space-y-2 transition-all hover:shadow-xs cursor-pointer hover:border-primary/50",
-                        isVetada
+                        isVetoPolitica
+                          ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-300/80 dark:border-purple-900/60"
+                          : isVetada
                           ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-300/80 dark:border-amber-900/60"
                           : isCritico
                           ? "bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50"
@@ -513,12 +525,19 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                           </div>
                         </div>
 
-                        {isVetada ? (
+                        {isVetoPolitica ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] py-0 px-1.5 shrink-0 bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-800 font-bold"
+                          >
+                            Veto de Política
+                          </Badge>
+                        ) : isVetada ? (
                           <Badge
                             variant="outline"
                             className="text-[9px] py-0 px-1.5 shrink-0 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 font-bold"
                           >
-                            Veto Analítico
+                            Veto ROI Negativo
                           </Badge>
                         ) : (
                           <Badge
@@ -537,13 +556,13 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                       <div className="flex items-center justify-between text-[11px] bg-background/80 p-2 rounded-lg border border-border/60">
                         <div>
                           <span className="text-muted-foreground text-[10px] block">Ação do Árbitro:</span>
-                          <strong className={isVetada ? "text-amber-700 dark:text-amber-400" : "text-foreground"}>
-                            {isVetada ? "Nenhuma Ação (Veto ROI)" : acao.acao_sugerida}
+                          <strong className={isVetoPolitica ? "text-purple-700 dark:text-purple-400" : isVetada ? "text-amber-700 dark:text-amber-400" : "text-foreground"}>
+                            {isVetoPolitica ? "Nenhuma Ação (Veto Política)" : isVetada ? "Nenhuma Ação (Veto ROI)" : acao.acao_sugerida}
                           </strong>
                         </div>
                         <div className="text-right">
                           <span className="text-[10px] text-muted-foreground block">Retorno Líquido:</span>
-                          <strong className={isVetada ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}>
+                          <strong className={isVetoPolitica ? "text-purple-600 dark:text-purple-400" : isVetada ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}>
                             {formatCurrency(acao.retorno_liquido)}
                           </strong>
                         </div>
@@ -552,11 +571,15 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                       {/* Instrução Tática Gerada pela IA ou Veto Analítico */}
                       <div className={cn(
                         "text-[11px] leading-relaxed p-2 rounded-lg border flex items-start gap-1.5",
-                        isVetada
+                        isVetoPolitica
+                          ? "text-purple-950 dark:text-purple-200 bg-purple-100/60 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800/60 font-medium"
+                          : isVetada
                           ? "text-amber-900 dark:text-amber-200 bg-amber-100/60 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 font-medium"
                           : "text-muted-foreground bg-background/50 border-dashed border-border/80"
                       )}>
-                        {isVetada ? (
+                        {isVetoPolitica ? (
+                          <ShieldAlert className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                        ) : isVetada ? (
                           <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                         ) : (
                           <Sparkles className="h-3.5 w-3.5 text-[#0077C8] dark:text-[#38BDF8] shrink-0 mt-0.5" />

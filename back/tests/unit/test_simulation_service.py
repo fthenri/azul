@@ -146,16 +146,16 @@ def test_arbitrar_acao_bordo_roi_negativo_veto() -> None:
         arbitrar_acao_bordo,
     )
 
-    # Cliente com baixo CLV e risco moderado onde a ação gera ROI negativo
-    perfil_turista_baixo_clv = {
+    # Cliente elegível por política (Safira), mas com baixo CLV onde a ação gera ROI negativo
+    perfil_safira_baixo_clv = {
         "id_cliente": "cli_baixo_clv_1",
-        "tier_fidelidade": "Azul",
-        "persona": "Turista Eventual",
+        "tier_fidelidade": "Safira",
+        "persona": "Gestor Corporativo",
         "clv_previsto": 100.0,
         "risco_evasao": 0.30,
-        "contexto_narrativo_llm": "Passageiro viajando sem ocorrências recentes",
+        "contexto_narrativo_llm": "Passageiro corporativo sem ocorrências recentes",
     }
-    decisao = arbitrar_acao_bordo(perfil_turista_baixo_clv)
+    decisao = arbitrar_acao_bordo(perfil_safira_baixo_clv)
     assert decisao["acao_vencedora"] == "NENHUMA_ACAO"
     assert decisao["custo_acao"] == 0.0
     assert decisao["retorno_liquido"] <= 0.0
@@ -164,7 +164,60 @@ def test_arbitrar_acao_bordo_roi_negativo_veto() -> None:
     assert rotulo == "Nenhuma Ação"
 
     mock_res = _obter_mock_bordo_padronizado(
-        perfil_turista_baixo_clv, assento="14B", acao_vencedora="NENHUMA_ACAO"
+        perfil_safira_baixo_clv, assento="14B", acao_vencedora="NENHUMA_ACAO"
     )
     assert "Decisão Analítica" in mock_res["instrucao_comissario"]
     assert "Intervenção cancelada" in mock_res["instrucao_comissario"]
+
+
+def test_arbitrar_acao_bordo_hard_gate_politica_veto() -> None:
+    """Valida a Regra 1: Clientes do Tier Básico / Turista Eventual sem histórico de atrito são vetados por política comercial."""
+    from back.executor_decisao import (
+        MENSAGEM_VETO_POLITICA,
+        ROTULOS_ACOES_BORDO,
+        _obter_mock_bordo_padronizado,
+        arbitrar_acao_bordo,
+    )
+
+    perfil_leticia_costa = {
+        "id_cliente": "db9e90f6-153b-41a2-8dd2-76e1ca03e257",
+        "nome": "Letícia Costa",
+        "tier_fidelidade": "Basico",
+        "persona": "Turista Eventual",
+        "clv_previsto": 1255.63,
+        "risco_evasao": 0.2514,
+        "score_atrito_acumulado": 0.0,
+        "contexto_narrativo_llm": "Sem ocorrências recentes",
+    }
+    decisao = arbitrar_acao_bordo(perfil_leticia_costa)
+    assert decisao["acao_vencedora"] == "NENHUMA_ACAO"
+    assert decisao["custo_acao"] == 0.0
+    assert decisao["retorno_liquido"] == 0.0
+    assert decisao["tipo_veto"] == "POLITICA"
+    assert decisao["motivo_bloqueio"] == MENSAGEM_VETO_POLITICA
+
+    mock_res = _obter_mock_bordo_padronizado(
+        perfil_leticia_costa, assento="12A", acao_vencedora="NENHUMA_ACAO"
+    )
+    assert mock_res["instrucao_comissario"] == MENSAGEM_VETO_POLITICA
+    assert "Veto de Política" in mock_res["instrucao_comissario"]
+    assert "Categoria Básico sem histórico de atrito operacional não é elegível a cortesias proativas." in mock_res["instrucao_comissario"]
+
+
+def test_arbitrar_melhor_acao_hard_gate_premium_protection() -> None:
+    """Valida a Regra 2: Upgrade Executiva requer CLV > 5000 ou Safira/Diamante."""
+    from back.executor_decisao import arbitrar_melhor_acao
+
+    # Cliente Topázio com CLV baixo (ex: 2000.0) e alto risco de evasão
+    # Sem a Regra 2, ele poderia tentar ganhar Upgrade se o uplift fechasse.
+    perfil_topazio_baixo_clv = {
+        "id_cliente": "cli_topazio_baixo",
+        "tier_fidelidade": "Topazio",
+        "persona": "Gestor Corporativo",
+        "clv_previsto": 2000.0,
+        "risco_evasao": 0.90,
+        "score_atrito_acumulado": 2.5,
+        "contexto_narrativo_llm": "Atraso no voo",
+    }
+    decisao = arbitrar_melhor_acao(perfil_topazio_baixo_clv)
+    assert decisao["acao_vencedora"] != "UPGRADE_EXECUTIVA"

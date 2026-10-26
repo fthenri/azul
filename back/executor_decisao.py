@@ -41,6 +41,13 @@ CATALOGO_ACOES_BORDO: dict[str, dict[str, float]] = {
     "ABORDAGEM_CHEFE_CABINE": {"custo": 0.00, "eficacia": 0.02},
 }
 
+MENSAGEM_VETO_POLITICA: str = (
+    "Decisão Analítica: Veto de Política. Categoria Básico sem histórico de atrito operacional não é elegível a cortesias proativas."
+)
+FALLBACK_ROI_NEGATIVO: str = (
+    "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
+)
+
 ROTULOS_ACOES_BORDO: dict[str, str] = {
     "KIT_PET": "Kit Snack Premium + Atenção Pet",
     "KIT_KIDS": "Kit Sobrevivência Kids",
@@ -144,6 +151,36 @@ def arbitrar_melhor_acao(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
             "avaliacoes_uplift": {},
         }
 
+    persona = str(perfil_cliente.get("persona", "")).strip()
+    score_atrito = float(perfil_cliente.get("score_atrito_acumulado", 0.0) or 0.0)
+    ctx_crm = str(
+        perfil_cliente.get("contexto_narrativo_llm")
+        or perfil_cliente.get("descricao_ssr")
+        or perfil_cliente.get("contexto")
+        or ""
+    ).lower()
+    has_friction = (
+        score_atrito > 0.0
+        or any(k in ctx_crm for k in ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria", "atraso", "cancelamento"])
+    )
+    is_base = (
+        tier_fidelidade.lower() in ("basico", "básico", "azul")
+        or "turista" in persona.lower()
+    )
+
+    # POLÍTICAS DE ELEGIBILIDADE (HARD GATES)
+    # Regra 1 (Sem Atrito na Base): Se o cliente for do nível 'Básico' (ou persona 'Turista Eventual')
+    # E possuir atrito acumulado baixo/zero, force a ação para 'NAO_FAZER_NADA' e defina o custo como 0.
+    if is_base and not has_friction:
+        return {
+            "acao_vencedora": "NAO_FAZER_NADA",
+            "retorno_liquido": 0.0,
+            "custo_acao": 0.0,
+            "tipo_veto": "POLITICA",
+            "motivo_bloqueio": MENSAGEM_VETO_POLITICA,
+            "avaliacoes_uplift": {},
+        }
+
     melhor_acao = "NAO_FAZER_NADA"
     maior_retorno_liquido = 0.0
     custo_escolhido = 0.0
@@ -157,6 +194,12 @@ def arbitrar_melhor_acao(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
         if tier_fidelidade == "Diamante" and nome_acao in (
             "CORTESIA_ESPACO_AZUL",
             "ISENCAO_BAGAGEM_EXTRA",
+        ):
+            continue
+
+        # Regra 2 (Proteção de Ações Premium): Ações caras como 'Upgrade Executiva' só podem ser cogitadas se o CLV > 5000 ou se o nível for Safira/Diamante.
+        if nome_acao in ("UPGRADE_EXECUTIVA", "KIT_PREMIUM") and not (
+            clv_previsto > 5000.0 or tier_fidelidade in ("Safira", "Diamante")
         ):
             continue
 
@@ -205,6 +248,13 @@ def _obter_mock_padronizado(
         }
 
     if acao_vencedora == "NAO_FAZER_NADA":
+        if perfil_cliente.get("motivo_bloqueio"):
+            return {
+                "notificacao_interna": (
+                    f"Decisão interna: Veto de Política Comercial para titular #{id_curto} ({persona}, {tier})."
+                ),
+                "mensagem_crm": str(perfil_cliente["motivo_bloqueio"]),
+            }
         return {
             "notificacao_interna": (
                 f"Decisão interna: Sem ação por falta de ROI para cliente #{id_curto} "
@@ -389,8 +439,11 @@ Responda ESTRITAMENTE em formato JSON (sem nenhum texto ou formatação fora do 
 
 
 def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
-    clv_previsto = float(perfil_cliente.get("clv_previsto", 0.0))
-    risco_evasao = float(perfil_cliente.get("risco_evasao", 0.0))
+    clv_previsto = float(perfil_cliente.get("clv_previsto", 0.0) or 0.0)
+    risco_evasao = float(perfil_cliente.get("risco_evasao", 0.0) or 0.0)
+    tier_raw = str(perfil_cliente.get("tier_fidelidade", "Basico") or "Basico").strip()
+    persona_raw = str(perfil_cliente.get("persona", "") or "").strip()
+    score_atrito = float(perfil_cliente.get("score_atrito_acumulado", 0.0) or 0.0)
 
     # Blindagem determinística de Case Sensitivity e unificação de contexto
     ctx_raw = str(
@@ -401,7 +454,42 @@ def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
     )
     if perfil_cliente.get("ssr_codigo"):
         ctx_raw += f" {perfil_cliente.get('ssr_codigo')}"
+    if perfil_cliente.get("sac_motivo"):
+        ctx_raw += f" {perfil_cliente.get('sac_motivo')}"
+    if perfil_cliente.get("tem_sac"):
+        ctx_raw += " sac reclamacao"
+    if perfil_cliente.get("tem_alerta_bagagem"):
+        ctx_raw += " bagagem"
     ctx = ctx_raw.strip().lower()
+
+    # Blindagem para Pets: cobre 'petc', 'pet na cabine', 'animal' e 'pet' via regex e operador in
+    is_pet = bool(
+        any(k in ctx for k in ["petc", "pet na cabine", "animal", "pet"])
+        or re.search(r"\b(petc|animal|pet)\b|pet na cabine", ctx, re.IGNORECASE)
+    )
+
+    has_friction = (
+        score_atrito > 0.0
+        or any(k in ctx for k in ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria", "atraso", "cancelamento"])
+    )
+
+    is_base = (
+        tier_raw.lower() in ("basico", "básico", "azul")
+        or "turista" in persona_raw.lower()
+    )
+
+    # REGRA 1 (Sem Atrito na Base): Se o cliente for do nível 'Básico' (ou persona 'Turista Eventual')
+    # E possuir atrito acumulado baixo/zero (ex: atrito_acumulado <= 0 ou ausência de falhas recentes),
+    # force a ação para 'Nenhuma Ação' e defina o custo como 0.
+    if is_base and not has_friction and not is_pet:
+        return {
+            "acao_vencedora": "NENHUMA_ACAO",
+            "retorno_liquido": 0.0,
+            "custo_acao": 0.0,
+            "tipo_veto": "POLITICA",
+            "motivo_bloqueio": MENSAGEM_VETO_POLITICA,
+            "avaliacoes": {},
+        }
 
     avaliacoes: dict[str, float] = {}
     for nome_acao, dados in CATALOGO_ACOES_BORDO.items():
@@ -415,12 +503,6 @@ def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
         avaliacoes[nome_acao] = round(retorno, 2)
 
     # Roteamento Contextual Inteligente (Context-Aware / Data Contract Satélites)
-    # Blindagem para Pets: cobre 'petc', 'pet na cabine', 'animal' e 'pet' via regex e operador in
-    is_pet = bool(
-        any(k in ctx for k in ["petc", "pet na cabine", "animal", "pet"])
-        or re.search(r"\b(petc|animal|pet)\b|pet na cabine", ctx, re.IGNORECASE)
-    )
-
     if is_pet:
         melhor_acao = "KIT_PET"
     elif any(k in ctx for k in ["chml", "criança", "criancas", "kids", "infantil", "família", "familia"]):
@@ -431,6 +513,12 @@ def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
         # Se não houver contexto anômalo: Ação Vencedora = 'Bebida Premium Cortesia'
         melhor_acao = "BEBIDA_CORTESIA"
 
+    # REGRA 2 (Proteção de Ações Premium): Ações caras como 'Upgrade Executiva' ou 'Kit Premium' só podem ser cogitadas se o CLV > 5000 ou se o nível for Safira/Diamante.
+    if melhor_acao in ("UPGRADE_EXECUTIVA", "KIT_PREMIUM") and not (
+        clv_previsto > 5000.0 or tier_raw in ("Safira", "Diamante")
+    ):
+        melhor_acao = "BEBIDA_CORTESIA"
+
     retorno_escolhido = avaliacoes.get(
         melhor_acao,
         (clv_previsto * risco_evasao * CATALOGO_ACOES_BORDO[melhor_acao]["eficacia"]) - CATALOGO_ACOES_BORDO[melhor_acao]["custo"]
@@ -438,14 +526,20 @@ def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
     custo_escolhido = CATALOGO_ACOES_BORDO[melhor_acao]["custo"]
 
     # Trava do ROI (Proteção de Caixa): se Retorno_Liquido <= 0, veto estrito da ação
+    tipo_veto = None
+    motivo_bloqueio = None
     if retorno_escolhido <= 0.0:
         melhor_acao = "NENHUMA_ACAO"
         custo_escolhido = 0.0
+        tipo_veto = "ROI_NEGATIVO"
+        motivo_bloqueio = FALLBACK_ROI_NEGATIVO
 
     return {
         "acao_vencedora": melhor_acao,
         "retorno_liquido": round(retorno_escolhido, 2),
         "custo_acao": round(custo_escolhido, 2),
+        "tipo_veto": tipo_veto,
+        "motivo_bloqueio": motivo_bloqueio,
         "avaliacoes": avaliacoes,
     }
 
@@ -454,10 +548,47 @@ def _obter_mock_bordo_padronizado(
     perfil_cliente: dict[str, Any],
     assento: str,
     acao_vencedora: str,
+    motivo_bloqueio: str | None = None,
 ) -> dict[str, str]:
     if acao_vencedora in ("NENHUMA_ACAO", "Nenhuma Ação"):
+        if motivo_bloqueio:
+            return {"instrucao_comissario": motivo_bloqueio}
+        if perfil_cliente.get("motivo_bloqueio"):
+            return {"instrucao_comissario": str(perfil_cliente["motivo_bloqueio"])}
+
+        tier = str(perfil_cliente.get("tier_fidelidade", "Basico") or "Basico").strip().lower()
+        persona = str(perfil_cliente.get("persona", "") or "").strip().lower()
+        score_atrito = float(perfil_cliente.get("score_atrito_acumulado", 0.0) or 0.0)
+        ctx = str(
+            perfil_cliente.get("contexto_narrativo_llm")
+            or perfil_cliente.get("descricao_ssr")
+            or perfil_cliente.get("contexto")
+            or ""
+        ).strip().lower()
+        if perfil_cliente.get("ssr_codigo"):
+            ctx += f" {str(perfil_cliente.get('ssr_codigo')).lower()}"
+        if perfil_cliente.get("sac_motivo"):
+            ctx += f" {str(perfil_cliente.get('sac_motivo')).lower()}"
+        if perfil_cliente.get("tem_sac"):
+            ctx += " sac reclamacao"
+        if perfil_cliente.get("tem_alerta_bagagem"):
+            ctx += " bagagem"
+
+        has_friction = (
+            score_atrito > 0.0
+            or any(k in ctx for k in ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria", "atraso", "cancelamento"])
+        )
+        is_pet = bool(
+            any(k in ctx for k in ["petc", "pet na cabine", "animal", "pet"])
+            or re.search(r"\b(petc|animal|pet)\b|pet na cabine", ctx, re.IGNORECASE)
+        )
+        is_base = tier in ("basico", "básico", "azul") or "turista" in persona
+
+        if is_base and not has_friction and not is_pet:
+            return {"instrucao_comissario": MENSAGEM_VETO_POLITICA}
+
         return {
-            "instrucao_comissario": "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
+            "instrucao_comissario": FALLBACK_ROI_NEGATIVO
         }
     tier = str(perfil_cliente.get("tier_fidelidade", "Basico"))
     risco = float(perfil_cliente.get("risco_evasao", 0.0))
@@ -517,10 +648,11 @@ def gerar_instrucao_bordo_llm(
     assento: str,
     acao_vencedora: str,
     contexto_rag: str,
+    motivo_bloqueio: str | None = None,
 ) -> dict[str, str]:
     # Trava estrita de ROI: Se a ação foi cancelada/vetada, não invoca o LLM
     if acao_vencedora in ("NENHUMA_ACAO", "Nenhuma Ação"):
-        return _obter_mock_bordo_padronizado(perfil_cliente, assento, acao_vencedora)
+        return _obter_mock_bordo_padronizado(perfil_cliente, assento, acao_vencedora, motivo_bloqueio)
 
     # Bloco de chamada à API de LLM para instruções de bordo da tripulação
     try:
@@ -713,8 +845,11 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte formato exato:
         if isinstance(lista_instrucoes, list) and len(lista_instrucoes) == len(itens_lote):
             res = []
             for item, item_llm in zip(itens_lote, lista_instrucoes):
-                msg = item_llm.get("instrucao") if isinstance(item_llm, dict) else str(item_llm)
-                res.append(msg or _obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"])
+                if item["acao_vencedora"] in ("NENHUMA_ACAO", "Nenhuma Ação"):
+                    res.append(_obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"])
+                else:
+                    msg = item_llm.get("instrucao") if isinstance(item_llm, dict) else str(item_llm)
+                    res.append(msg or _obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"])
             return res
 
         return [
