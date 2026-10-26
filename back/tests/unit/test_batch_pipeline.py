@@ -101,6 +101,19 @@ def test_batch_pipeline_end_to_end_and_idempotency(tmp_path: Path, capsys: pytes
     ])
     initial_data.to_parquet(gold_file, engine="pyarrow", index=False)
 
+    # Cria tabelas Gold auxiliares de CLV e Evasão para o cálculo financeiro
+    pd.DataFrame([
+        {"id_cliente": "CLI_001", "clv_previsto": 10000.0},
+        {"id_cliente": "CLI_002", "clv_previsto": 8000.0},
+        {"id_cliente": "CLI_003", "clv_previsto": 12000.0},
+    ]).to_parquet(gold_dir / "clv_clientes.parquet", engine="pyarrow", index=False)
+
+    pd.DataFrame([
+        {"id_cliente": "CLI_001", "risco_evasao": 0.40},
+        {"id_cliente": "CLI_002", "risco_evasao": 0.35},
+        {"id_cliente": "CLI_003", "risco_evasao": 0.50},
+    ]).to_parquet(gold_dir / "evasao_clientes.parquet", engine="pyarrow", index=False)
+
     # 1ª Execução: deve processar os 3 registros
     res1 = run_batch_pipeline(data_lake_dir=tmp_path, delay_seconds=0.0)
     assert res1["registros_processados"] == 3

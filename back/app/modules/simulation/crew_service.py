@@ -477,7 +477,8 @@ class CrewService:
             ROUND(e.score_atrito_acumulado, 2) AS score_atrito_acumulado,
             ROUND(COALESCE(c.clv_previsto, 0) * COALESCE(e.risco_evasao, 0), 2) AS valor_em_risco,
             COALESCE(ctx.contexto_narrativo_llm, 'Sem ocorrências recentes') AS contexto_narrativo_llm,
-            ctx.llm_mensagem_comissaria
+            ctx.llm_mensagem_comissaria,
+            ctx.mensagem_llm_offboard
         FROM silver_viagens v
         JOIN gold_clv c ON v.id_cliente = c.id_cliente
         JOIN gold_evasao e ON v.id_cliente = e.id_cliente
@@ -553,6 +554,10 @@ class CrewService:
 
             risco = float(p.get("risco_evasao") or 0.0)
             pareto = str(p.get("faixa_pareto") or "Cauda Longa")
+            clv_val = float(p.get("clv_previsto") or 0.0)
+            ctx_narrativo = str(p.get("contexto_narrativo_llm") or "Sem ocorrências recentes")
+            msg_lake = p.get("llm_mensagem_comissaria")
+
             if risco > 0.60:
                 status = "critico"
             elif pareto in ("Top 10% Receita", "Top 20% Receita"):
@@ -560,21 +565,44 @@ class CrewService:
             else:
                 status = "normal"
 
+            # Avalia se a ação para o assento tem ROI positivo ou é cancelada pelo algoritmo
+            perfil_assento = {
+                "id_cliente": str(p["id_cliente"]),
+                "clv_previsto": clv_val,
+                "risco_evasao": risco,
+                "contexto_narrativo_llm": ctx_narrativo,
+                "tier_fidelidade": str(p.get("tier_fidelidade") or "Azul"),
+            }
+            dec_assento = arbitrar_acao_bordo(perfil_assento)
+            tec_assento = dec_assento.get("acao_vencedora", "ABORDAGEM_CHEFE_CABINE")
+            rot_assento = ROTULOS_ACOES_BORDO.get(tec_assento, tec_assento)
+            custo_assento = float(dec_assento.get("custo_acao", 0.0))
+            ret_assento = float(dec_assento.get("retorno_liquido", 0.0))
+
+            if ret_assento <= 0.0 or tec_assento in ("NENHUMA_ACAO", "Nenhuma Ação") or p.get("acao_vencedora") == "Nenhuma Ação":
+                rot_assento = "Nenhuma Ação"
+                custo_assento = 0.0
+                msg_lake = "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
+
             cliente_dto = AssentoCliente(
                 id_cliente=str(p["id_cliente"]),
                 nome=gerar_nome_passageiro(p["id_cliente"]),
                 tier_fidelidade=str(p.get("tier_fidelidade") or "Azul"),
                 persona=str(p.get("persona") or "Turista Eventual"),
-                clv_previsto=float(p.get("clv_previsto") or 0.0),
+                clv_previsto=clv_val,
                 faixa_pareto=pareto,
                 risco_evasao=risco,
                 score_atrito_acumulado=float(p.get("score_atrito_acumulado") or 0.0),
                 pnr=pnr,
                 tamanho_grupo=tamanho_grupo,
                 is_grupo_familiar=is_grupo_familiar,
-                contexto_narrativo_llm=str(p.get("contexto_narrativo_llm") or "Sem ocorrências recentes"),
-                mensagem_llm_batch=p.get("llm_mensagem_comissaria"),
-                llm_mensagem_comissaria=p.get("llm_mensagem_comissaria"),
+                contexto_narrativo_llm=ctx_narrativo,
+                mensagem_llm_batch=msg_lake,
+                llm_mensagem_comissaria=msg_lake,
+                mensagem_llm_offboard=p.get("mensagem_llm_offboard"),
+                acao_vencedora=rot_assento,
+                custo_acao=custo_assento,
+                retorno_liquido=ret_assento,
             )
 
             assentos_voo.append(
@@ -633,15 +661,25 @@ class CrewService:
 
         for i, (seat_code, p) in enumerate(top5_candidatos):
             decisao = decisoes_arbitro[i]
-            instrucao = (
-                instrucoes_lote[i]
-                if i < len(instrucoes_lote)
-                else "Atendimento humanizado recomendado."
-            )
             acao_tecnica = str(decisao.get("acao_vencedora", "ABORDAGEM_CHEFE_CABINE"))
             rotulo_acao = ROTULOS_ACOES_BORDO.get(acao_tecnica) or acao_tecnica
             custo = float(decisao.get("custo_acao") or 0.0)
             retorno = float(decisao.get("retorno_liquido") or 0.0)
+
+            # Trava estrita de ROI: Se Retorno_Liquido <= 0 ou Nenhuma Ação
+            if retorno <= 0.0 or acao_tecnica in ("NENHUMA_ACAO", "Nenhuma Ação") or p.get("acao_vencedora") == "Nenhuma Ação":
+                rotulo_acao = "Nenhuma Ação"
+                custo = 0.0
+                instrucao = (
+                    p.get("llm_mensagem_comissaria")
+                    or "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
+                )
+            else:
+                instrucao = (
+                    p.get("llm_mensagem_comissaria")
+                    or (instrucoes_lote[i] if i < len(instrucoes_lote) else "Atendimento humanizado recomendado.")
+                )
+
             custo_total += custo
             retorno_total += retorno
 
@@ -670,11 +708,13 @@ class CrewService:
                     acao_sugerida=rotulo_acao,
                     custo_acao=custo,
                     retorno_liquido=retorno,
-                    instrucao_comissario=p.get("llm_mensagem_comissaria") or instrucao,
+                    instrucao_comissario=instrucao,
                     valor_em_risco=float(p.get("valor_em_risco") or 0.0),
                     contexto_narrativo_llm=str(p.get("contexto_narrativo_llm") or "Sem ocorrências recentes"),
-                    mensagem_llm_batch=p.get("llm_mensagem_comissaria"),
-                    llm_mensagem_comissaria=p.get("llm_mensagem_comissaria"),
+                    mensagem_llm_batch=instrucao,
+                    llm_mensagem_comissaria=instrucao,
+                    mensagem_llm_offboard=p.get("mensagem_llm_offboard"),
+                    acao_vencedora=rotulo_acao,
                 )
             )
 
@@ -795,22 +835,35 @@ class CrewService:
         decisao = arbitrar_acao_bordo(perfil)
         acao_vencedora: str = str(decisao.get("acao_vencedora", "ABORDAGEM_CHEFE_CABINE"))
         rotulo_acao: str = ROTULOS_ACOES_BORDO.get(acao_vencedora) or acao_vencedora
+        custo_acao: float = float(decisao.get("custo_acao", 0.0))
+        retorno_liquido: float = float(decisao.get("retorno_liquido", 0.0))
 
-        # 3. Agente LLM para comissário (passa o código técnico da ação vencedora para o prompt e mock)
-        contexto_rag = self.get_contexto_rag()
-        resultado_llm = gerar_instrucao_bordo_llm(
-            perfil_cliente=perfil,
-            assento=assento,
-            acao_vencedora=acao_vencedora,
-            contexto_rag=contexto_rag,
-        )
+        # Trava estrita de ROI: Se Retorno_Liquido <= 0 ou Nenhuma Ação
+        if retorno_liquido <= 0.0 or acao_vencedora in ("NENHUMA_ACAO", "Nenhuma Ação"):
+            rotulo_acao = "Nenhuma Ação"
+            custo_acao = 0.0
+            resultado_llm = {
+                "instrucao_comissario": (
+                    perfil.get("llm_mensagem_comissaria")
+                    or "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
+                )
+            }
+        else:
+            # 3. Agente LLM para comissário (passa o código técnico da ação vencedora para o prompt e mock)
+            contexto_rag = self.get_contexto_rag()
+            resultado_llm = gerar_instrucao_bordo_llm(
+                perfil_cliente=perfil,
+                assento=assento,
+                acao_vencedora=acao_vencedora,
+                contexto_rag=contexto_rag,
+            )
 
         return SimularBordoResponse(
             assento=assento,
             id_cliente=id_cliente,
             acao_sugerida=rotulo_acao,
-            custo_acao=float(decisao.get("custo_acao", 0.0)),
-            retorno_liquido=float(decisao.get("retorno_liquido", 0.0)),
+            custo_acao=custo_acao,
+            retorno_liquido=retorno_liquido,
             instrucao_comissario=str(resultado_llm.get("instrucao_comissario", "")),
             dados_cliente={
                 "id_cliente": perfil.get("id_cliente"),
@@ -822,8 +875,11 @@ class CrewService:
                 "risco_evasao": perfil.get("risco_evasao"),
                 "score_atrito_acumulado": perfil.get("score_atrito_acumulado"),
                 "contexto_narrativo_llm": perfil.get("contexto_narrativo_llm", "Sem ocorrências recentes"),
-                "mensagem_llm_batch": perfil.get("mensagem_llm_batch") or perfil.get("llm_mensagem_comissaria"),
-                "llm_mensagem_comissaria": perfil.get("llm_mensagem_comissaria"),
+                "mensagem_llm_batch": str(resultado_llm.get("instrucao_comissario", "")) or perfil.get("mensagem_llm_batch"),
+                "llm_mensagem_comissaria": str(resultado_llm.get("instrucao_comissario", "")) or perfil.get("llm_mensagem_comissaria"),
+                "acao_vencedora": rotulo_acao,
+                "custo_acao": custo_acao,
+                "retorno_liquido": retorno_liquido,
             },
         )
 

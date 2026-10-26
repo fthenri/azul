@@ -464,6 +464,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
               <CardContent className="p-4 space-y-3">
                 {loteAcoes?.acoes.map((acao, idx) => {
                   const isCritico = acao.tipo === "atrito";
+                  const isVetada = acao.acao_sugerida === "Nenhuma Ação" || acao.retorno_liquido <= 0;
                   const matchingSeat = seats.find((s) => s.assento === acao.assento);
                   const passenger = matchingSeat?.dados_cliente;
                   const rawBatchMsg =
@@ -472,7 +473,9 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                     acao.mensagem_llm_batch ||
                     acao.llm_mensagem_comissaria;
                   const instrucaoTexto =
-                    rawBatchMsg && typeof rawBatchMsg === "string" && rawBatchMsg.trim().length > 0
+                    isVetada
+                      ? "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
+                      : rawBatchMsg && typeof rawBatchMsg === "string" && rawBatchMsg.trim().length > 0
                       ? rawBatchMsg.trim()
                       : "Instrução pendente. Siga o protocolo padrão do Tier.";
 
@@ -482,7 +485,9 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                       onClick={() => matchingSeat && handleSelectSeat(matchingSeat)}
                       className={cn(
                         "p-3 rounded-xl border text-xs space-y-2 transition-all hover:shadow-xs cursor-pointer hover:border-primary/50",
-                        isCritico
+                        isVetada
+                          ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-300/80 dark:border-amber-900/60"
+                          : isCritico
                           ? "bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50"
                           : "bg-slate-50/70 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800"
                       )}
@@ -508,34 +513,54 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                           </div>
                         </div>
 
-                        <Badge
-                          variant={isCritico ? "destructive" : "default"}
-                          className={cn(
-                            "text-[9px] py-0 px-1.5 shrink-0",
-                            !isCritico && "bg-indigo-900 hover:bg-indigo-950 text-white dark:bg-indigo-600"
-                          )}
-                        >
-                          {acao.status_badge}
-                        </Badge>
+                        {isVetada ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] py-0 px-1.5 shrink-0 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 font-bold"
+                          >
+                            Veto Analítico
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant={isCritico ? "destructive" : "default"}
+                            className={cn(
+                              "text-[9px] py-0 px-1.5 shrink-0",
+                              !isCritico && "bg-indigo-900 hover:bg-indigo-950 text-white dark:bg-indigo-600"
+                            )}
+                          >
+                            {acao.status_badge}
+                          </Badge>
+                        )}
                       </div>
 
                       {/* Ação Prescrita pelo Árbitro */}
                       <div className="flex items-center justify-between text-[11px] bg-background/80 p-2 rounded-lg border border-border/60">
                         <div>
                           <span className="text-muted-foreground text-[10px] block">Ação do Árbitro:</span>
-                          <strong className="text-foreground">{acao.acao_sugerida}</strong>
+                          <strong className={isVetada ? "text-amber-700 dark:text-amber-400" : "text-foreground"}>
+                            {isVetada ? "Nenhuma Ação (Veto ROI)" : acao.acao_sugerida}
+                          </strong>
                         </div>
                         <div className="text-right">
                           <span className="text-[10px] text-muted-foreground block">Retorno Líquido:</span>
-                          <strong className="text-emerald-600 dark:text-emerald-400">
+                          <strong className={isVetada ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}>
                             {formatCurrency(acao.retorno_liquido)}
                           </strong>
                         </div>
                       </div>
 
-                      {/* Instrução Tática Gerada pela IA */}
-                      <div className="text-[11px] text-muted-foreground leading-relaxed bg-background/50 p-2 rounded-lg border border-dashed border-border/80 flex items-start gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5 text-[#0077C8] dark:text-[#38BDF8] shrink-0 mt-0.5" />
+                      {/* Instrução Tática Gerada pela IA ou Veto Analítico */}
+                      <div className={cn(
+                        "text-[11px] leading-relaxed p-2 rounded-lg border flex items-start gap-1.5",
+                        isVetada
+                          ? "text-amber-900 dark:text-amber-200 bg-amber-100/60 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 font-medium"
+                          : "text-muted-foreground bg-background/50 border-dashed border-border/80"
+                      )}>
+                        {isVetada ? (
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5 text-[#0077C8] dark:text-[#38BDF8] shrink-0 mt-0.5" />
+                        )}
                         <span>{instrucaoTexto}</span>
                       </div>
                     </div>

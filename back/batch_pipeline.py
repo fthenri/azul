@@ -27,6 +27,7 @@ logger = logging.getLogger("azul.dataops.batch_llm")
 # Constantes de mensagens de fallback e segurança corporativa
 FALLBACK_SEGURANCA_TIER = "Instrução pendente. Siga o protocolo padrão do Tier."
 FALLBACK_OFFBOARD = "Mensagem pendente. Favor acionar a régua de relacionamento padrão."
+FALLBACK_ROI_NEGATIVO = "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
 
 
 def resolve_data_lake_dir() -> Path:
@@ -109,11 +110,17 @@ def run_batch_pipeline(
             f"DESCRIBE SELECT * FROM read_parquet('{gold_contexto_path.as_posix()}')"
         ).fetchall()
     ]
+    has_acao_col = "acao_vencedora" in schema_cols
+    has_custo_col = "custo_acao" in schema_cols
     has_llm_col = "llm_mensagem_comissaria" in schema_cols
     has_offboard_col = "mensagem_llm_offboard" in schema_cols
 
     # Registra view analítica gold_contexto_passageiro tratando ausência inicial das colunas
     extra_cols = []
+    if not has_acao_col:
+        extra_cols.append("CAST(NULL AS VARCHAR) AS acao_vencedora")
+    if not has_custo_col:
+        extra_cols.append("CAST(NULL AS DOUBLE) AS custo_acao")
     if not has_llm_col:
         extra_cols.append("CAST(NULL AS VARCHAR) AS llm_mensagem_comissaria")
     if not has_offboard_col:
@@ -139,25 +146,32 @@ def run_batch_pipeline(
     else:
         con.execute("CREATE OR REPLACE VIEW gold_clv AS SELECT '' AS id_cliente, 0.0 AS clv_previsto")
 
-    # 3. Query idempotente: Top 5 clientes prioritários por voo onde llm_mensagem_comissaria IS NULL ou vazio
+    # 3. Query: Top 5 clientes prioritários por voo + passageiros com risco financeiro / ROI negativo
     query = """
         WITH ranked AS (
             SELECT 
                 g.*,
                 COALESCE(e.risco_evasao, 0.0) AS risco_evasao,
-                COALESCE(c.clv_previsto, 0.0) * COALESCE(e.risco_evasao, 0.0) AS valor_em_risco
+                COALESCE(c.clv_previsto, 0.0) AS clv_previsto,
+                COALESCE(c.clv_previsto, 0.0) * COALESCE(e.risco_evasao, 0.0) AS valor_em_risco,
+                ROW_NUMBER() OVER(
+                    PARTITION BY g.numero_voo 
+                    ORDER BY (COALESCE(c.clv_previsto, 0.0) * COALESCE(e.risco_evasao, 0.0)) DESC, g.id_cliente
+                ) AS ranking_voo
             FROM gold_contexto_passageiro g
             LEFT JOIN gold_evasao e ON g.id_cliente = e.id_cliente
             LEFT JOIN gold_clv c ON g.id_cliente = c.id_cliente
             WHERE g.numero_voo IS NOT NULL 
               AND TRIM(g.numero_voo) != ''
-              AND (g.llm_mensagem_comissaria IS NULL OR TRIM(COALESCE(g.llm_mensagem_comissaria, '')) = '')
-            QUALIFY ROW_NUMBER() OVER(
-                PARTITION BY g.numero_voo 
-                ORDER BY (COALESCE(c.clv_previsto, 0.0) * COALESCE(e.risco_evasao, 0.0)) DESC, g.id_cliente
-            ) <= 5
+              AND (
+                  g.llm_mensagem_comissaria IS NULL 
+                  OR TRIM(COALESCE(g.llm_mensagem_comissaria, '')) = ''
+                  OR g.llm_mensagem_comissaria LIKE '[GERADO VIA BATCH]%'
+              )
         )
         SELECT * FROM ranked
+        WHERE ranking_voo <= 5
+           OR ((COALESCE(clv_previsto, 0.0) * COALESCE(risco_evasao, 0.0) * 0.15) - 5.0 <= 0)
     """
     if limit is not None and limit > 0:
         query += f" LIMIT {limit}"
@@ -188,41 +202,66 @@ def run_batch_pipeline(
             "nome": nome_cliente,
             "contexto_narrativo_llm": contexto_passageiro,
             "tier_fidelidade": str(pax.get("tier_fidelidade") or "Azul"),
+            "clv_previsto": float(pax.get("clv_previsto") or 0.0),
+            "risco_evasao": float(pax.get("risco_evasao") or 0.0),
+            "ssr_codigo": pax.get("ssr_codigo"),
         }
         decisao = arbitrar_acao_bordo(perfil)
+        retorno_liquido = float(decisao.get("retorno_liquido") or 0.0)
         acao_tecnica = decisao.get("acao_vencedora", "ABORDAGEM_CHEFE_CABINE")
         rotulo_acao = ROTULOS_ACOES_BORDO.get(acao_tecnica, acao_tecnica)
+        custo_acao = float(decisao.get("custo_acao") or 0.0)
 
-        try:
-            mensagem = llm_client.gerar_instrucao_comissaria(
-                nome_cliente=nome_cliente,
-                contexto_passageiro=contexto_passageiro,
-                acao_vencedora=rotulo_acao,
-            )
-        except Exception as exc:
-            logger.warning(
-                "Falha na inferência LLM para cliente %s (%s). Injetando fallback de segurança.",
-                pax.get("id_cliente"),
-                exc,
-            )
-            mensagem = FALLBACK_SEGURANCA_TIER
+        # Regra Estrita de Trava do LLM (Economia de Tokens / Proteção de Caixa):
+        # Se Retorno_Liquido <= 0, o sistema NÃO deve chamar o OpenRouter (Gemini).
+        if retorno_liquido <= 0.0 or acao_tecnica in ("NENHUMA_ACAO", "Nenhuma Ação"):
+            acao_vencedora = "Nenhuma Ação"
+            custo_acao = 0.0
+            mensagem = FALLBACK_ROI_NEGATIVO
+            mensagem_offboard = FALLBACK_ROI_NEGATIVO
+        else:
+            acao_vencedora = rotulo_acao
+            curr_msg = str(pax.get("llm_mensagem_comissaria") or "").strip()
+            curr_off = str(pax.get("mensagem_llm_offboard") or "").strip()
 
-        try:
-            mensagem_offboard = llm_client.gerar_mensagem_offboard(
-                nome_cliente=nome_cliente,
-                contexto_passageiro=contexto_passageiro,
-                acao_vencedora=rotulo_acao,
-            )
-        except Exception as exc:
-            logger.warning(
-                "Falha na inferência LLM off-board para cliente %s (%s). Injetando fallback de segurança.",
-                pax.get("id_cliente"),
-                exc,
-            )
-            mensagem_offboard = FALLBACK_OFFBOARD
+            if curr_msg.startswith("[RAG: Azul Fidelidade Res. 400]"):
+                mensagem = curr_msg
+            else:
+                try:
+                    mensagem = llm_client.gerar_instrucao_comissaria(
+                        nome_cliente=nome_cliente,
+                        contexto_passageiro=contexto_passageiro,
+                        acao_vencedora=rotulo_acao,
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Falha na inferência LLM para cliente %s (%s). Injetando fallback de segurança.",
+                        pax.get("id_cliente"),
+                        exc,
+                    )
+                    mensagem = FALLBACK_SEGURANCA_TIER
+
+            if curr_off.startswith("[RAG: Azul Fidelidade Res. 400]"):
+                mensagem_offboard = curr_off
+            else:
+                try:
+                    mensagem_offboard = llm_client.gerar_mensagem_offboard(
+                        nome_cliente=nome_cliente,
+                        contexto_passageiro=contexto_passageiro,
+                        acao_vencedora=rotulo_acao,
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Falha na inferência LLM off-board para cliente %s (%s). Injetando fallback de segurança.",
+                        pax.get("id_cliente"),
+                        exc,
+                    )
+                    mensagem_offboard = FALLBACK_OFFBOARD
 
         staging_records.append({
             "id_cliente": pax["id_cliente"],
+            "acao_vencedora": acao_vencedora,
+            "custo_acao": custo_acao,
             "llm_mensagem_comissaria": mensagem,
             "mensagem_llm_offboard": mensagem_offboard,
             "data_atualizacao": datetime.now(timezone.utc).isoformat(),
@@ -260,6 +299,8 @@ def run_batch_pipeline(
                 g.sac_motivo,
                 g.sac_status,
                 g.contexto_narrativo_llm,
+                COALESCE(s.acao_vencedora, {("g.acao_vencedora" if has_acao_col else "CAST(NULL AS VARCHAR)")}) AS acao_vencedora,
+                COALESCE(s.custo_acao, {("g.custo_acao" if has_custo_col else "CAST(NULL AS DOUBLE)")}) AS custo_acao,
                 COALESCE(s.llm_mensagem_comissaria, {("g.llm_mensagem_comissaria" if has_llm_col else "CAST(NULL AS VARCHAR)")}) AS llm_mensagem_comissaria,
                 COALESCE(s.mensagem_llm_offboard, {("g.mensagem_llm_offboard" if has_offboard_col else "CAST(NULL AS VARCHAR)")}) AS mensagem_llm_offboard,
                 CASE 

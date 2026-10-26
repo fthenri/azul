@@ -49,6 +49,7 @@ def test_get_voo_simulado_endpoint(client: TestClient) -> None:
                 "[RAG: Azul Fidelidade Res. 400]" in cliente["mensagem_llm_batch"]
                 or "[GERADO VIA BATCH]" in cliente["mensagem_llm_batch"]
                 or "Instrução" in cliente["mensagem_llm_batch"]
+                or "Decisão Analítica" in cliente["mensagem_llm_batch"]
             )
 
         if item["status"] == "critico":

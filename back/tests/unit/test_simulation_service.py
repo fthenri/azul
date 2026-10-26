@@ -136,3 +136,35 @@ def test_arbitrar_acao_bordo_pet_routing() -> None:
     decisao_animal = arbitrar_acao_bordo(perfil_animal)
     assert decisao_animal["acao_vencedora"] == "KIT_PET"
     assert decisao_animal["custo_acao"] == 10.0
+
+
+def test_arbitrar_acao_bordo_roi_negativo_veto() -> None:
+    """Valida que quando o retorno líquido for <= 0, a ação é vetada para proteger o caixa."""
+    from back.executor_decisao import (
+        ROTULOS_ACOES_BORDO,
+        _obter_mock_bordo_padronizado,
+        arbitrar_acao_bordo,
+    )
+
+    # Cliente com baixo CLV e risco moderado onde a ação gera ROI negativo
+    perfil_turista_baixo_clv = {
+        "id_cliente": "cli_baixo_clv_1",
+        "tier_fidelidade": "Azul",
+        "persona": "Turista Eventual",
+        "clv_previsto": 100.0,
+        "risco_evasao": 0.30,
+        "contexto_narrativo_llm": "Passageiro viajando sem ocorrências recentes",
+    }
+    decisao = arbitrar_acao_bordo(perfil_turista_baixo_clv)
+    assert decisao["acao_vencedora"] == "NENHUMA_ACAO"
+    assert decisao["custo_acao"] == 0.0
+    assert decisao["retorno_liquido"] <= 0.0
+
+    rotulo = ROTULOS_ACOES_BORDO[decisao["acao_vencedora"]]
+    assert rotulo == "Nenhuma Ação"
+
+    mock_res = _obter_mock_bordo_padronizado(
+        perfil_turista_baixo_clv, assento="14B", acao_vencedora="NENHUMA_ACAO"
+    )
+    assert "Decisão Analítica" in mock_res["instrucao_comissario"]
+    assert "Intervenção cancelada" in mock_res["instrucao_comissario"]

@@ -88,6 +88,18 @@ class AssentoCliente(BaseModel):
         default=None,
         description="Mensagem personalizada de WhatsApp para o passageiro (módulo Off-Board)",
     )
+    acao_vencedora: Optional[str] = Field(
+        default=None,
+        description="Ação vencedora prescrita pelo árbitro de decisão",
+    )
+    custo_acao: Optional[float] = Field(
+        default=None,
+        description="Custo financeiro da ação recomendada (R$)",
+    )
+    retorno_liquido: Optional[float] = Field(
+        default=None,
+        description="Retorno líquido projetado de retenção (R$)",
+    )
 
 
 class AssentoVoo(BaseModel):
@@ -147,6 +159,18 @@ class AcaoRecomendadaLote(BaseModel):
     mensagem_llm_offboard: Optional[str] = Field(
         default=None,
         description="Mensagem personalizada de WhatsApp para o passageiro (módulo Off-Board)",
+    )
+    acao_vencedora: Optional[str] = Field(
+        default=None,
+        description="Ação vencedora prescrita pelo árbitro de decisão",
+    )
+    custo_acao: Optional[float] = Field(
+        default=None,
+        description="Custo financeiro da ação recomendada (R$)",
+    )
+    retorno_liquido: Optional[float] = Field(
+        default=None,
+        description="Retorno líquido projetado de retenção (R$)",
     )
 
 

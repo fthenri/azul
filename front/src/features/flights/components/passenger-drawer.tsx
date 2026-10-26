@@ -26,6 +26,8 @@ import {
   Gift,
   MessageSquare,
   Loader2,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -87,28 +89,62 @@ export function PassengerDrawer({
     return loteAcoes.acoes.find((a) => a.assento === seat.assento) || null;
   }, [seat, loteAcoes]);
 
-  // Identifica a ação vencedora orientada a contexto (Data Contract Satélites / LLM)
+  // Identifica a ação vencedora orientada a contexto e ROI (Data Contract Satélites / LLM / Proteção de Caixa)
   const acaoVencedora = useMemo(() => {
     if (!seat) return "Bebida Premium Cortesia";
     if (batchAction?.acao_sugerida) return batchAction.acao_sugerida;
     if (simulationResult?.acao_sugerida) return simulationResult.acao_sugerida;
+    if (seat.dados_cliente?.acao_vencedora) return seat.dados_cliente.acao_vencedora;
 
+    const msg =
+      seat.dados_cliente?.mensagem_llm_batch ||
+      (seat.dados_cliente as any)?.llm_mensagem_comissaria;
+    if (msg && msg.includes("Decisão Analítica")) {
+      return "Nenhuma Ação";
+    }
+
+    // Avalia a nova regra matemática financeira:
+    // Valor_Recuperado = CLV * Probabilidade_Evasao * Taxa_Recuperacao_Acao
+    // Retorno_Liquido = Valor_Recuperado - Custo_Acao
+    const clv = Number(seat.dados_cliente.clv_previsto || 0);
+    const risco = Number(seat.dados_cliente.risco_evasao || 0);
     const ctx = (seat.dados_cliente.contexto_narrativo_llm || "").toLowerCase();
+
+    let acao = "Bebida Premium Cortesia";
+    let taxa = 0.05;
+    let custo = 15.0;
+
     if (ctx.includes("petc") || ctx.includes("pet na cabine") || ctx.includes("animal") || ctx.includes("pet")) {
-      return "Kit Snack Premium + Atenção Pet";
+      acao = "Kit Snack Premium + Atenção Pet";
+      taxa = 0.15;
+      custo = 10.0;
+    } else if (ctx.includes("chml") || ctx.includes("criança") || ctx.includes("criancas") || ctx.includes("kids") || ctx.includes("família") || ctx.includes("familia")) {
+      acao = "Kit Sobrevivência Kids";
+      taxa = 0.12;
+      custo = 12.0;
+    } else if (ctx.includes("worldtracer") || ctx.includes("bagagem") || ctx.includes("sac") || ctx.includes("reclamação") || ctx.includes("reclamacao") || ctx.includes("ouvidoria")) {
+      acao = "Acolhimento Pessoal + Voucher 1000pts";
+      taxa = 0.15;
+      custo = 50.0;
     }
-    if (ctx.includes("chml") || ctx.includes("criança") || ctx.includes("criancas") || ctx.includes("kids") || ctx.includes("família") || ctx.includes("familia")) {
-      return "Kit Sobrevivência Kids";
+
+    const valorRecuperado = clv * risco * taxa;
+    const retornoLiquido = valorRecuperado - custo;
+
+    // Se Retorno_Liquido <= 0, o sistema veta a intervenção para proteger o caixa
+    if (retornoLiquido <= 0) {
+      return "Nenhuma Ação";
     }
-    if (ctx.includes("worldtracer") || ctx.includes("bagagem") || ctx.includes("sac") || ctx.includes("reclamação") || ctx.includes("reclamacao") || ctx.includes("ouvidoria")) {
-      return "Acolhimento Pessoal + Voucher 1000pts";
-    }
-    return "Bebida Premium Cortesia";
+
+    return acao;
   }, [seat, batchAction, simulationResult]);
 
-  // Roteiro de leitura gerado pelo Batch AI com fallback corporativo seguro
+  // Roteiro de leitura gerado pelo Batch AI com fallback corporativo seguro e trava analítica
   const instrucaoTatica = useMemo(() => {
     if (!seat) return "";
+    if (acaoVencedora === "Nenhuma Ação") {
+      return "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo).";
+    }
     const msg =
       seat.dados_cliente?.mensagem_llm_batch ||
       (seat.dados_cliente as any)?.llm_mensagem_comissaria;
@@ -117,7 +153,7 @@ export function PassengerDrawer({
       return msg.trim();
     }
     return "Instrução pendente. Siga o protocolo padrão do Tier.";
-  }, [seat]);
+  }, [seat, acaoVencedora]);
 
   const handleCopyInstruction = async (text: string) => {
     try {
@@ -153,6 +189,7 @@ export function PassengerDrawer({
 
   const getActionIcon = (acao: string) => {
     const a = acao.toLowerCase();
+    if (a.includes("nenhuma") || a.includes("cancelada")) return ShieldAlert;
     if (a.includes("pet")) return HeartHandshake;
     if (a.includes("kids") || a.includes("criança") || a.includes("chml")) return Gift;
     if (a.includes("voucher") || a.includes("acolhimento")) return HeartHandshake;
@@ -588,82 +625,170 @@ export function PassengerDrawer({
         {/* ================================================================= */}
         {/* AÇÃO TÁTICA (CONTEXT-AWARE): PRESCRIÇÃO DA IA + ROTEIRO DE BORDO */}
         {/* ================================================================= */}
-        <div className="rounded-2xl border border-sky-300 dark:border-sky-800 bg-linear-to-b from-sky-50/70 to-white dark:from-slate-900/80 dark:to-slate-900/40 p-4 space-y-3.5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-[#0077C8]/10 text-[#0077C8] dark:text-[#38BDF8] flex items-center justify-center shrink-0">
-                <Sparkles className="h-4 w-4" />
+        {(() => {
+          const isVetada = acaoVencedora === "Nenhuma Ação";
+
+          return (
+            <div
+              className={cn(
+                "rounded-2xl p-4 space-y-3.5 shadow-xs transition-colors",
+                isVetada
+                  ? "border border-amber-300 dark:border-amber-700/80 bg-linear-to-b from-amber-50/90 to-amber-100/40 dark:from-amber-950/40 dark:to-slate-900/60"
+                  : "border border-sky-300 dark:border-sky-800 bg-linear-to-b from-sky-50/70 to-white dark:from-slate-900/80 dark:to-slate-900/40"
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={cn(
+                      "h-7 w-7 rounded-lg flex items-center justify-center shrink-0",
+                      isVetada
+                        ? "bg-amber-200/80 dark:bg-amber-900 text-amber-800 dark:text-amber-200"
+                        : "bg-[#0077C8]/10 text-[#0077C8] dark:text-[#38BDF8]"
+                    )}
+                  >
+                    {isVetada ? <ShieldAlert className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                      {isVetada ? "Decisão Analítica & Proteção de Caixa" : "Ação Tática (Context-Aware)"}
+                    </h4>
+                    <p className="text-[10px] text-muted-foreground">
+                      {isVetada
+                        ? "Veto algorítmico: Custo do benefício supera o retorno líquido projetado"
+                        : "Prescrição do Árbitro Contextual alinhada ao Azul Fidelidade"}
+                    </p>
+                  </div>
+                </div>
+
+                <Badge
+                  className={cn(
+                    "text-[10px] font-bold text-white",
+                    isVetada
+                      ? "bg-amber-600 hover:bg-amber-600"
+                      : "bg-[#0077C8] hover:bg-[#0077C8]"
+                  )}
+                >
+                  {isVetada ? "Veto Analítico (ROI Negativo)" : "Ação Vencedora"}
+                </Badge>
               </div>
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                  Ação Tática (Context-Aware)
-                </h4>
-                <p className="text-[10px] text-muted-foreground">
-                  Prescrição do Árbitro Contextual alinhada ao Azul Fidelidade
+
+              {/* Título da Ação Vencedora / Veto */}
+              <div
+                className={cn(
+                  "p-3 rounded-xl border flex items-center justify-between shadow-2xs",
+                  isVetada
+                    ? "bg-amber-100/60 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800"
+                    : "bg-white dark:bg-slate-900 border-sky-200 dark:border-sky-900/80"
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={cn(
+                      "h-9 w-9 rounded-xl flex items-center justify-center shrink-0 font-bold",
+                      isVetada
+                        ? "bg-amber-200/80 dark:bg-amber-900 text-amber-800 dark:text-amber-200"
+                        : "bg-sky-100 dark:bg-sky-950/70 text-[#0077C8] dark:text-[#38BDF8]"
+                    )}
+                  >
+                    <ActionIcon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                      {isVetada ? "Status da Ação para o Assento" : "Ação Recomendada para o Assento"}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-sm font-bold block",
+                        isVetada ? "text-amber-900 dark:text-amber-200" : "text-foreground"
+                      )}
+                    >
+                      {isVetada ? "Nenhuma Ação (Intervenção Cancelada)" : acaoVencedora}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mensagem do LLM / Decisão Analítica em Destaque */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5",
+                      isVetada
+                        ? "text-amber-900 dark:text-amber-300"
+                        : "text-amber-800 dark:text-amber-400"
+                    )}
+                  >
+                    {isVetada ? (
+                      <>
+                        <ShieldAlert className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                        DECISÃO ANALÍTICA — PROTEÇÃO DE CAIXA
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        ROTEIRO DE ABORDAGEM PARA A TRIPULAÇÃO
+                      </>
+                    )}
+                  </span>
+
+                  {/* Oculta botão de copiar quando a ação for vetada */}
+                  {!isVetada && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCopyInstruction(instrucaoTatica)}
+                      className="h-6 text-[10px] gap-1 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="h-3 w-3 text-emerald-600" />
+                          <span>Copiado</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3" />
+                          <span>Copiar</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+
+                <div
+                  className={cn(
+                    "rounded-xl p-3.5 shadow-inner border",
+                    isVetada
+                      ? "bg-amber-100/90 dark:bg-amber-950/70 border-amber-300 dark:border-amber-700/80"
+                      : "bg-amber-50/80 dark:bg-amber-950/40 border-amber-200/90 dark:border-amber-800/60"
+                  )}
+                >
+                  <div className="flex items-start gap-2">
+                    {isVetada && (
+                      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    )}
+                    <p
+                      className={cn(
+                        "text-xs leading-relaxed",
+                        isVetada
+                          ? "text-amber-950 dark:text-amber-100 font-semibold"
+                          : "text-amber-950 dark:text-amber-100 font-medium italic"
+                      )}
+                    >
+                      {isVetada ? instrucaoTatica : `“${instrucaoTatica}”`}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[9.5px] text-muted-foreground">
+                  {isVetada
+                    ? "Trava de ROI ativada: O custo da ação supera o retorno esperado com a probabilidade de retenção (gastar menos para fidelizar mais)."
+                    : "Roteiro humanizado e empático gerado com base no contexto do passageiro."}
                 </p>
               </div>
             </div>
-
-            <Badge className="text-[10px] font-bold bg-[#0077C8] hover:bg-[#0077C8] text-white">
-              Ação Vencedora
-            </Badge>
-          </div>
-
-          {/* Título da Ação Vencedora */}
-          <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-900/80 flex items-center justify-between shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-sky-100 dark:bg-sky-950/70 text-[#0077C8] dark:text-[#38BDF8] flex items-center justify-center shrink-0 font-bold">
-                <ActionIcon className="h-5 w-5" />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                  Ação Recomendada para o Assento
-                </span>
-                <span className="text-sm font-bold text-foreground block">
-                  {acaoVencedora}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Mensagem do LLM em Destaque (Roteiro de Leitura para a Comissária) */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5" />
-                ROTEIRO DE ABORDAGEM PARA A TRIPULAÇÃO
-              </span>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleCopyInstruction(instrucaoTatica)}
-                className="h-6 text-[10px] gap-1 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3 w-3 text-emerald-600" />
-                    <span>Copiado</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" />
-                    <span>Copiar</span>
-                  </>
-                )}
-              </Button>
-            </div>
-
-            <div className="rounded-xl bg-amber-50/80 dark:bg-amber-950/40 p-3.5 border border-amber-200/90 dark:border-amber-800/60 shadow-inner">
-              <p className="text-xs leading-relaxed text-amber-950 dark:text-amber-100 font-medium italic">
-                &ldquo;{instrucaoTatica}&rdquo;
-              </p>
-            </div>
-            <p className="text-[9.5px] text-muted-foreground">
-              Roteiro humanizado e empático gerado com base no contexto do passageiro.
-            </p>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Status de Sincronização e Governança */}
         <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-border text-xs text-muted-foreground flex items-center justify-between">
@@ -698,16 +823,23 @@ export function PassengerDrawer({
 
         <Button
           size="sm"
-          disabled={isSubmittingFeedback}
+          disabled={isSubmittingFeedback || acaoVencedora === "Nenhuma Ação"}
           onClick={handleMarkCompleted}
           className={cn(
             "text-xs gap-1.5 font-bold transition-colors cursor-pointer",
-            isAttended
+            acaoVencedora === "Nenhuma Ação"
+              ? "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed border border-border"
+              : isAttended
               ? "bg-emerald-600 hover:bg-emerald-700 text-white"
               : "bg-[#0077C8] hover:bg-[#005a99] text-white"
           )}
         >
-          {isSubmittingFeedback ? (
+          {acaoVencedora === "Nenhuma Ação" ? (
+            <>
+              <ShieldCheck className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              <span>Intervenção Dispensada (Caixa Protegido)</span>
+            </>
+          ) : isSubmittingFeedback ? (
             <>
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               <span>Registrando no MLOps...</span>

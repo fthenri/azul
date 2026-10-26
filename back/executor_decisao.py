@@ -23,19 +23,19 @@ logger = logging.getLogger("azul.gold.executor")
 DEFAULT_SEED: int = 42
 
 CATALOGO_ACOES: dict[str, dict[str, float]] = {
-    "UPGRADE_EXECUTIVA": {"custo": 1500.00, "eficacia": 0.08},
-    "ACESSO_LOUNGE_VCP": {"custo": 120.00, "eficacia": 0.06},
-    "BONUS_5000_PONTOS": {"custo": 150.00, "eficacia": 0.05},
-    "ISENCAO_BAGAGEM_EXTRA": {"custo": 100.00, "eficacia": 0.04},
-    "CORTESIA_ESPACO_AZUL": {"custo": 50.00, "eficacia": 0.04},
+    "UPGRADE_EXECUTIVA": {"custo": 1500.00, "eficacia": 0.30},
+    "ACESSO_LOUNGE_VCP": {"custo": 120.00, "eficacia": 0.15},
+    "BONUS_5000_PONTOS": {"custo": 150.00, "eficacia": 0.12},
+    "ISENCAO_BAGAGEM_EXTRA": {"custo": 100.00, "eficacia": 0.10},
+    "CORTESIA_ESPACO_AZUL": {"custo": 50.00, "eficacia": 0.08},
     "MENSAGEM_EXECUTIVA_VIP": {"custo": 1.00, "eficacia": 0.02},
     "NAO_FAZER_NADA": {"custo": 0.00, "eficacia": 0.00},
 }
 
 CATALOGO_ACOES_BORDO: dict[str, dict[str, float]] = {
-    "KIT_PET": {"custo": 10.00, "eficacia": 0.05},
-    "KIT_KIDS": {"custo": 12.00, "eficacia": 0.06},
-    "ACOLHIMENTO_VOUCHER": {"custo": 50.00, "eficacia": 0.08},
+    "KIT_PET": {"custo": 10.00, "eficacia": 0.15},
+    "KIT_KIDS": {"custo": 12.00, "eficacia": 0.12},
+    "ACOLHIMENTO_VOUCHER": {"custo": 50.00, "eficacia": 0.15},
     "BEBIDA_CORTESIA": {"custo": 15.00, "eficacia": 0.05},
     "SNACK_EXTRA": {"custo": 5.00, "eficacia": 0.03},
     "ABORDAGEM_CHEFE_CABINE": {"custo": 0.00, "eficacia": 0.02},
@@ -48,6 +48,8 @@ ROTULOS_ACOES_BORDO: dict[str, str] = {
     "BEBIDA_CORTESIA": "Bebida Premium Cortesia",
     "SNACK_EXTRA": "Snack Premium Extra",
     "ABORDAGEM_CHEFE_CABINE": "Abordagem Pessoal do Chefe de Cabine",
+    "NENHUMA_ACAO": "Nenhuma Ação",
+    "Nenhuma Ação": "Nenhuma Ação",
 }
 
 
@@ -404,9 +406,12 @@ def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
     avaliacoes: dict[str, float] = {}
     for nome_acao, dados in CATALOGO_ACOES_BORDO.items():
         custo = dados["custo"]
-        eficacia = dados["eficacia"]
-        # Fórmula de Uplift realista (2% a 8% de eficácia): Retorno Líquido = (CLV * Risco * Eficácia) - Custo
-        retorno = (clv_previsto * risco_evasao * eficacia) - custo
+        taxa_recuperacao = dados["eficacia"]
+        # Fórmula de Uplift realista com Probabilidade de Recuperação:
+        # Valor_Recuperado = CLV * Probabilidade_Evasao * Taxa_Recuperacao_Acao
+        # Retorno_Liquido = Valor_Recuperado - Custo_Acao
+        valor_recuperado = clv_previsto * risco_evasao * taxa_recuperacao
+        retorno = valor_recuperado - custo
         avaliacoes[nome_acao] = round(retorno, 2)
 
     # Roteamento Contextual Inteligente (Context-Aware / Data Contract Satélites)
@@ -432,6 +437,11 @@ def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
     )
     custo_escolhido = CATALOGO_ACOES_BORDO[melhor_acao]["custo"]
 
+    # Trava do ROI (Proteção de Caixa): se Retorno_Liquido <= 0, veto estrito da ação
+    if retorno_escolhido <= 0.0:
+        melhor_acao = "NENHUMA_ACAO"
+        custo_escolhido = 0.0
+
     return {
         "acao_vencedora": melhor_acao,
         "retorno_liquido": round(retorno_escolhido, 2),
@@ -445,6 +455,10 @@ def _obter_mock_bordo_padronizado(
     assento: str,
     acao_vencedora: str,
 ) -> dict[str, str]:
+    if acao_vencedora in ("NENHUMA_ACAO", "Nenhuma Ação"):
+        return {
+            "instrucao_comissario": "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
+        }
     tier = str(perfil_cliente.get("tier_fidelidade", "Basico"))
     risco = float(perfil_cliente.get("risco_evasao", 0.0))
     id_curto = str(perfil_cliente.get("id_cliente", ""))[:8].upper()
@@ -504,6 +518,10 @@ def gerar_instrucao_bordo_llm(
     acao_vencedora: str,
     contexto_rag: str,
 ) -> dict[str, str]:
+    # Trava estrita de ROI: Se a ação foi cancelada/vetada, não invoca o LLM
+    if acao_vencedora in ("NENHUMA_ACAO", "Nenhuma Ação"):
+        return _obter_mock_bordo_padronizado(perfil_cliente, assento, acao_vencedora)
+
     # Bloco de chamada à API de LLM para instruções de bordo da tripulação
     try:
         load_dotenv(resolve_project_root() / ".env")
