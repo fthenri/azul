@@ -76,6 +76,14 @@ class AssentoCliente(BaseModel):
         default="Sem ocorrências recentes",
         description="Contexto narrativo operacional do passageiro (GST/CRM/WorldTracer/SSR)",
     )
+    mensagem_llm_batch: Optional[str] = Field(
+        default=None,
+        description="Instrução tática gerada pelo pipeline Batch AI para a tripulação",
+    )
+    llm_mensagem_comissaria: Optional[str] = Field(
+        default=None,
+        description="Instrução operacional gerada pelo motor LLM em lote",
+    )
 
 
 class AssentoVoo(BaseModel):
@@ -123,6 +131,10 @@ class AcaoRecomendadaLote(BaseModel):
     contexto_narrativo_llm: str = Field(
         default="Sem ocorrências recentes",
         description="Contexto operacional e ocorrências recentes do passageiro (WorldTracer/SSR/SAC)",
+    )
+    mensagem_llm_batch: Optional[str] = Field(
+        default=None,
+        description="Instrução tática gerada pelo pipeline Batch AI para a tripulação",
     )
 
 

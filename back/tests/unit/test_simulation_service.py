@@ -74,3 +74,42 @@ def test_arbitrar_melhor_acao_lgpd_opt_out_safeguard() -> None:
     assert "motivo_bloqueio" in decisao
     assert "Salvaguarda LGPD" in decisao["motivo_bloqueio"]
     assert len(decisao["avaliacoes_uplift"]) == 0
+
+
+def test_arbitrar_acao_bordo_pet_routing() -> None:
+    """Valida o roteamento contextual inteligente para tutores com Pet na cabine (PETC)."""
+    from back.executor_decisao import (
+        ROTULOS_ACOES_BORDO,
+        _obter_mock_bordo_padronizado,
+        arbitrar_acao_bordo,
+    )
+
+    # Cenário 1: SSR PETC
+    perfil_petc = {
+        "id_cliente": "cli_pet_1",
+        "tier_fidelidade": "Safira",
+        "clv_previsto": 15000.0,
+        "risco_evasao": 0.35,
+        "contexto_narrativo_llm": "Serviço Especial (SSR PETC): Viajando com Pet na Cabine (cão de pequeno porte)",
+    }
+    decisao_petc = arbitrar_acao_bordo(perfil_petc)
+    assert decisao_petc["acao_vencedora"] == "KIT_PET"
+    assert decisao_petc["custo_acao"] == 10.0
+    rotulo = ROTULOS_ACOES_BORDO[decisao_petc["acao_vencedora"]]
+    assert rotulo == "Kit Snack Premium + Atenção Pet"
+
+    mock_res = _obter_mock_bordo_padronizado(perfil_petc, assento="4B", acao_vencedora="KIT_PET")
+    assert "Pet" in mock_res["instrucao_comissario"] or "pet" in mock_res["instrucao_comissario"].lower()
+    assert "Kit Snack Premium" in mock_res["instrucao_comissario"]
+
+    # Cenário 2: Palavra 'Pet' no contexto
+    perfil_pet = {
+        "id_cliente": "cli_pet_2",
+        "tier_fidelidade": "Diamante",
+        "clv_previsto": 35000.0,
+        "risco_evasao": 0.40,
+        "contexto_narrativo_llm": "Passageiro transportando pet de suporte emocional na caixa",
+    }
+    decisao_pet = arbitrar_acao_bordo(perfil_pet)
+    assert decisao_pet["acao_vencedora"] == "KIT_PET"
+    assert decisao_pet["custo_acao"] == 10.0

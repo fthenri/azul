@@ -48,3 +48,4 @@ def test_get_mock_llm_client_factory() -> None:
     client = get_mock_llm_client(delay_seconds=0.0)
     assert isinstance(client, MockLLMClient)
     assert client.delay_seconds == 0.0
+

@@ -150,6 +150,8 @@ export interface AssentoCliente {
   tamanho_grupo?: number;
   is_grupo_familiar?: boolean;
   contexto_narrativo_llm?: string;
+  mensagem_llm_batch?: string;
+  llm_mensagem_comissaria?: string;
 }
 
 export interface AssentoVoo {
@@ -183,6 +185,8 @@ export interface AcaoRecomendadaLote {
   instrucao_comissario: string;
   valor_em_risco?: number;
   contexto_narrativo_llm?: string;
+  mensagem_llm_batch?: string;
+  llm_mensagem_comissaria?: string;
 }
 
 export interface ResumoLote {

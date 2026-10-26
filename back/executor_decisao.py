@@ -32,6 +32,7 @@ CATALOGO_ACOES: dict[str, dict[str, float]] = {
 }
 
 CATALOGO_ACOES_BORDO: dict[str, dict[str, float]] = {
+    "KIT_PET": {"custo": 10.00, "eficacia": 0.05},
     "KIT_KIDS": {"custo": 12.00, "eficacia": 0.06},
     "ACOLHIMENTO_VOUCHER": {"custo": 50.00, "eficacia": 0.08},
     "BEBIDA_CORTESIA": {"custo": 15.00, "eficacia": 0.05},
@@ -40,6 +41,7 @@ CATALOGO_ACOES_BORDO: dict[str, dict[str, float]] = {
 }
 
 ROTULOS_ACOES_BORDO: dict[str, str] = {
+    "KIT_PET": "Kit Snack Premium + Atenção Pet",
     "KIT_KIDS": "Kit Sobrevivência Kids",
     "ACOLHIMENTO_VOUCHER": "Acolhimento Pessoal + Voucher 1000pts",
     "BEBIDA_CORTESIA": "Bebida Premium Cortesia",
@@ -397,7 +399,9 @@ def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
         avaliacoes[nome_acao] = round(retorno, 2)
 
     # Roteamento Contextual Inteligente (Context-Aware / Data Contract Satélites)
-    if any(k in ctx for k in ["chml", "criança", "criancas", "kids", "infantil", "família", "familia"]):
+    if any(k in ctx for k in ["petc", "pet"]):
+        melhor_acao = "KIT_PET"
+    elif any(k in ctx for k in ["chml", "criança", "criancas", "kids", "infantil", "família", "familia"]):
         melhor_acao = "KIT_KIDS"
     elif any(k in ctx for k in ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria"]):
         melhor_acao = "ACOLHIMENTO_VOUCHER"
@@ -430,7 +434,13 @@ def _obter_mock_bordo_padronizado(
     ctx_narrativo = str(perfil_cliente.get("contexto_narrativo_llm") or "").strip()
     tem_contexto = ctx_narrativo and ctx_narrativo != "Sem ocorrências recentes"
 
-    if acao_vencedora in ("KIT_KIDS", "Kit Sobrevivência Kids"):
+    if acao_vencedora in ("KIT_PET", "Kit Snack Premium + Atenção Pet"):
+        msg = (
+            f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) viaja acompanhado de Pet na cabine ({ctx_narrativo if tem_contexto else 'Atenção especial ao tutor e ao pet'}). "
+            "Ao iniciar o serviço de bordo, ofereça carinhosamente o Kit Snack Premium com atenção especial e água fresca para o pet, "
+            "reforçando o cuidado, respeito e hospitalidade pet-friendly da Azul."
+        )
+    elif acao_vencedora in ("KIT_KIDS", "Kit Sobrevivência Kids"):
         msg = (
             f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) viaja com família/crianças ({ctx_narrativo if tem_contexto else 'Atenção especial à família'}). "
             "Ao iniciar o serviço de bordo, entregue carinhosamente o Kit Sobrevivência Kids (livro de colorir e snacks lúdicos), "

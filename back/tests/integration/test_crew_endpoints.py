@@ -43,6 +43,9 @@ def test_get_voo_simulado_endpoint(client: TestClient) -> None:
         assert "faixa_pareto" in cliente
         assert "risco_evasao" in cliente
         assert "score_atrito_acumulado" in cliente
+        assert "mensagem_llm_batch" in cliente
+        if cliente.get("mensagem_llm_batch"):
+            assert "[GERADO VIA BATCH]" in cliente["mensagem_llm_batch"] or "Instrução" in cliente["mensagem_llm_batch"]
 
         if item["status"] == "critico":
             criticos += 1
@@ -121,7 +124,7 @@ def test_post_simular_bordo_success(client: TestClient) -> None:
         chave in result["acao_sugerida"] or "Bebida" in result["acao_sugerida"] or "Abordagem" in result["acao_sugerida"] or "Snack" in result["acao_sugerida"]
         for chave in ("ABORDAGEM_CHEFE_CABINE", "BEBIDA_CORTESIA", "SNACK_EXTRA")
     )
-    assert result["custo_acao"] in (0.0, 15.0, 5.0)
+    assert result["custo_acao"] in (0.0, 15.0, 5.0, 10.0, 12.0, 50.0)
     assert isinstance(result["retorno_liquido"], (int, float))
     assert isinstance(result["instrucao_comissario"], str)
     assert len(result["instrucao_comissario"]) > 10

@@ -136,3 +136,4 @@ def test_batch_pipeline_end_to_end_and_idempotency(tmp_path: Path, capsys: pytes
     assert "Iniciando Lote" in captured2.out
     assert "Registros processados: 0" in captured2.out
     assert "Upsert concluído no Data Lake" in captured2.out
+

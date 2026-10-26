@@ -51,3 +51,4 @@ class MockLLMClient:
 def get_mock_llm_client(delay_seconds: float | None = None) -> MockLLMClient:
     """Fábrica para obtenção de instância do cliente mock LLM."""
     return MockLLMClient(delay_seconds=delay_seconds)
+

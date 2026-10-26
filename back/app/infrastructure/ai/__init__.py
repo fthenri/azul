@@ -7,3 +7,4 @@ from back.app.infrastructure.ai.mock_llm_client import (
 )
 
 __all__ = ["MockLLMClient", "EmptyPromptError", "get_mock_llm_client"]
+

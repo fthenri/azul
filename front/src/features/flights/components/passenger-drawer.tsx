@@ -94,6 +94,9 @@ export function PassengerDrawer({
     if (simulationResult?.acao_sugerida) return simulationResult.acao_sugerida;
 
     const ctx = (seat.dados_cliente.contexto_narrativo_llm || "").toLowerCase();
+    if (ctx.includes("petc") || ctx.includes("pet")) {
+      return "Kit Snack Premium + Atenção Pet";
+    }
     if (ctx.includes("chml") || ctx.includes("criança") || ctx.includes("criancas") || ctx.includes("kids") || ctx.includes("família") || ctx.includes("familia")) {
       return "Kit Sobrevivência Kids";
     }
@@ -103,24 +106,18 @@ export function PassengerDrawer({
     return "Bebida Premium Cortesia";
   }, [seat, batchAction, simulationResult]);
 
-  // Roteiro de leitura humanizado gerado pela IA/LLM para a comissária
+  // Roteiro de leitura gerado pelo Batch AI com fallback corporativo seguro
   const instrucaoTatica = useMemo(() => {
     if (!seat) return "";
-    if (batchAction?.instrucao_comissario) return batchAction.instrucao_comissario;
-    if (simulationResult?.instrucao_comissario) return simulationResult.instrucao_comissario;
+    const msg =
+      seat.dados_cliente?.mensagem_llm_batch ||
+      (seat.dados_cliente as any)?.llm_mensagem_comissaria;
 
-    const { dados_cliente: c } = seat;
-    const ctx = c.contexto_narrativo_llm || "";
-    const temCtx = ctx && ctx !== "Sem ocorrências recentes";
-
-    if (acaoVencedora.includes("Kids") || acaoVencedora.includes("KIDS")) {
-      return `Passageiro(a) no assento ${seat.assento} (${c.nome}, ${c.tier_fidelidade}) viaja com família/crianças (${temCtx ? ctx : "Atenção especial à família"}). Ao iniciar o serviço de bordo, entregue com carinho o Kit Sobrevivência Kids (livro de colorir e snacks lúdicos), desejando uma viagem tranquila aos responsáveis e colocando a tripulação à total disposição.`;
+    if (msg && typeof msg === "string" && msg.trim().length > 0) {
+      return msg.trim();
     }
-    if (acaoVencedora.includes("Voucher") || acaoVencedora.includes("Acolhimento")) {
-      return `Passageiro(a) no assento ${seat.assento} (${c.nome}, ${c.tier_fidelidade}) enfrentou atrito operacional registrado no CRM: ${ctx}. O Chefe de Cabine deve realizar uma acolhida pessoal e reservada, pedir sinceras desculpas em nome da Azul e entregar a cortesia de 1.000 pontos no Azul Fidelidade, assegurando que o cliente se sinta acolhido e valorizado.`;
-    }
-    return `Passageiro(a) no assento ${seat.assento} (${c.nome}, ${c.tier_fidelidade}) é passageiro prioritário (risco de evasão ${Math.round(c.risco_evasao * 100)}%). Ao iniciar o serviço de bordo, ofereça uma bebida premium cortesia (suco premium, cerveja especial ou vinho), agradecendo calorosamente por sua fidelidade à Azul.`;
-  }, [seat, batchAction, simulationResult, acaoVencedora]);
+    return "Instrução pendente. Siga o protocolo padrão do Tier.";
+  }, [seat]);
 
   const handleCopyInstruction = async (text: string) => {
     try {
@@ -156,6 +153,7 @@ export function PassengerDrawer({
 
   const getActionIcon = (acao: string) => {
     const a = acao.toLowerCase();
+    if (a.includes("pet")) return HeartHandshake;
     if (a.includes("kids") || a.includes("criança") || a.includes("chml")) return Gift;
     if (a.includes("voucher") || a.includes("acolhimento")) return HeartHandshake;
     if (a.includes("bebida")) return Coffee;
@@ -633,7 +631,7 @@ export function PassengerDrawer({
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
                 <MessageSquare className="h-3.5 w-3.5" />
-                Roteiro de Abordagem para a Tripulação (LLM)
+                ROTEIRO DE ABORDAGEM PARA A TRIPULAÇÃO
               </span>
 
               <Button
