@@ -265,18 +265,18 @@ export function CrewView() {
           </span>
         </Card>
 
-        <Card className="p-4 bg-card border border-border shadow-xs border-l-4 border-l-amber-500">
+        <Card className="p-4 bg-card border border-border shadow-xs border-l-4 border-l-slate-800">
           <div className="flex items-center justify-between text-muted-foreground mb-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-              Passageiros VIP
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-300">
+              Clientes Alto Valor (Tiers)
             </span>
-            <Crown className="h-4 w-4 text-amber-500" />
+            <Crown className="h-4 w-4 text-slate-700 dark:text-slate-300" />
           </div>
-          <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
+          <div className="text-2xl font-black text-slate-900 dark:text-slate-100">
             {totalVips}
           </div>
           <span className="text-[10px] text-muted-foreground">
-            Top 10% / Top 20% Receita (Pareto)
+            Diamante & Safira (Top Pareto)
           </span>
         </Card>
 
@@ -319,7 +319,7 @@ export function CrewView() {
             onClick={() => setFilter("atencao")}
             className={cn("h-7 text-xs px-2.5 gap-1", filter === "atencao" && "bg-[#002855] text-white")}
           >
-            <Sparkles className="h-3 w-3 text-amber-400" />
+            <Sparkles className="h-3 w-3 text-sky-400" />
             <span>Prioridades ({totalCriticos + totalVips})</span>
           </Button>
           <Button
@@ -335,10 +335,10 @@ export function CrewView() {
             variant={filter === "vip" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter("vip")}
-            className={cn("h-7 text-xs px-2.5 gap-1", filter === "vip" && "bg-amber-500 text-white")}
+            className={cn("h-7 text-xs px-2.5 gap-1", filter === "vip" && "bg-slate-800 text-white")}
           >
             <Crown className="h-3 w-3" />
-            <span>VIPs ({totalVips})</span>
+            <span>Diamante / Safira ({totalVips})</span>
           </Button>
         </div>
 
@@ -349,12 +349,12 @@ export function CrewView() {
             <span>Crítico (Risco &gt; 60%)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-amber-400" />
-            <span>VIP (Top Pareto)</span>
+            <span className="h-3 w-3 rounded-sm bg-slate-800" />
+            <span>Diamante / Safira</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-slate-300 dark:bg-slate-700" />
-            <span>Normal</span>
+            <span className="h-3 w-3 rounded-sm bg-sky-200 dark:bg-sky-800" />
+            <span>Azul Fidelidade</span>
           </div>
         </div>
       </div>

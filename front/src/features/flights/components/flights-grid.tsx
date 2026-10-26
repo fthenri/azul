@@ -201,19 +201,19 @@ export function FlightsGrid() {
           </CardContent>
         </Card>
 
-        <Card className="border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-950/20 shadow-xs">
+        <Card className="border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 shadow-xs">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-amber-800 dark:text-amber-400 uppercase">
-                Passageiros VIPs
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-300 uppercase">
+                Clientes Alto Valor (Tiers)
               </span>
-              <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <Crown className="h-4 w-4 text-slate-700 dark:text-slate-300" />
             </div>
-            <div className="mt-2 text-2xl font-black text-amber-800 dark:text-amber-300">
+            <div className="mt-2 text-2xl font-black text-slate-900 dark:text-slate-100">
               {metrics.totalVips}
             </div>
-            <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-0.5">
-              Top 10% e 20% Receita (Pareto)
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Diamante & Safira (Top Pareto)
             </p>
           </CardContent>
         </Card>
@@ -255,9 +255,9 @@ export function FlightsGrid() {
               variant={selectedFilter === "vips" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedFilter("vips")}
-              className={cn("text-xs h-8", selectedFilter === "vips" && "bg-amber-600 hover:bg-amber-700 text-white")}
+              className={cn("text-xs h-8", selectedFilter === "vips" && "bg-slate-800 hover:bg-slate-900 text-white")}
             >
-              Com VIPs ({flights.filter((f) => f.passageiros_vip > 0).length})
+              Diamante / Safira ({flights.filter((f) => f.passageiros_vip > 0).length})
             </Button>
           </div>
         </CardContent>
@@ -274,7 +274,7 @@ export function FlightsGrid() {
                 <TableHead className="font-bold text-xs">Partida Prevista</TableHead>
                 <TableHead className="font-bold text-xs">Ocupação</TableHead>
                 <TableHead className="font-bold text-xs text-center">Críticos</TableHead>
-                <TableHead className="font-bold text-xs text-center">VIPs</TableHead>
+                <TableHead className="font-bold text-xs text-center">Diamante / Safira</TableHead>
                 <TableHead className="font-bold text-xs">Atraso Médio</TableHead>
                 <TableHead className="font-bold text-xs">Status</TableHead>
                 <TableHead className="font-bold text-xs text-right">Ação</TableHead>
@@ -362,7 +362,7 @@ export function FlightsGrid() {
                     <TableCell className="text-center">
                       {flight.passageiros_vip > 0 ? (
                         <Badge
-                          className="bg-amber-500 hover:bg-amber-600 text-white font-mono font-bold text-[11px] px-2 py-0.5"
+                          className="bg-slate-800 hover:bg-slate-900 text-white font-mono font-bold text-[11px] px-2 py-0.5"
                         >
                           {flight.passageiros_vip}
                         </Badge>

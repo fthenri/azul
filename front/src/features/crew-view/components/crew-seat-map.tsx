@@ -16,6 +16,7 @@ import { SeatFilter } from "../hooks/use-crew-flight";
 import { Mission } from "@/lib/flight-state";
 import { SyncMission } from "@/lib/sync-storage";
 import { cn } from "@/lib/utils";
+import { getTierConfig } from "@/lib/tier-colors";
 
 export type SeatMapRole = "gestor" | "crew";
 
@@ -119,7 +120,10 @@ export function CrewSeatMap({
     if (filter === "todos") return true;
     if (filter === "atencao") return seat.status === "critico" || seat.status === "vip";
     if (filter === "critico") return seat.status === "critico";
-    if (filter === "vip") return seat.status === "vip";
+    if (filter === "vip") {
+      const tier = seat.dados_cliente?.tier_fidelidade || "";
+      return seat.status === "vip" || tier === "Diamante" || tier === "Safira";
+    }
     return true;
   };
 
@@ -205,6 +209,7 @@ export function CrewSeatMap({
       // Destacado (ativo), colorido com pulso ou check de concluído, e clicável
       const isDone = mission.status === "concluida" || (mission as any).concluida;
       const isAtrito = mission.tipo === "atrito";
+      const missionTierConfig = getTierConfig(mission.tier || seat.dados_cliente?.tier_fidelidade);
 
       return (
         <button
@@ -223,7 +228,10 @@ export function CrewSeatMap({
               ? "bg-emerald-50 text-emerald-950 border-emerald-400 dark:bg-emerald-950/70 dark:text-emerald-100 dark:border-emerald-500 ring-2 ring-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/70"
               : isAtrito
               ? "bg-rose-50 text-rose-950 border-rose-400 dark:bg-rose-950/70 dark:text-rose-100 dark:border-rose-500 ring-2 ring-rose-500 ring-offset-2 hover:bg-rose-100 dark:hover:bg-rose-900/70 animate-pulse"
-              : "bg-amber-50 text-amber-950 border-amber-400 dark:bg-amber-950/70 dark:text-amber-100 dark:border-amber-400 ring-2 ring-amber-400 ring-offset-2 hover:bg-amber-100 dark:hover:bg-amber-900/70 animate-pulse",
+              : cn(
+                  missionTierConfig.seat,
+                  "ring-2 ring-sky-500 ring-offset-2 animate-pulse"
+                ),
             isGroupMember &&
               "ring-4 ring-blue-500 ring-offset-2 scale-105 z-10 bg-blue-50 dark:bg-blue-950/70 dark:ring-blue-400 shadow-md transition-all duration-300",
             isSelected && "scale-105 ring-4 ring-blue-600 dark:ring-blue-400 z-20 shadow-xl",
@@ -241,7 +249,7 @@ export function CrewSeatMap({
             ) : isAtrito ? (
               <AlertTriangle className="h-3 w-3 text-rose-600 dark:text-rose-400 shrink-0" />
             ) : (
-              <Sparkles className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
+              <Sparkles className="h-3 w-3 text-sky-600 dark:text-sky-400 shrink-0" />
             )}
           </div>
 
@@ -253,7 +261,7 @@ export function CrewSeatMap({
           {/* Rodapé: Tier e Badge de IA */}
           <div className="flex items-center justify-between w-full text-[8px] font-black uppercase">
             <span className="truncate">
-              {mission.tier?.slice(0, 3) || seat.dados_cliente?.tier_fidelidade?.slice(0, 3) || "VIP"}
+              {mission.tier?.slice(0, 3) || seat.dados_cliente?.tier_fidelidade?.slice(0, 3) || missionTierConfig.shortLabel}
             </span>
             <span
               className={cn(
@@ -262,7 +270,7 @@ export function CrewSeatMap({
                   ? "bg-emerald-600 text-white"
                   : isAtrito
                   ? "bg-rose-600 text-white"
-                  : "bg-amber-600 text-white"
+                  : "bg-sky-600 text-white"
               )}
             >
               {isDone ? "OK" : "MISSÃO"}
@@ -275,13 +283,13 @@ export function CrewSeatMap({
               <span
                 className={cn(
                   "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                  isAtrito ? "bg-rose-400" : "bg-amber-400"
+                  isAtrito ? "bg-rose-400" : "bg-sky-400"
                 )}
               />
               <span
                 className={cn(
                   "relative inline-flex rounded-full h-2.5 w-2.5",
-                  isAtrito ? "bg-rose-500" : "bg-amber-500"
+                  isAtrito ? "bg-rose-500" : "bg-sky-500"
                 )}
               />
             </span>
@@ -295,6 +303,7 @@ export function CrewSeatMap({
     // Se role === 'gestor': Todos os assentos são renderizados normalmente.
     // O clique no assento abre o modal/agente LLM para gerar a missão.
     // =========================================================================
+    const tierConfig = getTierConfig(seat.dados_cliente?.tier_fidelidade);
     let statusStyles = "";
     let indicatorIcon = null;
 
@@ -306,22 +315,28 @@ export function CrewSeatMap({
       indicatorIcon = (
         <AlertTriangle className="h-3 w-3 text-rose-600 dark:text-rose-400 shrink-0" />
       );
-    } else if (seat.status === "vip") {
-      statusStyles = cn(
-        "bg-amber-50/90 text-amber-950 border-amber-400 hover:bg-amber-100/90 dark:bg-[#002855] dark:text-amber-200 dark:border-amber-400/80 dark:hover:bg-[#003B7A] shadow-xs",
-        isSelected && "ring-2 ring-amber-400 ring-offset-2 dark:ring-offset-slate-950"
-      );
-      indicatorIcon = (
-        <Crown className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
-      );
     } else {
       statusStyles = cn(
-        "bg-slate-100/90 text-slate-700 border-slate-200 hover:bg-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700/60",
+        tierConfig.seat,
         isSelected && "ring-2 ring-[#0077C8] ring-offset-2 dark:ring-offset-slate-950"
       );
-      indicatorIcon = (
-        <User className="h-2.5 w-2.5 text-slate-400 dark:text-slate-500 shrink-0" />
-      );
+      if (tierConfig.key === "diamante") {
+        indicatorIcon = (
+          <Crown className="h-3 w-3 text-slate-200 dark:text-slate-300 shrink-0" />
+        );
+      } else if (tierConfig.key === "safira") {
+        indicatorIcon = (
+          <Crown className="h-3 w-3 text-blue-900 dark:text-blue-300 shrink-0" />
+        );
+      } else if (tierConfig.key === "topazio") {
+        indicatorIcon = (
+          <Sparkles className="h-2.5 w-2.5 text-cyan-800 dark:text-cyan-300 shrink-0" />
+        );
+      } else {
+        indicatorIcon = (
+          <User className="h-2.5 w-2.5 text-sky-800 dark:text-sky-300 shrink-0" />
+        );
+      }
     }
 
     return (
@@ -341,7 +356,7 @@ export function CrewSeatMap({
           !highlighted && "opacity-25 hover:opacity-100 scale-95",
           highlighted && !isDimmed && "hover:scale-105 active:scale-95"
         )}
-        title={`${seatCode}: ${seat.dados_cliente.nome} (${seat.status.toUpperCase()}) - ${seat.dados_cliente.tier_fidelidade}${isFamily ? ` [Grupo Familiar / PNR ${seatPnr}: ${seat.dados_cliente.tamanho_grupo || 2} pax]` : ""}`}
+        title={`${seatCode}: ${seat.dados_cliente.nome} (${seat.status === "critico" ? "CRÍTICO" : tierConfig.name}) - ${seat.dados_cliente.tier_fidelidade}${isFamily ? ` [Grupo Familiar / PNR ${seatPnr}: ${seat.dados_cliente.tamanho_grupo || 2} pax]` : ""}`}
       >
         {/* Header do Assento: Código + Ícone de Grupo/Status */}
         <div className="flex items-center justify-between w-full">
@@ -393,13 +408,13 @@ export function CrewSeatMap({
             <span
               className={cn(
                 "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                seat.status === "critico" ? "bg-rose-400" : "bg-amber-400"
+                seat.status === "critico" ? "bg-rose-400" : "bg-sky-400"
               )}
             />
             <span
               className={cn(
                 "relative inline-flex rounded-full h-2.5 w-2.5",
-                seat.status === "critico" ? "bg-rose-500" : "bg-amber-500"
+                seat.status === "critico" ? "bg-rose-500" : "bg-sky-500"
               )}
             />
           </span>

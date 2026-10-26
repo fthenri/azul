@@ -458,7 +458,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                         "p-3 rounded-xl border text-xs space-y-2 transition-all hover:shadow-xs cursor-pointer hover:border-primary/50",
                         isCritico
                           ? "bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50"
-                          : "bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50"
+                          : "bg-slate-50/70 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800"
                       )}
                     >
                       {/* Header do Card de Ação */}
@@ -486,7 +486,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                           variant={isCritico ? "destructive" : "default"}
                           className={cn(
                             "text-[9px] py-0 px-1.5 shrink-0",
-                            !isCritico && "bg-amber-500 hover:bg-amber-600 text-white"
+                            !isCritico && "bg-slate-800 hover:bg-slate-900 text-white"
                           )}
                         >
                           {acao.status_badge}
@@ -563,31 +563,39 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                   variant={filter === "vip" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setFilter("vip")}
-                  className={cn("text-xs h-7 px-2.5", filter === "vip" && "bg-amber-600 text-white")}
+                  className={cn("text-xs h-7 px-2.5", filter === "vip" && "bg-slate-800 text-white")}
                 >
-                  VIPs ({seatCounts.vips})
+                  Diamante / Safira ({seatCounts.vips})
                 </Button>
               </div>
             </CardHeader>
 
             <CardContent className="p-4 flex flex-col items-center">
-              {/* Legenda Visual */}
+              {/* Legenda Visual com Categorias Oficiais Azul Fidelidade */}
               <div className="w-full flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground mb-4 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-border">
                 <div className="flex items-center gap-1.5">
                   <span className="h-3 w-3 rounded-xs bg-rose-500" />
-                  <span>Crítico (Evasão &gt; 60%)</span>
+                  <span>Crítico (Risco &gt; 60%)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-xs bg-amber-500" />
-                  <span>VIP (Top Pareto)</span>
+                  <span className="h-3 w-3 rounded-xs bg-slate-800 border border-slate-900" />
+                  <span>Diamante</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded-xs bg-blue-200 border border-blue-500" />
+                  <span>Safira</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded-xs bg-cyan-100 border border-cyan-400" />
+                  <span>Topázio</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded-xs bg-sky-100 border border-sky-300" />
+                  <span>Azul Fidelidade</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Users className="h-3 w-3 text-sky-500" />
-                  <span>Grupo Familiar (Mesmo PNR • clique para destacar)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-xs bg-slate-200 dark:bg-slate-700" />
-                  <span>Normal / Livre</span>
+                  <span>Grupo Familiar</span>
                 </div>
               </div>
 

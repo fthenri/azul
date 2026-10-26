@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
+import { getTierConfig } from "@/lib/tier-colors";
 
 interface PassengerDrawerProps {
   seat: AssentoVoo | null;
@@ -267,7 +268,7 @@ export function PassengerDrawer({
 
   const { dados_cliente: cliente } = seat;
   const isCritico = seat.status === "critico";
-  const isVip = seat.status === "vip";
+  const tierConfig = getTierConfig(cliente.tier_fidelidade);
   const riscoPerc = Math.round(cliente.risco_evasao * 100);
 
   // Instrução da tripulação (se inclusa no batch ou retornada pelo backend)
@@ -288,9 +289,7 @@ export function PassengerDrawer({
                 "h-12 w-12 rounded-xl flex flex-col items-center justify-center font-mono font-black text-base shrink-0 shadow-xs border",
                 isCritico
                   ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700"
-                  : isVip
-                  ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700"
+                  : tierConfig.badge
               )}
             >
               <span className="text-[10px] font-semibold opacity-75 uppercase">
@@ -309,16 +308,14 @@ export function PassengerDrawer({
                     Crítico
                   </Badge>
                 )}
-                {isVip && (
-                  <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-[10px] py-0 px-2 font-bold">
-                    VIP
-                  </Badge>
-                )}
-                {seat.status === "normal" && (
-                  <Badge variant="outline" className="text-[10px] py-0 px-2 font-bold">
-                    Normal
-                  </Badge>
-                )}
+                <Badge
+                  className={cn(
+                    "text-[10px] py-0 px-2 font-bold border",
+                    tierConfig.badge
+                  )}
+                >
+                  {cliente.tier_fidelidade || tierConfig.name}
+                </Badge>
               </div>
               <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5 mt-0.5">
                 <span className="font-mono text-[11px] text-foreground font-semibold">
@@ -326,7 +323,7 @@ export function PassengerDrawer({
                 </span>
                 <span>•</span>
                 <span>
-                  Tier: <strong className="text-[#0077C8] dark:text-[#38BDF8]">{cliente.tier_fidelidade}</strong>
+                  Tier: <strong className={tierConfig.text}>{cliente.tier_fidelidade}</strong>
                 </span>
                 <span>•</span>
                 <span>{cliente.persona}</span>
