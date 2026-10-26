@@ -214,3 +214,51 @@ def test_post_acao_concluida_validation_error(client: TestClient) -> None:
     }
     response = client.post("/api/v1/motor/acao-concluida", json=payload)
     assert response.status_code == 422
+
+def test_voo_simulado_explicabilidade_xai_payload(client: TestClient) -> None:
+    """Valida diretamente a explicabilidade XAI completa (SHAP, Árbitro ROI e RAG) no voo simulado."""
+    response = client.get("/api/v1/motor/voo-simulado")
+    assert response.status_code == 200
+    data = response.json()
+    assert "assentos" in data
+    assert len(data["assentos"]) > 0
+
+    first_seat = data["assentos"][0]
+    dados = first_seat["dados_cliente"]
+
+    # 1. Verifica presença da chave explicabilidade
+    assert "explicabilidade" in dados
+    assert dados["explicabilidade"] is not None
+    xai = dados["explicabilidade"]
+
+    # 2. Valida Decomposição SHAP
+    assert "fatores_shap" in xai
+    assert len(xai["fatores_shap"]) > 0
+    for f in xai["fatores_shap"]:
+        assert "variavel" in f
+        assert "impacto" in f
+        assert f["direcao"] in ("positivo", "negativo")
+        assert isinstance(f["impacto"], (int, float))
+
+    # 3. Valida Racional do Árbitro Contextual (Uplift & ROI)
+    assert "racional_arbitro" in xai
+    racional = xai["racional_arbitro"]
+    assert "acao_vencedora" in racional
+    assert "custo" in racional
+    assert "retorno_liquido" in racional
+    assert "formula" in racional
+    assert "CLV" in racional["formula"]
+    assert "acoes_avaliadas" in racional
+    assert len(racional["acoes_avaliadas"]) > 0
+    for acao in racional["acoes_avaliadas"]:
+        assert acao["status"] in ("VENCEDORA", "SUPERADA", "VETADA_ROI")
+        assert "acao" in acao
+        assert "custo" in acao
+        assert "retorno_liquido" in acao
+
+    # 4. Valida Fundamentação Regulatória (RAG)
+    assert "fundamentacao_rag" in xai
+    rag = xai["fundamentacao_rag"]
+    assert "Resolução 400 ANAC" in rag["norma"]
+    assert "regra_fidelidade" in rag
+

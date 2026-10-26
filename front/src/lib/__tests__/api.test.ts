@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { api, ApiError } from "../api";
-import { DEMO_KPIS, DEMO_PERSONAS, DEMO_PARETO, DEMO_MOMENTOS, DEMO_SIMULACAO_RESULT, DEMO_AUDITORIA_DECISOES, DEMO_SHAP } from "../demo-data";
+import { DEMO_KPIS, DEMO_PERSONAS, DEMO_PARETO, DEMO_MOMENTOS, DEMO_SIMULACAO_RESULT, DEMO_AUDITORIA_DECISOES, DEMO_SHAP, DEMO_VOO_SIMULADO } from "../demo-data";
 
 describe("API Client Integration Tests (contract.md compliance)", () => {
   const originalFetch = global.fetch;
@@ -193,5 +193,24 @@ describe("API Client Integration Tests (contract.md compliance)", () => {
     );
     expect(result.status).toBe("sucesso");
     expect(result.origem).toBe("OFFBOARD_CRM");
+  });
+
+  it("getVooSimulado deve retornar assentos com explicabilidade XAI (SHAP, Árbitro e RAG)", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => DEMO_VOO_SIMULADO,
+    } as Response);
+
+    const data = await api.getVooSimulado();
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/voo-simulado"),
+      expect.anything()
+    );
+    expect(data.assentos.length).toBeGreaterThan(0);
+    const primeiro = data.assentos[0].dados_cliente;
+    expect(primeiro.explicabilidade).toBeDefined();
+    expect(primeiro.explicabilidade?.fatores_shap.length).toBeGreaterThan(0);
+    expect(primeiro.explicabilidade?.racional_arbitro?.formula).toContain("CLV");
+    expect(primeiro.explicabilidade?.fundamentacao_rag?.norma).toBe("Resolução 400 ANAC");
   });
 });
