@@ -45,6 +45,10 @@ class MockLLMClient:
         if self.delay_seconds > 0:
             time.sleep(self.delay_seconds)
 
+        prompt_lower = str(prompt).lower()
+        if any(k in prompt_lower for k in ["petc", "pet na cabine", "animal", "pet"]):
+            return "[GERADO VIA BATCH] Instrução tática para a tripulação baseada no contexto: Kit Snack Premium + Atenção Pet."
+
         return "[GERADO VIA BATCH] Instrução tática para a tripulação baseada no contexto: Acolhimento e prioridade."
 
 

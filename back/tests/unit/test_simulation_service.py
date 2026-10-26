@@ -113,3 +113,26 @@ def test_arbitrar_acao_bordo_pet_routing() -> None:
     decisao_pet = arbitrar_acao_bordo(perfil_pet)
     assert decisao_pet["acao_vencedora"] == "KIT_PET"
     assert decisao_pet["custo_acao"] == 10.0
+
+    # Cenário 3: Variação 'pet na cabine' e 'ANIMAL' (Case-insensitive)
+    perfil_cabine = {
+        "id_cliente": "cli_pet_3",
+        "tier_fidelidade": "Topázio",
+        "clv_previsto": 8000.0,
+        "risco_evasao": 0.30,
+        "contexto_narrativo_llm": "Reserva confirmada com PET NA CABINE sob assento 12C",
+    }
+    decisao_cabine = arbitrar_acao_bordo(perfil_cabine)
+    assert decisao_cabine["acao_vencedora"] == "KIT_PET"
+    assert decisao_cabine["custo_acao"] == 10.0
+
+    perfil_animal = {
+        "id_cliente": "cli_pet_4",
+        "tier_fidelidade": "Azul",
+        "clv_previsto": 4000.0,
+        "risco_evasao": 0.20,
+        "contexto_narrativo_llm": "Aviso de embarque: transporte de animal vivo devidamente autorizado",
+    }
+    decisao_animal = arbitrar_acao_bordo(perfil_animal)
+    assert decisao_animal["acao_vencedora"] == "KIT_PET"
+    assert decisao_animal["custo_acao"] == 10.0

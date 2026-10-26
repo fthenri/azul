@@ -822,6 +822,8 @@ class CrewService:
                 "risco_evasao": perfil.get("risco_evasao"),
                 "score_atrito_acumulado": perfil.get("score_atrito_acumulado"),
                 "contexto_narrativo_llm": perfil.get("contexto_narrativo_llm", "Sem ocorrências recentes"),
+                "mensagem_llm_batch": perfil.get("mensagem_llm_batch") or perfil.get("llm_mensagem_comissaria"),
+                "llm_mensagem_comissaria": perfil.get("llm_mensagem_comissaria"),
             },
         )
 

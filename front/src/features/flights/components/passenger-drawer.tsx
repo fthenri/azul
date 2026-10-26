@@ -94,7 +94,7 @@ export function PassengerDrawer({
     if (simulationResult?.acao_sugerida) return simulationResult.acao_sugerida;
 
     const ctx = (seat.dados_cliente.contexto_narrativo_llm || "").toLowerCase();
-    if (ctx.includes("petc") || ctx.includes("pet")) {
+    if (ctx.includes("petc") || ctx.includes("pet na cabine") || ctx.includes("animal") || ctx.includes("pet")) {
       return "Kit Snack Premium + Atenção Pet";
     }
     if (ctx.includes("chml") || ctx.includes("criança") || ctx.includes("criancas") || ctx.includes("kids") || ctx.includes("família") || ctx.includes("familia")) {

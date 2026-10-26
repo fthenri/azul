@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import os
-import sys
 from pathlib import Path
+import re
+import sys
 from typing import Any
 
 from dotenv import load_dotenv
@@ -388,7 +389,17 @@ Responda ESTRITAMENTE em formato JSON (sem nenhum texto ou formatação fora do 
 def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
     clv_previsto = float(perfil_cliente.get("clv_previsto", 0.0))
     risco_evasao = float(perfil_cliente.get("risco_evasao", 0.0))
-    ctx = str(perfil_cliente.get("contexto_narrativo_llm") or "").lower()
+
+    # Blindagem determinística de Case Sensitivity e unificação de contexto
+    ctx_raw = str(
+        perfil_cliente.get("contexto_narrativo_llm")
+        or perfil_cliente.get("descricao_ssr")
+        or perfil_cliente.get("contexto")
+        or ""
+    )
+    if perfil_cliente.get("ssr_codigo"):
+        ctx_raw += f" {perfil_cliente.get('ssr_codigo')}"
+    ctx = ctx_raw.strip().lower()
 
     avaliacoes: dict[str, float] = {}
     for nome_acao, dados in CATALOGO_ACOES_BORDO.items():
@@ -399,7 +410,13 @@ def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
         avaliacoes[nome_acao] = round(retorno, 2)
 
     # Roteamento Contextual Inteligente (Context-Aware / Data Contract Satélites)
-    if any(k in ctx for k in ["petc", "pet"]):
+    # Blindagem para Pets: cobre 'petc', 'pet na cabine', 'animal' e 'pet' via regex e operador in
+    is_pet = bool(
+        any(k in ctx for k in ["petc", "pet na cabine", "animal", "pet"])
+        or re.search(r"\b(petc|animal|pet)\b|pet na cabine", ctx, re.IGNORECASE)
+    )
+
+    if is_pet:
         melhor_acao = "KIT_PET"
     elif any(k in ctx for k in ["chml", "criança", "criancas", "kids", "infantil", "família", "familia"]):
         melhor_acao = "KIT_KIDS"
