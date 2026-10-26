@@ -121,9 +121,11 @@ def test_batch_pipeline_end_to_end_and_idempotency(tmp_path: Path, capsys: pytes
     con = duckdb.connect()
     gold_res = con.execute(f"SELECT id_cliente, llm_mensagem_comissaria FROM read_parquet('{gold_file.as_posix()}') ORDER BY id_cliente").df()
 
-    # CLI_001 e CLI_003 receberam a mensagem padrão do Mock LLM
-    assert "[GERADO VIA BATCH]" in gold_res.loc[gold_res["id_cliente"] == "CLI_001", "llm_mensagem_comissaria"].values[0]
-    assert "[GERADO VIA BATCH]" in gold_res.loc[gold_res["id_cliente"] == "CLI_003", "llm_mensagem_comissaria"].values[0]
+    # CLI_001 e CLI_003 receberam a mensagem da LLM (Mock ou Real com prefixo RAG)
+    val_cli1 = gold_res.loc[gold_res["id_cliente"] == "CLI_001", "llm_mensagem_comissaria"].values[0]
+    val_cli3 = gold_res.loc[gold_res["id_cliente"] == "CLI_003", "llm_mensagem_comissaria"].values[0]
+    assert "[GERADO VIA BATCH]" in val_cli1 or "[RAG: Azul Fidelidade Res. 400]" in val_cli1
+    assert "[GERADO VIA BATCH]" in val_cli3 or "[RAG: Azul Fidelidade Res. 400]" in val_cli3
 
     # CLI_002 disparou Graceful Degradation devido ao prompt vazio
     assert gold_res.loc[gold_res["id_cliente"] == "CLI_002", "llm_mensagem_comissaria"].values[0] == FALLBACK_SEGURANCA_TIER

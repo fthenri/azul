@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 import duckdb
 import pandas as pd
 
-from back.app.infrastructure.ai.mock_llm_client import MockLLMClient
+from back.app.infrastructure.ai.real_llm_client import RealLLMClient
 
 # Configuração de logging estruturado
 logging.basicConfig(
@@ -136,18 +136,8 @@ def run_batch_pipeline(
     num_pendentes = len(pending_df)
     logger.info("Registros pendentes identificados para inferência LLM: %d", num_pendentes)
 
-    # 4. Configuração do Mock LLM Client
-    if delay_seconds is None:
-        env_delay = os.getenv("MOCK_LLM_DELAY_SECONDS")
-        if env_delay is not None:
-            eff_delay = float(env_delay)
-        else:
-            # Se especificado limite pequeno (<=10), simula 1.0s. Caso contrário, otimizado para lotes massivos
-            eff_delay = 1.0 if (limit is not None and limit <= 10) else float(os.getenv("DEFAULT_BATCH_DELAY", "0.001"))
-    else:
-        eff_delay = delay_seconds
-
-    llm_client = MockLLMClient(delay_seconds=eff_delay)
+    # 4. Configuração do Real LLM Client
+    llm_client = RealLLMClient()
 
     # 5. Processamento em loop isolado (Graceful Degradation)
     staging_records: List[Dict[str, Any]] = []
