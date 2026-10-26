@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import logging
+from pathlib import Path
 import random
+import sqlite3
 from typing import Any, List
 
 from back.app.config import Settings, get_settings
@@ -814,35 +817,116 @@ class CrewService:
             },
         )
 
+    def _get_mlops_db_path(self) -> Path:
+        """Retorna o caminho do banco SQLite transacional de MLOps."""
+        db_dir = self.settings.project_root / "back"
+        db_dir.mkdir(parents=True, exist_ok=True)
+        return db_dir / "mlops_logs.db"
+
+    def _init_mlops_db(self) -> None:
+        """Garante que a tabela mlops_feedback exista no banco SQLite mlops_logs.db."""
+        db_path = self._get_mlops_db_path()
+        with sqlite3.connect(str(db_path)) as con:
+            con.execute("""
+                CREATE TABLE IF NOT EXISTS mlops_feedback (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    flight_id TEXT NOT NULL,
+                    assento TEXT NOT NULL,
+                    id_cliente TEXT,
+                    acao_executada TEXT NOT NULL,
+                    custo REAL NOT NULL,
+                    timestamp TEXT NOT NULL,
+                    status TEXT DEFAULT 'INGESTED',
+                    grupo_controle TEXT DEFAULT 'HOLDOUT_10PCT'
+                )
+            """)
+            con.commit()
+
     def register_action_feedback(
         self,
         flight_id: str,
         payload: dict[str, Any],
     ) -> dict[str, Any]:
-        """Registra a conclusão de uma ação de bordo para alimentar o ciclo de Feedback Loop de MLOps (Holdout Group)."""
+        """Registra e persiste a conclusão de uma ação de bordo no banco transacional SQLite mlops_logs.db."""
+        self._init_mlops_db()
+        db_path = self._get_mlops_db_path()
+
         assento = str(payload.get("assento") or "").strip()
         id_cliente = str(payload.get("id_cliente") or "").strip()
-        acao = str(payload.get("acao") or "").strip()
+        acao = str(payload.get("acao") or "Bebida Premium Cortesia").strip()
+
+        # Mapeia custo real pelo catálogo
+        custo = float(payload.get("custo") or 0.0)
+        if custo <= 0.0:
+            if "kids" in acao.lower():
+                custo = 12.00
+            elif "voucher" in acao.lower() or "acolhimento" in acao.lower():
+                custo = 50.00
+            elif "snack" in acao.lower():
+                custo = 5.00
+            else:
+                custo = 15.00
+
+        ts = datetime.now(timezone.utc).isoformat()
+
+        with sqlite3.connect(str(db_path)) as con:
+            cur = con.cursor()
+            cur.execute(
+                """
+                INSERT INTO mlops_feedback (flight_id, assento, id_cliente, acao_executada, custo, timestamp, status)
+                VALUES (?, ?, ?, ?, ?, ?, 'CONCLUIDA')
+                """,
+                (flight_id, assento, id_cliente, acao, custo, ts),
+            )
+            con.commit()
+            registro_id = cur.lastrowid
+            cur.execute("SELECT count(*) FROM mlops_feedback")
+            total_persistidos = cur.fetchone()[0]
 
         logger.info(
-            "MLOps Feedback Loop recebido: voo=%s, assento=%s, id_cliente=%s, acao=%s",
+            "MLOps Feedback Loop gravado fisicamente em SQLite [ID=%s | Total=%s]: voo=%s, assento=%s, cliente=%s, acao=%s, custo=R$%.2f",
+            registro_id,
+            total_persistidos,
             flight_id,
             assento,
             id_cliente,
             acao,
+            custo,
         )
 
         return {
             "status": "sucesso",
             "mensagem": "Ação registrada no Data Lake para Feedback Loop (Holdout Group)",
+            "registro_id": registro_id,
             "flight_id": flight_id,
             "assento": assento,
             "id_cliente": id_cliente,
             "acao_executada": acao,
+            "custo": custo,
+            "timestamp": ts,
             "ciclo_mlops": {
-                "status": "INGESTED_INTO_FEATURE_STORE",
+                "status": "INGESTED_INTO_SQLITE_LOGS",
+                "banco": "mlops_logs.db",
+                "tabela": "mlops_feedback",
+                "registro_id": registro_id,
                 "grupo_controle": "HOLDOUT_10PCT",
-                "destino_datalake": "gold_feedback_mlops.parquet",
+                "total_registros_persistidos": total_persistidos,
             },
         }
+
+    def get_action_feedback_logs(self, flight_id: str) -> dict[str, Any]:
+        """Consulta os registros salvos no banco SQLite transacional de MLOps para auditoria."""
+        self._init_mlops_db()
+        db_path = self._get_mlops_db_path()
+        with sqlite3.connect(str(db_path)) as con:
+            con.row_factory = sqlite3.Row
+            rows = con.execute(
+                "SELECT * FROM mlops_feedback WHERE flight_id = ? ORDER BY id DESC LIMIT 50",
+                (flight_id,),
+            ).fetchall()
+            return {
+                "flight_id": flight_id,
+                "total": len(rows),
+                "registros": [dict(r) for r in rows],
+            }
 

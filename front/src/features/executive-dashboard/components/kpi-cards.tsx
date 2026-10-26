@@ -36,12 +36,12 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
     {
       title: "Valor Protegido",
       value: formatCurrency(data.valor_protegido),
-      description: "CLV de clientes preservado pelo motor",
+      description: "CLV de passageiros críticos na Camada Gold",
       icon: ShieldCheck,
       color: "text-[#16805D]",
       bg: "bg-[#16805D]/10",
       border: "border-[#16805D]/20",
-      tooltip: "CLV (Customer Lifetime Value): Previsão de lucro futuro gerado pelo cliente com base no histórico de engajamento e decaimento.",
+      tooltip: "CLV (Customer Lifetime Value): Previsão de lucro futuro preservado dos clientes com propensão crítica de churn.",
     },
     {
       title: "Valor Gerado",

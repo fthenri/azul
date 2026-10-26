@@ -53,6 +53,20 @@ async def execute_flight_action(
     _user: RequireCommissionerOrManagerDep = None,
     crew_service: CrewService = Depends(get_crew_service),
 ) -> Dict[str, Any]:
-    """Mock do Feedback Loop de MLOps: valida ingestão no Data Lake sem alterar arquivos estáticos."""
+    """Persiste a execução da ação no banco transacional SQLite mlops_logs.db para Feedback Loop."""
     return crew_service.register_action_feedback(flight_id=id, payload=payload)
+
+
+@router.get(
+    "/{id}/mlops-logs",
+    summary="Consultar Registros Transacionais do Feedback Loop (MLOps)",
+    description="Retorna os registros físicos salvos no banco SQLite mlops_logs.db para auditoria de retreinamento.",
+)
+async def get_flight_mlops_logs(
+    id: str,
+    _user: RequireCommissionerOrManagerDep = None,
+    crew_service: CrewService = Depends(get_crew_service),
+) -> Dict[str, Any]:
+    """Consulta física de auditoria dos eventos transacionais de MLOps."""
+    return crew_service.get_action_feedback_logs(flight_id=id)
 
