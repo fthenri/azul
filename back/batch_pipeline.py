@@ -13,7 +13,12 @@ import pandas as pd
 
 from back.app.infrastructure.ai.real_llm_client import RealLLMClient
 from back.app.modules.simulation.crew_service import gerar_nome_passageiro
-from back.executor_decisao import ROTULOS_ACOES_BORDO, arbitrar_acao_bordo
+from back.executor_decisao import (
+    FALLBACK_ROI_NEGATIVO,
+    MENSAGEM_VETO_POLITICA,
+    ROTULOS_ACOES_BORDO,
+    arbitrar_acao_bordo,
+)
 
 # Configuração de logging estruturado
 logging.basicConfig(
@@ -27,7 +32,6 @@ logger = logging.getLogger("azul.dataops.batch_llm")
 # Constantes de mensagens de fallback e segurança corporativa
 FALLBACK_SEGURANCA_TIER = "Instrução pendente. Siga o protocolo padrão do Tier."
 FALLBACK_OFFBOARD = "Mensagem pendente. Favor acionar a régua de relacionamento padrão."
-FALLBACK_ROI_NEGATIVO = "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
 
 
 def resolve_data_lake_dir() -> Path:
@@ -133,25 +137,47 @@ def run_batch_pipeline(
         FROM read_parquet('{gold_contexto_path.as_posix()}')
     """)
 
-    # Registra views analíticas auxiliares para cálculo de risco e priorização por voo
+    # Registra views analíticas auxiliares para cálculo de risco e priorização por voo com inspeção resiliente de schema
     evasao_path = gold_dir / "evasao_clientes.parquet"
     clv_path = gold_dir / "clv_clientes.parquet"
+    personas_path = gold_dir / "personas_clientes.parquet"
+    clientes_path = silver_dir / "clientes_silver.parquet"
+
     if evasao_path.exists():
-        con.execute(f"CREATE OR REPLACE VIEW gold_evasao AS SELECT * FROM read_parquet('{evasao_path.as_posix()}')")
+        evasao_cols = [r[0] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{evasao_path.as_posix()}')").fetchall()]
+        extra_evasao = "" if "score_atrito_acumulado" in evasao_cols else ", 0.0 AS score_atrito_acumulado"
+        con.execute(f"CREATE OR REPLACE VIEW gold_evasao AS SELECT *{extra_evasao} FROM read_parquet('{evasao_path.as_posix()}')")
     else:
-        con.execute("CREATE OR REPLACE VIEW gold_evasao AS SELECT '' AS id_cliente, 0.0 AS risco_evasao")
+        con.execute("CREATE OR REPLACE VIEW gold_evasao AS SELECT '' AS id_cliente, 0.0 AS risco_evasao, 0.0 AS score_atrito_acumulado")
 
     if clv_path.exists():
         con.execute(f"CREATE OR REPLACE VIEW gold_clv AS SELECT * FROM read_parquet('{clv_path.as_posix()}')")
     else:
         con.execute("CREATE OR REPLACE VIEW gold_clv AS SELECT '' AS id_cliente, 0.0 AS clv_previsto")
 
-    # 3. Query: Top 5 clientes prioritários por voo + passageiros com risco financeiro / ROI negativo
+    if personas_path.exists():
+        personas_cols = [r[0] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{personas_path.as_posix()}')").fetchall()]
+        extra_personas = "" if "persona" in personas_cols else ", 'Turista Eventual' AS persona"
+        con.execute(f"CREATE OR REPLACE VIEW gold_personas AS SELECT *{extra_personas} FROM read_parquet('{personas_path.as_posix()}')")
+    else:
+        con.execute("CREATE OR REPLACE VIEW gold_personas AS SELECT '' AS id_cliente, 'Turista Eventual' AS persona")
+
+    if clientes_path.exists():
+        clientes_cols = [r[0] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{clientes_path.as_posix()}')").fetchall()]
+        extra_clientes = "" if "tier_fidelidade" in clientes_cols else ", 'Basico' AS tier_fidelidade"
+        con.execute(f"CREATE OR REPLACE VIEW silver_clientes AS SELECT *{extra_clientes} FROM read_parquet('{clientes_path.as_posix()}')")
+    else:
+        con.execute("CREATE OR REPLACE VIEW silver_clientes AS SELECT '' AS id_cliente, 'Basico' AS tier_fidelidade")
+
+    # 3. Query: Top 5 clientes prioritários por voo + passageiros com risco financeiro / ROI negativo / Veto de Política
     query = """
         WITH ranked AS (
             SELECT 
                 g.*,
+                COALESCE(s.tier_fidelidade, 'Basico') AS tier_fidelidade,
+                COALESCE(p.persona, 'Turista Eventual') AS persona,
                 COALESCE(e.risco_evasao, 0.0) AS risco_evasao,
+                COALESCE(e.score_atrito_acumulado, 0.0) AS score_atrito_acumulado,
                 COALESCE(c.clv_previsto, 0.0) AS clv_previsto,
                 COALESCE(c.clv_previsto, 0.0) * COALESCE(e.risco_evasao, 0.0) AS valor_em_risco,
                 ROW_NUMBER() OVER(
@@ -161,17 +187,30 @@ def run_batch_pipeline(
             FROM gold_contexto_passageiro g
             LEFT JOIN gold_evasao e ON g.id_cliente = e.id_cliente
             LEFT JOIN gold_clv c ON g.id_cliente = c.id_cliente
+            LEFT JOIN gold_personas p ON g.id_cliente = p.id_cliente
+            LEFT JOIN silver_clientes s ON g.id_cliente = s.id_cliente
             WHERE g.numero_voo IS NOT NULL 
               AND TRIM(g.numero_voo) != ''
               AND (
                   g.llm_mensagem_comissaria IS NULL 
                   OR TRIM(COALESCE(g.llm_mensagem_comissaria, '')) = ''
                   OR g.llm_mensagem_comissaria LIKE '[GERADO VIA BATCH]%'
+                  OR (
+                      g.llm_mensagem_comissaria NOT LIKE 'Decisão Analítica:%'
+                      AND COALESCE(s.tier_fidelidade, 'Basico') IN ('Basico', 'Básico')
+                      AND COALESCE(e.score_atrito_acumulado, 0.0) <= 0.0
+                      AND (g.contexto_narrativo_llm IS NULL OR g.contexto_narrativo_llm = 'Sem ocorrências recentes')
+                  )
               )
         )
         SELECT * FROM ranked
         WHERE ranking_voo <= 5
            OR ((COALESCE(clv_previsto, 0.0) * COALESCE(risco_evasao, 0.0) * 0.15) - 5.0 <= 0)
+           OR (
+               (tier_fidelidade IN ('Basico', 'Básico') OR persona = 'Turista Eventual')
+               AND score_atrito_acumulado <= 0.0
+               AND (contexto_narrativo_llm IS NULL OR contexto_narrativo_llm = 'Sem ocorrências recentes')
+           )
     """
     if limit is not None and limit > 0:
         query += f" LIMIT {limit}"
@@ -201,22 +240,35 @@ def run_batch_pipeline(
             "id_cliente": str(pax.get("id_cliente")),
             "nome": nome_cliente,
             "contexto_narrativo_llm": contexto_passageiro,
-            "tier_fidelidade": str(pax.get("tier_fidelidade") or "Azul"),
+            "tier_fidelidade": str(pax.get("tier_fidelidade") or "Basico"),
+            "persona": str(pax.get("persona") or "Turista Eventual"),
             "clv_previsto": float(pax.get("clv_previsto") or 0.0),
             "risco_evasao": float(pax.get("risco_evasao") or 0.0),
+            "score_atrito_acumulado": float(pax.get("score_atrito_acumulado") or 0.0),
             "ssr_codigo": pax.get("ssr_codigo"),
+            "sac_motivo": pax.get("sac_motivo"),
+            "tem_sac": pax.get("tem_sac"),
+            "tem_alerta_bagagem": pax.get("tem_alerta_bagagem"),
         }
         decisao = arbitrar_acao_bordo(perfil)
         retorno_liquido = float(decisao.get("retorno_liquido") or 0.0)
         acao_tecnica = decisao.get("acao_vencedora", "ABORDAGEM_CHEFE_CABINE")
         rotulo_acao = ROTULOS_ACOES_BORDO.get(acao_tecnica, acao_tecnica)
         custo_acao = float(decisao.get("custo_acao") or 0.0)
+        motivo_bloqueio = decisao.get("motivo_bloqueio")
 
         # Regra Estrita de Trava do LLM (Economia de Tokens / Proteção de Caixa):
-        # Se Retorno_Liquido <= 0, o sistema NÃO deve chamar o OpenRouter (Gemini).
-        if retorno_liquido <= 0.0 or acao_tecnica in ("NENHUMA_ACAO", "Nenhuma Ação"):
+        # Se Retorno_Liquido <= 0 ou Veto por Política Comercial, o sistema NÃO deve chamar o OpenRouter (Gemini).
+        if decisao.get("tipo_veto") == "POLITICA" or motivo_bloqueio == MENSAGEM_VETO_POLITICA:
             acao_vencedora = "Nenhuma Ação"
             custo_acao = 0.0
+            retorno_liquido = 0.0
+            mensagem = MENSAGEM_VETO_POLITICA
+            mensagem_offboard = MENSAGEM_VETO_POLITICA
+        elif retorno_liquido <= 0.0 or acao_tecnica in ("NENHUMA_ACAO", "Nenhuma Ação") or rotulo_acao == "Nenhuma Ação":
+            acao_vencedora = "Nenhuma Ação"
+            custo_acao = 0.0
+            retorno_liquido = 0.0
             mensagem = FALLBACK_ROI_NEGATIVO
             mensagem_offboard = FALLBACK_ROI_NEGATIVO
         else:
@@ -299,8 +351,16 @@ def run_batch_pipeline(
                 g.sac_motivo,
                 g.sac_status,
                 g.contexto_narrativo_llm,
-                COALESCE(s.acao_vencedora, {("g.acao_vencedora" if has_acao_col else "CAST(NULL AS VARCHAR)")}) AS acao_vencedora,
-                COALESCE(s.custo_acao, {("g.custo_acao" if has_custo_col else "CAST(NULL AS DOUBLE)")}) AS custo_acao,
+                CASE
+                    WHEN s.id_cliente IS NOT NULL THEN s.acao_vencedora
+                    WHEN {("g.llm_mensagem_comissaria LIKE 'Decisão Analítica:%' OR g.llm_mensagem_comissaria LIKE '%Intervenção cancelada%' OR g.llm_mensagem_comissaria LIKE '%Veto%'" if has_llm_col else "FALSE")} THEN 'Nenhuma Ação'
+                    ELSE {("g.acao_vencedora" if has_acao_col else "CAST(NULL AS VARCHAR)")}
+                END AS acao_vencedora,
+                CASE
+                    WHEN s.id_cliente IS NOT NULL THEN s.custo_acao
+                    WHEN {("g.llm_mensagem_comissaria LIKE 'Decisão Analítica:%' OR g.llm_mensagem_comissaria LIKE '%Intervenção cancelada%' OR g.llm_mensagem_comissaria LIKE '%Veto%'" if has_llm_col else "FALSE")} THEN 0.0
+                    ELSE {("g.custo_acao" if has_custo_col else "CAST(NULL AS DOUBLE)")}
+                END AS custo_acao,
                 COALESCE(s.llm_mensagem_comissaria, {("g.llm_mensagem_comissaria" if has_llm_col else "CAST(NULL AS VARCHAR)")}) AS llm_mensagem_comissaria,
                 COALESCE(s.mensagem_llm_offboard, {("g.mensagem_llm_offboard" if has_offboard_col else "CAST(NULL AS VARCHAR)")}) AS mensagem_llm_offboard,
                 CASE 

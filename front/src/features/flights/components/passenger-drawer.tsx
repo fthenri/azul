@@ -89,71 +89,121 @@ export function PassengerDrawer({
     return loteAcoes.acoes.find((a) => a.assento === seat.assento) || null;
   }, [seat, loteAcoes]);
 
-  // Identifica a ação vencedora orientada a contexto e ROI (Data Contract Satélites / LLM / Proteção de Caixa)
-  const acaoVencedora = useMemo(() => {
-    if (!seat) return "Bebida Premium Cortesia";
-    if (batchAction?.acao_sugerida) return batchAction.acao_sugerida;
-    if (simulationResult?.acao_sugerida) return simulationResult.acao_sugerida;
-    if (seat.dados_cliente?.acao_vencedora) return seat.dados_cliente.acao_vencedora;
-
+  // Roteiro ou mensagem recebida do backend
+  const roteiroAbordagem = useMemo(() => {
+    if (!seat) return "";
     const msg =
       seat.dados_cliente?.mensagem_llm_batch ||
-      (seat.dados_cliente as any)?.llm_mensagem_comissaria;
-    if (msg && msg.includes("Decisão Analítica")) {
-      return "Nenhuma Ação";
-    }
-
-    // Avalia a nova regra matemática financeira:
-    // Valor_Recuperado = CLV * Probabilidade_Evasao * Taxa_Recuperacao_Acao
-    // Retorno_Liquido = Valor_Recuperado - Custo_Acao
-    const clv = Number(seat.dados_cliente.clv_previsto || 0);
-    const risco = Number(seat.dados_cliente.risco_evasao || 0);
-    const ctx = (seat.dados_cliente.contexto_narrativo_llm || "").toLowerCase();
-
-    let acao = "Bebida Premium Cortesia";
-    let taxa = 0.05;
-    let custo = 15.0;
-
-    if (ctx.includes("petc") || ctx.includes("pet na cabine") || ctx.includes("animal") || ctx.includes("pet")) {
-      acao = "Kit Snack Premium + Atenção Pet";
-      taxa = 0.15;
-      custo = 10.0;
-    } else if (ctx.includes("chml") || ctx.includes("criança") || ctx.includes("criancas") || ctx.includes("kids") || ctx.includes("família") || ctx.includes("familia")) {
-      acao = "Kit Sobrevivência Kids";
-      taxa = 0.12;
-      custo = 12.0;
-    } else if (ctx.includes("worldtracer") || ctx.includes("bagagem") || ctx.includes("sac") || ctx.includes("reclamação") || ctx.includes("reclamacao") || ctx.includes("ouvidoria")) {
-      acao = "Acolhimento Pessoal + Voucher 1000pts";
-      taxa = 0.15;
-      custo = 50.0;
-    }
-
-    const valorRecuperado = clv * risco * taxa;
-    const retornoLiquido = valorRecuperado - custo;
-
-    // Se Retorno_Liquido <= 0, o sistema veta a intervenção para proteger o caixa
-    if (retornoLiquido <= 0) {
-      return "Nenhuma Ação";
-    }
-
-    return acao;
+      (seat.dados_cliente as any)?.llm_mensagem_comissaria ||
+      batchAction?.instrucao_comissario ||
+      simulationResult?.instrucao_comissario ||
+      "";
+    return typeof msg === "string" ? msg.trim() : "";
   }, [seat, batchAction, simulationResult]);
+
+  // Identifica se a ação foi vetada por política comercial
+  const isVetoPolitica = useMemo(() => {
+    if (!seat) return false;
+    if (
+      roteiroAbordagem.includes("Veto de Política") ||
+      roteiroAbordagem.includes("Categoria Básico")
+    ) {
+      return true;
+    }
+    const tier = (seat.dados_cliente?.tier_fidelidade || "Basico").toLowerCase();
+    const persona = (seat.dados_cliente?.persona || "").toLowerCase();
+    const atrito = Number(seat.dados_cliente?.score_atrito_acumulado || 0);
+    const ctx = (seat.dados_cliente?.contexto_narrativo_llm || "").toLowerCase();
+    const temFalha = [
+      "worldtracer",
+      "bagagem",
+      "sac",
+      "reclamação",
+      "reclamacao",
+      "ouvidoria",
+      "extravio",
+      "avaria",
+      "atraso",
+      "cancelamento",
+    ].some((k) => ctx.includes(k));
+    const isPet =
+      ctx.includes("petc") ||
+      ctx.includes("pet na cabine") ||
+      ctx.includes("animal") ||
+      ctx.includes("pet");
+    const isBase =
+      tier.includes("basic") ||
+      tier.includes("básic") ||
+      tier.includes("azul") ||
+      persona.includes("turista");
+
+    return isBase && atrito <= 0 && !temFalha && !isPet;
+  }, [seat, roteiroAbordagem]);
+
+  // Guarda lógica universal à prova de falhas: isAcaoVetada
+  const isAcaoVetada = useMemo(() => {
+    if (!seat) return false;
+    if (isVetoPolitica) return true;
+    if (
+      roteiroAbordagem.includes("Decisão Analítica") ||
+      roteiroAbordagem.includes("Intervenção cancelada") ||
+      roteiroAbordagem.includes("Veto")
+    ) {
+      return true;
+    }
+    if (seat.dados_cliente?.acao_vencedora === "Nenhuma Ação") return true;
+    if (batchAction?.acao_sugerida === "Nenhuma Ação") return true;
+    if (simulationResult?.acao_sugerida === "Nenhuma Ação") return true;
+
+    // Checagem de ROI negativo
+    const clv = Number(seat.dados_cliente?.clv_previsto || 0);
+    const risco = Number(seat.dados_cliente?.risco_evasao || 0);
+    const retornoLiquido = (clv * risco * 0.05) - 15.0;
+    if (retornoLiquido <= 0 && !seat.dados_cliente?.contexto_narrativo_llm) {
+      return true;
+    }
+
+    return false;
+  }, [seat, isVetoPolitica, roteiroAbordagem, batchAction, simulationResult]);
+
+  // Identifica a ação vencedora (Forçada rigorosamente para 'Nenhuma Ação' caso isAcaoVetada seja TRUE)
+  const acaoVencedora = useMemo(() => {
+    if (isAcaoVetada) {
+      return "Nenhuma Ação";
+    }
+    if (batchAction?.acao_sugerida && batchAction.acao_sugerida !== "Nenhuma Ação") {
+      return batchAction.acao_sugerida;
+    }
+    if (simulationResult?.acao_sugerida && simulationResult.acao_sugerida !== "Nenhuma Ação") {
+      return simulationResult.acao_sugerida;
+    }
+    if (seat?.dados_cliente?.acao_vencedora && seat.dados_cliente.acao_vencedora !== "Nenhuma Ação") {
+      return seat.dados_cliente.acao_vencedora;
+    }
+
+    const ctx = (seat?.dados_cliente?.contexto_narrativo_llm || "").toLowerCase();
+    const isPet = ctx.includes("petc") || ctx.includes("pet na cabine") || ctx.includes("animal") || ctx.includes("pet");
+    const temFalha = ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria", "atraso", "cancelamento"].some((k) => ctx.includes(k));
+
+    if (isPet) return "Kit Snack Premium + Atenção Pet";
+    if (ctx.includes("chml") || ctx.includes("criança") || ctx.includes("kids") || ctx.includes("família")) return "Kit Sobrevivência Kids";
+    if (temFalha) return "Acolhimento Pessoal + Voucher 1000pts";
+    return "Bebida Premium Cortesia";
+  }, [isAcaoVetada, batchAction, simulationResult, seat]);
 
   // Roteiro de leitura gerado pelo Batch AI com fallback corporativo seguro e trava analítica
   const instrucaoTatica = useMemo(() => {
-    if (!seat) return "";
-    if (acaoVencedora === "Nenhuma Ação") {
+    if (roteiroAbordagem && roteiroAbordagem.length > 0) {
+      return roteiroAbordagem;
+    }
+    if (isVetoPolitica) {
+      return "Decisão Analítica: Veto de Política. Categoria Básico sem histórico de atrito operacional não é elegível a cortesias proativas.";
+    }
+    if (isAcaoVetada) {
       return "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo).";
     }
-    const msg =
-      seat.dados_cliente?.mensagem_llm_batch ||
-      (seat.dados_cliente as any)?.llm_mensagem_comissaria;
-
-    if (msg && typeof msg === "string" && msg.trim().length > 0) {
-      return msg.trim();
-    }
     return "Instrução pendente. Siga o protocolo padrão do Tier.";
-  }, [seat, acaoVencedora]);
+  }, [roteiroAbordagem, isVetoPolitica, isAcaoVetada]);
 
   const handleCopyInstruction = async (text: string) => {
     try {
@@ -626,13 +676,15 @@ export function PassengerDrawer({
         {/* AÇÃO TÁTICA (CONTEXT-AWARE): PRESCRIÇÃO DA IA + ROTEIRO DE BORDO */}
         {/* ================================================================= */}
         {(() => {
-          const isVetada = acaoVencedora === "Nenhuma Ação";
+          const isVetada = isAcaoVetada;
 
           return (
             <div
               className={cn(
                 "rounded-2xl p-4 space-y-3.5 shadow-xs transition-colors",
-                isVetada
+                isVetoPolitica
+                  ? "border border-purple-300 dark:border-purple-800 bg-linear-to-b from-purple-50/90 to-purple-100/40 dark:from-purple-950/40 dark:to-slate-900/60"
+                  : isVetada
                   ? "border border-amber-300 dark:border-amber-700/80 bg-linear-to-b from-amber-50/90 to-amber-100/40 dark:from-amber-950/40 dark:to-slate-900/60"
                   : "border border-sky-300 dark:border-sky-800 bg-linear-to-b from-sky-50/70 to-white dark:from-slate-900/80 dark:to-slate-900/40"
               )}
@@ -642,7 +694,9 @@ export function PassengerDrawer({
                   <div
                     className={cn(
                       "h-7 w-7 rounded-lg flex items-center justify-center shrink-0",
-                      isVetada
+                      isVetoPolitica
+                        ? "bg-purple-200/80 dark:bg-purple-900 text-purple-800 dark:text-purple-200"
+                        : isVetada
                         ? "bg-amber-200/80 dark:bg-amber-900 text-amber-800 dark:text-amber-200"
                         : "bg-[#0077C8]/10 text-[#0077C8] dark:text-[#38BDF8]"
                     )}
@@ -651,10 +705,16 @@ export function PassengerDrawer({
                   </div>
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                      {isVetada ? "Decisão Analítica & Proteção de Caixa" : "Ação Tática (Context-Aware)"}
+                      {isVetoPolitica
+                        ? "Decisão Analítica — Política Comercial"
+                        : isVetada
+                        ? "Decisão Analítica & Proteção de Caixa"
+                        : "Ação Tática (Context-Aware)"}
                     </h4>
                     <p className="text-[10px] text-muted-foreground">
-                      {isVetada
+                      {isVetoPolitica
+                        ? "Hard Gate: Categoria Básico sem atrito operacional não é elegível a cortesias proativas"
+                        : isVetada
                         ? "Veto algorítmico: Custo do benefício supera o retorno líquido projetado"
                         : "Prescrição do Árbitro Contextual alinhada ao Azul Fidelidade"}
                     </p>
@@ -664,12 +724,18 @@ export function PassengerDrawer({
                 <Badge
                   className={cn(
                     "text-[10px] font-bold text-white",
-                    isVetada
+                    isVetoPolitica
+                      ? "bg-purple-700 hover:bg-purple-700"
+                      : isVetada
                       ? "bg-amber-600 hover:bg-amber-600"
                       : "bg-[#0077C8] hover:bg-[#0077C8]"
                   )}
                 >
-                  {isVetada ? "Veto Analítico (ROI Negativo)" : "Ação Vencedora"}
+                  {isVetoPolitica
+                    ? "Status: Intervenção Cancelada (Veto de Política)"
+                    : isVetada
+                    ? "Status: Intervenção Cancelada (Veto Analítico)"
+                    : "Ação Vencedora"}
                 </Badge>
               </div>
 
@@ -677,7 +743,9 @@ export function PassengerDrawer({
               <div
                 className={cn(
                   "p-3 rounded-xl border flex items-center justify-between shadow-2xs",
-                  isVetada
+                  isVetoPolitica
+                    ? "bg-purple-100/60 dark:bg-purple-950/40 border-purple-300 dark:border-purple-800"
+                    : isVetada
                     ? "bg-amber-100/60 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800"
                     : "bg-white dark:bg-slate-900 border-sky-200 dark:border-sky-900/80"
                 )}
@@ -686,7 +754,9 @@ export function PassengerDrawer({
                   <div
                     className={cn(
                       "h-9 w-9 rounded-xl flex items-center justify-center shrink-0 font-bold",
-                      isVetada
+                      isVetoPolitica
+                        ? "bg-purple-200/80 dark:bg-purple-900 text-purple-800 dark:text-purple-200"
+                        : isVetada
                         ? "bg-amber-200/80 dark:bg-amber-900 text-amber-800 dark:text-amber-200"
                         : "bg-sky-100 dark:bg-sky-950/70 text-[#0077C8] dark:text-[#38BDF8]"
                     )}
@@ -700,10 +770,14 @@ export function PassengerDrawer({
                     <span
                       className={cn(
                         "text-sm font-bold block",
-                        isVetada ? "text-amber-900 dark:text-amber-200" : "text-foreground"
+                        isVetoPolitica
+                          ? "text-purple-900 dark:text-purple-200"
+                          : isVetada
+                          ? "text-amber-900 dark:text-amber-200"
+                          : "text-foreground"
                       )}
                     >
-                      {isVetada ? "Nenhuma Ação (Intervenção Cancelada)" : acaoVencedora}
+                      {isVetada ? "Nenhuma Ação" : acaoVencedora}
                     </span>
                   </div>
                 </div>
@@ -715,12 +789,19 @@ export function PassengerDrawer({
                   <span
                     className={cn(
                       "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5",
-                      isVetada
+                      isVetoPolitica
+                        ? "text-purple-900 dark:text-purple-300"
+                        : isVetada
                         ? "text-amber-900 dark:text-amber-300"
                         : "text-amber-800 dark:text-amber-400"
                     )}
                   >
-                    {isVetada ? (
+                    {isVetoPolitica ? (
+                      <>
+                        <ShieldAlert className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                        DECISÃO ANALÍTICA — POLÍTICA DE ELEGIBILIDADE
+                      </>
+                    ) : isVetada ? (
                       <>
                         <ShieldAlert className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                         DECISÃO ANALÍTICA — PROTEÇÃO DE CAIXA
@@ -759,19 +840,25 @@ export function PassengerDrawer({
                 <div
                   className={cn(
                     "rounded-xl p-3.5 shadow-inner border",
-                    isVetada
+                    isVetoPolitica
+                      ? "bg-purple-100/90 dark:bg-purple-950/70 border-purple-300 dark:border-purple-700/80"
+                      : isVetada
                       ? "bg-amber-100/90 dark:bg-amber-950/70 border-amber-300 dark:border-amber-700/80"
                       : "bg-amber-50/80 dark:bg-amber-950/40 border-amber-200/90 dark:border-amber-800/60"
                   )}
                 >
                   <div className="flex items-start gap-2">
-                    {isVetada && (
+                    {isVetoPolitica ? (
+                      <ShieldAlert className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                    ) : isVetada ? (
                       <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                    )}
+                    ) : null}
                     <p
                       className={cn(
                         "text-xs leading-relaxed",
-                        isVetada
+                        isVetoPolitica
+                          ? "text-purple-950 dark:text-purple-100 font-semibold"
+                          : isVetada
                           ? "text-amber-950 dark:text-amber-100 font-semibold"
                           : "text-amber-950 dark:text-amber-100 font-medium italic"
                       )}
@@ -781,7 +868,9 @@ export function PassengerDrawer({
                   </div>
                 </div>
                 <p className="text-[9.5px] text-muted-foreground">
-                  {isVetada
+                  {isVetoPolitica
+                    ? "Hard Gate de Elegibilidade: Clientes da base da pirâmide (Tier Básico / Turista Eventual) sem histórico de atrito recente são blindados contra cortesias proativas."
+                    : isVetada
                     ? "Trava de ROI ativada: O custo da ação supera o retorno esperado com a probabilidade de retenção (gastar menos para fidelizar mais)."
                     : "Roteiro humanizado e empático gerado com base no contexto do passageiro."}
                 </p>
@@ -823,21 +912,21 @@ export function PassengerDrawer({
 
         <Button
           size="sm"
-          disabled={isSubmittingFeedback || acaoVencedora === "Nenhuma Ação"}
+          disabled={isSubmittingFeedback || isAcaoVetada}
           onClick={handleMarkCompleted}
           className={cn(
-            "text-xs gap-1.5 font-bold transition-colors cursor-pointer",
-            acaoVencedora === "Nenhuma Ação"
+            "text-xs gap-1.5 font-bold transition-colors",
+            isAcaoVetada
               ? "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed border border-border"
               : isAttended
-              ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-              : "bg-[#0077C8] hover:bg-[#005a99] text-white"
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+              : "bg-[#0077C8] hover:bg-[#005a99] text-white cursor-pointer"
           )}
         >
-          {acaoVencedora === "Nenhuma Ação" ? (
+          {isAcaoVetada ? (
             <>
-              <ShieldCheck className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              <span>Intervenção Dispensada (Caixa Protegido)</span>
+              <ShieldCheck className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+              <span>Intervenção Dispensada</span>
             </>
           ) : isSubmittingFeedback ? (
             <>

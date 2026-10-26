@@ -30,6 +30,8 @@ from back.app.schemas.simulation import (
 )
 from back.executor_decisao import (
     CATALOGO_ACOES_BORDO,
+    FALLBACK_ROI_NEGATIVO,
+    MENSAGEM_VETO_POLITICA,
     ROTULOS_ACOES_BORDO,
     arbitrar_acao_bordo,
     carregar_contexto_rag,
@@ -580,6 +582,8 @@ class CrewService:
             ROUND(e.score_atrito_acumulado, 2) AS score_atrito_acumulado,
             ROUND(COALESCE(c.clv_previsto, 0) * COALESCE(e.risco_evasao, 0), 2) AS valor_em_risco,
             COALESCE(ctx.contexto_narrativo_llm, 'Sem ocorrências recentes') AS contexto_narrativo_llm,
+            ctx.acao_vencedora,
+            ctx.custo_acao,
             ctx.llm_mensagem_comissaria,
             ctx.mensagem_llm_offboard,
             COALESCE(sh.shap_qtd_atrasos_criticos, 0.0) AS shap_atrasos,
@@ -679,8 +683,10 @@ class CrewService:
                 "id_cliente": str(p["id_cliente"]),
                 "clv_previsto": clv_val,
                 "risco_evasao": risco,
+                "score_atrito_acumulado": float(p.get("score_atrito_acumulado") or 0.0),
                 "contexto_narrativo_llm": ctx_narrativo,
                 "tier_fidelidade": str(p.get("tier_fidelidade") or "Azul"),
+                "persona": str(p.get("persona") or "Turista Eventual"),
             }
             dec_assento = arbitrar_acao_bordo(perfil_assento)
             tec_assento = dec_assento.get("acao_vencedora", "ABORDAGEM_CHEFE_CABINE")
@@ -688,10 +694,32 @@ class CrewService:
             custo_assento = float(dec_assento.get("custo_acao", 0.0))
             ret_assento = float(dec_assento.get("retorno_liquido", 0.0))
 
-            if ret_assento <= 0.0 or tec_assento in ("NENHUMA_ACAO", "Nenhuma Ação") or p.get("acao_vencedora") == "Nenhuma Ação":
+            msg_lake = p.get("llm_mensagem_comissaria")
+            msg_offboard = p.get("mensagem_llm_offboard")
+            p_acao = p.get("acao_vencedora")
+
+            is_veto = (
+                ret_assento <= 0.0
+                or tec_assento in ("NENHUMA_ACAO", "Nenhuma Ação")
+                or rot_assento == "Nenhuma Ação"
+                or p_acao == "Nenhuma Ação"
+                or (msg_lake and ("Decisão Analítica" in str(msg_lake) or "Intervenção cancelada" in str(msg_lake) or "Veto" in str(msg_lake)))
+                or dec_assento.get("tipo_veto") in ("POLITICA", "ROI_NEGATIVO")
+            )
+
+            if is_veto:
                 rot_assento = "Nenhuma Ação"
                 custo_assento = 0.0
-                msg_lake = "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
+                ret_assento = 0.0
+                if (msg_lake and "Veto de Política" in str(msg_lake)) or dec_assento.get("tipo_veto") == "POLITICA" or dec_assento.get("motivo_bloqueio") == MENSAGEM_VETO_POLITICA:
+                    msg_lake = MENSAGEM_VETO_POLITICA
+                    msg_offboard = MENSAGEM_VETO_POLITICA
+                elif msg_lake and str(msg_lake).startswith("Decisão Analítica:"):
+                    msg_lake = str(msg_lake)
+                    msg_offboard = str(msg_offboard) if msg_offboard and str(msg_offboard).startswith("Decisão Analítica:") else msg_lake
+                else:
+                    msg_lake = FALLBACK_ROI_NEGATIVO
+                    msg_offboard = FALLBACK_ROI_NEGATIVO
 
             explicabilidade_obj = self._build_explicabilidade(
                 pax=p,
@@ -716,7 +744,7 @@ class CrewService:
                 contexto_narrativo_llm=ctx_narrativo,
                 mensagem_llm_batch=msg_lake,
                 llm_mensagem_comissaria=msg_lake,
-                mensagem_llm_offboard=p.get("mensagem_llm_offboard"),
+                mensagem_llm_offboard=msg_offboard,
                 acao_vencedora=rot_assento,
                 custo_acao=custo_assento,
                 retorno_liquido=ret_assento,
@@ -784,19 +812,39 @@ class CrewService:
             custo = float(decisao.get("custo_acao") or 0.0)
             retorno = float(decisao.get("retorno_liquido") or 0.0)
 
-            # Trava estrita de ROI: Se Retorno_Liquido <= 0 ou Nenhuma Ação
-            if retorno <= 0.0 or acao_tecnica in ("NENHUMA_ACAO", "Nenhuma Ação") or p.get("acao_vencedora") == "Nenhuma Ação":
+            msg_pax = p.get("llm_mensagem_comissaria")
+            msg_off = p.get("mensagem_llm_offboard")
+            p_acao = p.get("acao_vencedora")
+
+            # Trava estrita de ROI ou Política: Se Retorno_Liquido <= 0, Veto de Política ou Nenhuma Ação
+            is_top_veto = (
+                retorno <= 0.0
+                or acao_tecnica in ("NENHUMA_ACAO", "Nenhuma Ação")
+                or rotulo_acao == "Nenhuma Ação"
+                or p_acao == "Nenhuma Ação"
+                or (msg_pax and ("Decisão Analítica" in str(msg_pax) or "Intervenção cancelada" in str(msg_pax) or "Veto" in str(msg_pax)))
+                or decisao.get("tipo_veto") in ("POLITICA", "ROI_NEGATIVO")
+            )
+
+            if is_top_veto:
                 rotulo_acao = "Nenhuma Ação"
                 custo = 0.0
-                instrucao = (
-                    p.get("llm_mensagem_comissaria")
-                    or "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
-                )
+                retorno = 0.0
+                if (msg_pax and "Veto de Política" in str(msg_pax)) or decisao.get("tipo_veto") == "POLITICA" or decisao.get("motivo_bloqueio") == MENSAGEM_VETO_POLITICA:
+                    instrucao = MENSAGEM_VETO_POLITICA
+                    instrucao_offboard = MENSAGEM_VETO_POLITICA
+                elif msg_pax and str(msg_pax).startswith("Decisão Analítica:"):
+                    instrucao = str(msg_pax)
+                    instrucao_offboard = str(msg_off) if msg_off and str(msg_off).startswith("Decisão Analítica:") else instrucao
+                else:
+                    instrucao = FALLBACK_ROI_NEGATIVO
+                    instrucao_offboard = FALLBACK_ROI_NEGATIVO
             else:
                 instrucao = (
                     p.get("llm_mensagem_comissaria")
                     or (instrucoes_lote[i] if i < len(instrucoes_lote) else "Atendimento humanizado recomendado.")
                 )
+                instrucao_offboard = p.get("mensagem_llm_offboard")
 
             custo_total += custo
             retorno_total += retorno
@@ -831,7 +879,7 @@ class CrewService:
                     contexto_narrativo_llm=str(p.get("contexto_narrativo_llm") or "Sem ocorrências recentes"),
                     mensagem_llm_batch=instrucao,
                     llm_mensagem_comissaria=instrucao,
-                    mensagem_llm_offboard=p.get("mensagem_llm_offboard"),
+                    mensagem_llm_offboard=instrucao_offboard,
                     acao_vencedora=rotulo_acao,
                 )
             )
@@ -952,20 +1000,30 @@ class CrewService:
         # 2. Árbitro de Bordo
         decisao = arbitrar_acao_bordo(perfil)
         acao_vencedora: str = str(decisao.get("acao_vencedora", "ABORDAGEM_CHEFE_CABINE"))
-        rotulo_acao: str = ROTULOS_ACOES_BORDO.get(acao_vencedora) or acao_vencedora
+        rotulo_acao: str = ROTULOS_ACOES_BORDO.get(acao_vencedora) or acao_tecnica if 'acao_tecnica' in locals() else acao_vencedora
+        rotulo_acao = ROTULOS_ACOES_BORDO.get(acao_vencedora, acao_vencedora)
         custo_acao: float = float(decisao.get("custo_acao", 0.0))
         retorno_liquido: float = float(decisao.get("retorno_liquido", 0.0))
 
-        # Trava estrita de ROI: Se Retorno_Liquido <= 0 ou Nenhuma Ação
-        if retorno_liquido <= 0.0 or acao_vencedora in ("NENHUMA_ACAO", "Nenhuma Ação"):
+        # Trava estrita de ROI ou Política: Se Retorno_Liquido <= 0, Veto de Política ou Nenhuma Ação
+        is_veto = (
+            retorno_liquido <= 0.0
+            or acao_vencedora in ("NENHUMA_ACAO", "Nenhuma Ação")
+            or rotulo_acao == "Nenhuma Ação"
+            or decisao.get("tipo_veto") in ("POLITICA", "ROI_NEGATIVO")
+        )
+
+        if is_veto:
             rotulo_acao = "Nenhuma Ação"
             custo_acao = 0.0
-            resultado_llm = {
-                "instrucao_comissario": (
-                    perfil.get("llm_mensagem_comissaria")
-                    or "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
-                )
-            }
+            retorno_liquido = 0.0
+            if decisao.get("tipo_veto") == "POLITICA" or decisao.get("motivo_bloqueio") == MENSAGEM_VETO_POLITICA:
+                msg_veto = MENSAGEM_VETO_POLITICA
+            elif perfil.get("llm_mensagem_comissaria") and str(perfil.get("llm_mensagem_comissaria")).startswith("Decisão Analítica:"):
+                msg_veto = str(perfil.get("llm_mensagem_comissaria"))
+            else:
+                msg_veto = FALLBACK_ROI_NEGATIVO
+            resultado_llm = {"instrucao_comissario": msg_veto}
         else:
             # 3. Agente LLM para comissário (passa o código técnico da ação vencedora para o prompt e mock)
             contexto_rag = self.get_contexto_rag()
@@ -995,6 +1053,7 @@ class CrewService:
                 "contexto_narrativo_llm": perfil.get("contexto_narrativo_llm", "Sem ocorrências recentes"),
                 "mensagem_llm_batch": str(resultado_llm.get("instrucao_comissario", "")) or perfil.get("mensagem_llm_batch"),
                 "llm_mensagem_comissaria": str(resultado_llm.get("instrucao_comissario", "")) or perfil.get("llm_mensagem_comissaria"),
+                "mensagem_llm_offboard": (MENSAGEM_VETO_POLITICA if decisao.get("tipo_veto") == "POLITICA" else (FALLBACK_ROI_NEGATIVO if is_veto else perfil.get("mensagem_llm_offboard"))),
                 "acao_vencedora": rotulo_acao,
                 "custo_acao": custo_acao,
                 "retorno_liquido": retorno_liquido,
