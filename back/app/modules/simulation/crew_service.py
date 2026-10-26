@@ -847,9 +847,14 @@ class CrewService:
                     custo REAL NOT NULL,
                     timestamp TEXT NOT NULL,
                     status TEXT DEFAULT 'INGESTED',
-                    grupo_controle TEXT DEFAULT 'HOLDOUT_10PCT'
+                    grupo_controle TEXT DEFAULT 'HOLDOUT_10PCT',
+                    origem TEXT DEFAULT 'ONBOARD_CREW'
                 )
             """)
+            try:
+                con.execute("ALTER TABLE mlops_feedback ADD COLUMN origem TEXT DEFAULT 'ONBOARD_CREW'")
+            except Exception:
+                pass
             con.commit()
 
     def register_action_feedback(
@@ -864,6 +869,7 @@ class CrewService:
         assento = str(payload.get("assento") or "").strip()
         id_cliente = str(payload.get("id_cliente") or "").strip()
         acao = str(payload.get("acao") or "Bebida Premium Cortesia").strip()
+        origem = str(payload.get("origem") or "ONBOARD_CREW").strip()
 
         # Mapeia custo real pelo catálogo
         custo = float(payload.get("custo") or 0.0)
@@ -883,10 +889,10 @@ class CrewService:
             cur = con.cursor()
             cur.execute(
                 """
-                INSERT INTO mlops_feedback (flight_id, assento, id_cliente, acao_executada, custo, timestamp, status)
-                VALUES (?, ?, ?, ?, ?, ?, 'CONCLUIDA')
+                INSERT INTO mlops_feedback (flight_id, assento, id_cliente, acao_executada, custo, timestamp, status, origem)
+                VALUES (?, ?, ?, ?, ?, ?, 'CONCLUIDA', ?)
                 """,
-                (flight_id, assento, id_cliente, acao, custo, ts),
+                (flight_id, assento, id_cliente, acao, custo, ts, origem),
             )
             con.commit()
             registro_id = cur.lastrowid
@@ -894,7 +900,7 @@ class CrewService:
             total_persistidos = cur.fetchone()[0]
 
         logger.info(
-            "MLOps Feedback Loop gravado fisicamente em SQLite [ID=%s | Total=%s]: voo=%s, assento=%s, cliente=%s, acao=%s, custo=R$%.2f",
+            "MLOps Feedback Loop gravado fisicamente em SQLite [ID=%s | Total=%s]: voo=%s, assento=%s, cliente=%s, acao=%s, custo=R$%.2f, origem=%s",
             registro_id,
             total_persistidos,
             flight_id,
@@ -902,6 +908,7 @@ class CrewService:
             id_cliente,
             acao,
             custo,
+            origem,
         )
 
         return {
@@ -913,6 +920,7 @@ class CrewService:
             "id_cliente": id_cliente,
             "acao_executada": acao,
             "custo": custo,
+            "origem": origem,
             "timestamp": ts,
             "ciclo_mlops": {
                 "status": "INGESTED_INTO_SQLITE_LOGS",

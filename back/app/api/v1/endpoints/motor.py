@@ -70,3 +70,17 @@ async def get_voo_simulado_motor(
     crew_service: CrewService = Depends(get_crew_service),
 ) -> VooSimuladoResponse:
     return crew_service.get_simulated_flight(modelo_aeronave=modelo)
+
+
+@router.post(
+    "/acao-concluida",
+    summary="Registrar Ação Concluída para Feedback Loop (MLOps)",
+    description="Registra a conclusão de uma ação (ONBOARD_CREW ou OFFBOARD_CRM), alimentando o log transacional SQLite de Feedback Loop.",
+)
+async def registrar_acao_concluida(
+    payload: dict,
+    _user: RequireCommissionerOrManagerDep = None,
+    crew_service: CrewService = Depends(get_crew_service),
+) -> dict:
+    flight_id = str(payload.get("flight_id") or payload.get("numero_voo") or "4409")
+    return crew_service.register_action_feedback(flight_id=flight_id, payload=payload)

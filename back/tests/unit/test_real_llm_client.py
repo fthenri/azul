@@ -5,6 +5,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from back.app.infrastructure.ai.real_llm_client import (
+    FALLBACK_OFFBOARD,
     FALLBACK_PADRAO_TIER,
     RealLLMClient,
     get_real_llm_client,
@@ -43,6 +44,36 @@ def test_real_llm_client_generation_with_prefix() -> None:
         )
         assert result.startswith("[RAG: Azul Fidelidade Res. 400] ")
         assert "Sr. João" in result
+
+
+def test_real_llm_client_offboard_generation() -> None:
+    """Valida a geração de mensagem de WhatsApp off-board com prefixo obrigatório."""
+    client = RealLLMClient(api_key="sk-test")
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = "Olá, Lucas Pereira! Sentimos muito pelo ocorrido com sua bagagem. Segue voucher de 1000 pontos. ✈️💙"
+    mock_response.choices = [mock_choice]
+
+    with patch.object(client.client.chat.completions, "create", return_value=mock_response):
+        result = client.gerar_mensagem_offboard(
+            nome_cliente="Lucas Pereira",
+            contexto_passageiro="Atraso de bagagem resolvido",
+            acao_vencedora="Acolhimento Pessoal + Voucher 1000pts",
+        )
+        assert result.startswith("[RAG: Azul Fidelidade Res. 400] ")
+        assert "Lucas Pereira" in result
+
+
+def test_real_llm_client_offboard_fallback() -> None:
+    """Valida fallback seguro na geração off-board em caso de erro na API."""
+    client = RealLLMClient(api_key="sk-test")
+    with patch.object(client.client.chat.completions, "create", side_effect=Exception("API Error")):
+        result = client.gerar_mensagem_offboard(
+            nome_cliente="Lucas Pereira",
+            contexto_passageiro="Atraso de bagagem",
+            acao_vencedora="Voucher",
+        )
+        assert result == FALLBACK_OFFBOARD
 
 
 def test_get_real_llm_client_factory() -> None:

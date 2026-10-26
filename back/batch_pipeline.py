@@ -26,6 +26,7 @@ logger = logging.getLogger("azul.dataops.batch_llm")
 
 # Constantes de mensagens de fallback e segurança corporativa
 FALLBACK_SEGURANCA_TIER = "Instrução pendente. Siga o protocolo padrão do Tier."
+FALLBACK_OFFBOARD = "Mensagem pendente. Favor acionar a régua de relacionamento padrão."
 
 
 def resolve_data_lake_dir() -> Path:
@@ -109,20 +110,21 @@ def run_batch_pipeline(
         ).fetchall()
     ]
     has_llm_col = "llm_mensagem_comissaria" in schema_cols
+    has_offboard_col = "mensagem_llm_offboard" in schema_cols
 
-    # Registra view analítica gold_contexto_passageiro tratando ausência inicial da coluna
+    # Registra view analítica gold_contexto_passageiro tratando ausência inicial das colunas
+    extra_cols = []
     if not has_llm_col:
-        con.execute(f"""
-            CREATE OR REPLACE VIEW gold_contexto_passageiro AS
-            SELECT *, CAST(NULL AS VARCHAR) AS llm_mensagem_comissaria
-            FROM read_parquet('{gold_contexto_path.as_posix()}')
-        """)
-    else:
-        con.execute(f"""
-            CREATE OR REPLACE VIEW gold_contexto_passageiro AS
-            SELECT *
-            FROM read_parquet('{gold_contexto_path.as_posix()}')
-        """)
+        extra_cols.append("CAST(NULL AS VARCHAR) AS llm_mensagem_comissaria")
+    if not has_offboard_col:
+        extra_cols.append("CAST(NULL AS VARCHAR) AS mensagem_llm_offboard")
+    extra_sql = (", " + ", ".join(extra_cols)) if extra_cols else ""
+
+    con.execute(f"""
+        CREATE OR REPLACE VIEW gold_contexto_passageiro AS
+        SELECT *{extra_sql}
+        FROM read_parquet('{gold_contexto_path.as_posix()}')
+    """)
 
     # Registra views analíticas auxiliares para cálculo de risco e priorização por voo
     evasao_path = gold_dir / "evasao_clientes.parquet"
@@ -205,9 +207,24 @@ def run_batch_pipeline(
             )
             mensagem = FALLBACK_SEGURANCA_TIER
 
+        try:
+            mensagem_offboard = llm_client.gerar_mensagem_offboard(
+                nome_cliente=nome_cliente,
+                contexto_passageiro=contexto_passageiro,
+                acao_vencedora=rotulo_acao,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Falha na inferência LLM off-board para cliente %s (%s). Injetando fallback de segurança.",
+                pax.get("id_cliente"),
+                exc,
+            )
+            mensagem_offboard = FALLBACK_OFFBOARD
+
         staging_records.append({
             "id_cliente": pax["id_cliente"],
             "llm_mensagem_comissaria": mensagem,
+            "mensagem_llm_offboard": mensagem_offboard,
             "data_atualizacao": datetime.now(timezone.utc).isoformat(),
         })
 
@@ -244,6 +261,7 @@ def run_batch_pipeline(
                 g.sac_status,
                 g.contexto_narrativo_llm,
                 COALESCE(s.llm_mensagem_comissaria, {("g.llm_mensagem_comissaria" if has_llm_col else "CAST(NULL AS VARCHAR)")}) AS llm_mensagem_comissaria,
+                COALESCE(s.mensagem_llm_offboard, {("g.mensagem_llm_offboard" if has_offboard_col else "CAST(NULL AS VARCHAR)")}) AS mensagem_llm_offboard,
                 CASE 
                     WHEN s.id_cliente IS NOT NULL THEN CURRENT_TIMESTAMP 
                     ELSE TRY_CAST(g.data_atualizacao AS TIMESTAMP WITH TIME ZONE) 

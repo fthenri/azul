@@ -84,6 +84,10 @@ class AssentoCliente(BaseModel):
         default=None,
         description="Instrução operacional gerada pelo motor LLM em lote",
     )
+    mensagem_llm_offboard: Optional[str] = Field(
+        default=None,
+        description="Mensagem personalizada de WhatsApp para o passageiro (módulo Off-Board)",
+    )
 
 
 class AssentoVoo(BaseModel):
@@ -139,6 +143,10 @@ class AcaoRecomendadaLote(BaseModel):
     llm_mensagem_comissaria: Optional[str] = Field(
         default=None,
         description="Instrução tática gerada pelo pipeline Batch AI para a tripulação (alias)",
+    )
+    mensagem_llm_offboard: Optional[str] = Field(
+        default=None,
+        description="Mensagem personalizada de WhatsApp para o passageiro (módulo Off-Board)",
     )
 
 

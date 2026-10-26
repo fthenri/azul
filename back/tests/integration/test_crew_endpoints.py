@@ -45,7 +45,11 @@ def test_get_voo_simulado_endpoint(client: TestClient) -> None:
         assert "score_atrito_acumulado" in cliente
         assert "mensagem_llm_batch" in cliente
         if cliente.get("mensagem_llm_batch"):
-            assert "[GERADO VIA BATCH]" in cliente["mensagem_llm_batch"] or "Instrução" in cliente["mensagem_llm_batch"]
+            assert (
+                "[RAG: Azul Fidelidade Res. 400]" in cliente["mensagem_llm_batch"]
+                or "[GERADO VIA BATCH]" in cliente["mensagem_llm_batch"]
+                or "Instrução" in cliente["mensagem_llm_batch"]
+            )
 
         if item["status"] == "critico":
             criticos += 1

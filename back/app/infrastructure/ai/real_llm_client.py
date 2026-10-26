@@ -10,6 +10,7 @@ from openai import OpenAI
 logger = logging.getLogger("azul.ai.real_client")
 
 FALLBACK_PADRAO_TIER = "Instrução pendente. Siga o protocolo padrão do Tier."
+FALLBACK_OFFBOARD = "Mensagem pendente. Favor acionar a régua de relacionamento padrão."
 MODELO_DEFAULT = "google/gemini-2.5-flash"
 PREFIXO_RAG = "[RAG: Azul Fidelidade Res. 400] "
 
@@ -115,6 +116,79 @@ class RealLLMClient:
                 exc,
             )
             return FALLBACK_PADRAO_TIER
+
+    def gerar_mensagem_offboard(
+        self,
+        nome_cliente: str,
+        contexto_passageiro: str,
+        acao_vencedora: str,
+    ) -> str:
+        """Gera mensagem de WhatsApp para o cliente final (módulo Off-Board / CRM).
+
+        Args:
+            nome_cliente: Nome do cliente (ex: 'Lucas Pereira').
+            contexto_passageiro: Histórico recente de ocorrência ou voo.
+            acao_vencedora: Benefício ou ação aprovada pelo árbitro (ex: 'Acolhimento Pessoal + Voucher 1000pts').
+
+        Returns:
+            Texto pronto para cópia/disparo via WhatsApp com emojis e prefixo oficial.
+        """
+        nome_limpo = str(nome_cliente or "").strip()
+        if not nome_limpo or nome_limpo.lower() in ("none", "null", "n/a"):
+            nome_limpo = "Cliente"
+
+        ctx_limpo = str(contexto_passageiro or "Sem ocorrências recentes").strip()
+        acao_limpa = str(acao_vencedora or "Acolhimento e prioridade").strip()
+
+        if ctx_limpo in ("EMPTY_PROMPT", "SIMULAR_ERRO") or not ctx_limpo:
+            return FALLBACK_OFFBOARD
+
+        system_prompt = (
+            f"Você é o motor de CRM da Azul Linhas Aéreas. Escreva uma mensagem de WhatsApp OBRIGATORIAMENTE direta "
+            f"para o cliente final. Chame-o por: {nome_limpo}. NUNCA mencione UUIDs. O tom deve ser corporativo, "
+            f"acolhedor e focado em retenção. Ofereça o benefício: {acao_limpa}, justificando com base no seu nível no "
+            f"Azul Fidelidade. A mensagem deve ser concisa (máximo 4 linhas), usar emojis adequados e estar pronta "
+            f'para ser copiada e colada. Prefixo obrigatório: "[RAG: Azul Fidelidade Res. 400] ".'
+        )
+
+        user_content = (
+            f"Cliente: {nome_limpo}\n"
+            f"Histórico / Contexto Operacional: {ctx_limpo}\n"
+            f"Benefício Oferecido: {acao_limpa}\n\n"
+            f"Redija a mensagem de WhatsApp pronta para envio iniciando pelo prefixo."
+        )
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content},
+                ],
+                temperature=0.3,
+                max_tokens=220,
+            )
+            raw_text = response.choices[0].message.content or ""
+            texto = raw_text.strip()
+
+            if not texto:
+                return FALLBACK_OFFBOARD
+
+            texto = texto.replace("[Nome do Cliente]", nome_limpo)
+            texto = texto.replace("[Nome]", nome_limpo)
+            texto = re.sub(r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}", "", texto)
+
+            if not texto.startswith(PREFIXO_RAG):
+                texto = f"{PREFIXO_RAG}{texto}"
+
+            return texto
+        except Exception as exc:
+            logger.warning(
+                "Falha na geração de mensagem off-board OpenRouter (%s: %s). Aplicando fallback seguro.",
+                type(exc).__name__,
+                exc,
+            )
+            return FALLBACK_OFFBOARD
 
     def generate(self, prompt: str) -> str:
         """Método de compatibilidade para chamadas genéricas de prompt."""
