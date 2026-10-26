@@ -27,6 +27,7 @@ class ParquetCatalog:
             "gold_evasao": self.gold_dir / "evasao_clientes.parquet",
             "gold_personas": self.gold_dir / "personas_clientes.parquet",
             "gold_contexto_passageiro": self.gold_dir / "contexto_passageiro.parquet",
+            "gold_shap": self.gold_dir / "shap_clientes.parquet",
             # Fontes Silver (Entidades Normalizadas e Tabelas Satélite de CRM)
             "silver_clientes": self.silver_dir / "clientes_silver.parquet",
             "silver_viagens": self.silver_dir / "viagens_silver.parquet",

@@ -308,6 +308,31 @@ export function getDemoVooSimulado(modeloCodigo?: string): VooSimuladoResponse {
           faixa_pareto: pareto,
           risco_evasao: risco,
           score_atrito_acumulado: atrito,
+          explicabilidade: {
+            fatores_shap: [
+              { variavel: "Histórico de atrasos críticos (> 60 min)", impacto: 0.35, direcao: "positivo" },
+              { variavel: "Ocorrência com bagagem despachada", impacto: 0.22, direcao: "positivo" },
+              { variavel: "Atrito em canal digital / SAC", impacto: 0.12, direcao: "positivo" },
+              { variavel: `Engajamento no programa (${tier})`, impacto: -0.10, direcao: "negativo" },
+            ],
+            racional_arbitro: {
+              acao_vencedora: "Acolhimento Pessoal + Voucher 1000pts",
+              custo: 50.0,
+              retorno_liquido: 565.0,
+              formula: "Valor Recuperado = CLV × Risco Evasão × Eficácia - Custo",
+              motivo_escolha: "Maior retorno líquido positivo ponderando risco e eficácia.",
+              acoes_avaliadas: [
+                { acao: "Acolhimento Pessoal + Voucher 1000pts", custo: 50.0, retorno_liquido: 565.0, status: "VENCEDORA", motivo: "Maior retorno líquido ponderando risco e eficácia." },
+                { acao: "Kit Snack Premium + Atenção Pet", custo: 10.0, retorno_liquido: 210.0, status: "SUPERADA", motivo: "Retorno positivo, porém menor eficácia de retenção." },
+                { acao: "Upgrade de Cabine", custo: 300.0, retorno_liquido: -45.0, status: "VETADA_ROI", motivo: "Custo financeiro superior à projeção de perda evitada." },
+              ],
+            },
+            fundamentacao_rag: {
+              norma: "Resolução 400 ANAC",
+              artigo: "Art. 20 a 28 (Assistência Material e Compensação)",
+              regra_fidelidade: `Benefício personalizado alinhado à categoria ${tier} e mitigações proativas da Azul.`,
+            },
+          },
         },
       });
     }

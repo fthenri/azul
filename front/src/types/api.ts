@@ -120,6 +120,35 @@ export interface ShapResponse {
   fatores_risco?: FatorRiscoShap[];
 }
 
+export interface AcaoConcorrente {
+  acao: string;
+  custo: number;
+  retorno_liquido: number;
+  status: "VENCEDORA" | "SUPERADA" | "VETADA_ROI";
+  motivo: string;
+}
+
+export interface RacionalArbitro {
+  acao_vencedora: string;
+  custo: number;
+  retorno_liquido: number;
+  formula?: string;
+  motivo_escolha: string;
+  acoes_avaliadas?: AcaoConcorrente[];
+}
+
+export interface FundamentacaoRag {
+  norma: string;
+  artigo?: string;
+  regra_fidelidade: string;
+}
+
+export interface ExplicabilidadeDecisao {
+  fatores_shap: FatorShap[];
+  racional_arbitro?: RacionalArbitro;
+  fundamentacao_rag?: FundamentacaoRag;
+}
+
 // ==========================================
 // Parâmetros de Simulação do Frontend
 // ==========================================
@@ -156,6 +185,7 @@ export interface AssentoCliente {
   acao_vencedora?: string;
   custo_acao?: number;
   retorno_liquido?: number;
+  explicabilidade?: ExplicabilidadeDecisao;
 }
 
 export interface AssentoVoo {

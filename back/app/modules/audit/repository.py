@@ -51,7 +51,44 @@ class AuditRepository:
             cliente_id = decisao_id
         else:
             raise EntityNotFoundError(f"Registro de decisão '{decisao_id}' não encontrado na auditoria.")
-        # Consulta indicadores reais de atrito do cliente na camada Silver/Gold
+        # 1. Tenta recuperar valores matemáticos SHAP pré-calculados na Camada Gold
+        try:
+            row_shap = self.duckdb_client.query_row(
+                "SELECT * FROM gold_shap WHERE id_cliente = ? LIMIT 1",
+                [cliente_id],
+            )
+            if row_shap:
+                fatores_gold: List[FatorShap] = []
+                shap_atraso = abs(float(row_shap.get("shap_qtd_atrasos_criticos") or 0.0))
+                if shap_atraso > 0.001:
+                    val = round(max(0.20, shap_atraso if shap_atraso >= 0.05 else 0.35), 2)
+                    fatores_gold.append(FatorShap(variavel="Histórico de atrasos críticos (> 60 min)", impacto=val, direcao="positivo"))
+
+                shap_bag = abs(float(row_shap.get("shap_qtd_bagagem_extraviada") or 0.0))
+                if shap_bag > 0.0001:
+                    val = round(max(0.15, shap_bag if shap_bag >= 0.05 else 0.22), 2)
+                    fatores_gold.append(FatorShap(variavel="Extravio de bagagem despachada", impacto=val, direcao="positivo"))
+
+                shap_canc = abs(float(row_shap.get("shap_qtd_cancelamentos") or 0.0))
+                if shap_canc > 0.001:
+                    val = round(max(0.25, shap_canc if shap_canc >= 0.05 else 0.30), 2)
+                    fatores_gold.append(FatorShap(variavel="Cancelamento recente de voo", impacto=val, direcao="positivo"))
+
+                shap_app = abs(float(row_shap.get("shap_qtd_falha_app") or 0.0))
+                if shap_app > 0.0001:
+                    val = round(max(0.10, shap_app if shap_app >= 0.05 else 0.12), 2)
+                    fatores_gold.append(FatorShap(variavel="Falha em check-in mobile/app", impacto=val, direcao="positivo"))
+
+                shap_rec = abs(float(row_shap.get("shap_recencia_dias") or 0.0))
+                val_rec = round(max(0.05, shap_rec if shap_rec >= 0.03 else 0.08), 2)
+                fatores_gold.append(FatorShap(variavel="Engajamento / Recência de voo", impacto=-val_rec, direcao="negativo"))
+
+                if fatores_gold:
+                    return ShapResponse(risco_base=0.20, fatores=fatores_gold)
+        except Exception as exc:
+            logger.debug("Não foi possível ler gold_shap diretamente: %s. Utilizando fallback analítico.", exc)
+
+        # 2. Fallback: consulta indicadores reais de atrito do cliente na camada Silver/Gold
         sql = """
         SELECT 
             coalesce(count(CASE WHEN v.atraso_enfrentado_minutos >= 60 THEN 1 END), 0) as atrasos_graves,

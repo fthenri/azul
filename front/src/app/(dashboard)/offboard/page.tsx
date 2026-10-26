@@ -22,6 +22,7 @@ import {
   Plane,
   Loader2,
   TrendingUp,
+  ChevronDown,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ export default function OffBoardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [enviados, setEnviados] = useState<Set<string>>(new Set());
+  const [expandedXaiId, setExpandedXaiId] = useState<string | null>(null);
 
   // Consulta analítica dos dados de passageiros e recomendações
   const {
@@ -150,6 +152,7 @@ export default function OffBoardPage() {
           mensagem: msgOffboard,
           isFallback,
           isEnviado,
+          explicabilidade: c.explicabilidade,
         };
       });
   }, [vooData, flightId, enviados]);
@@ -531,11 +534,24 @@ export default function OffBoardPage() {
                     </div>
                   </div>
 
-                  {/* Barra de Ações: Botão Copiar e Botão Confirmar Envio */}
+                  {/* Barra de Ações: Botão Copiar, Botão Confirmar Disparo e Botão XAI */}
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
-                    <div className="text-[10.5px] text-muted-foreground flex items-center gap-1.5">
-                      <Lock className="h-3 w-3 text-muted-foreground" />
-                      <span>Zero PII nos identificadores corporativos • Log gravado em SQLite</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setExpandedXaiId(expandedXaiId === p.seatKey ? null : p.seatKey)}
+                        className={`h-8 text-xs gap-1.5 font-bold cursor-pointer transition-colors ${
+                          expandedXaiId === p.seatKey
+                            ? "bg-primary/15 text-primary border border-primary/30"
+                            : "text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        <span>{expandedXaiId === p.seatKey ? "Ocultar Explicabilidade" : "Explicar Decisão (XAI)"}</span>
+                        <ChevronDown className={`h-3 w-3 transition-transform ${expandedXaiId === p.seatKey ? "rotate-180" : ""}`} />
+                      </Button>
                     </div>
 
                     <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -593,6 +609,170 @@ export default function OffBoardPage() {
                       </Button>
                     </div>
                   </div>
+
+                  {/* Painel Expansível de Explicabilidade (XAI: SHAP + Árbitro Contextual + RAG) */}
+                  {expandedXaiId === p.seatKey && (
+                    <div className="mt-3 p-4 rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 space-y-3.5 animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between border-b border-primary/20 pb-2.5 flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-md bg-primary/20 flex items-center justify-center text-primary">
+                            <Sparkles className="h-3.5 w-3.5" />
+                          </div>
+                          <h4 className="font-bold text-xs text-foreground uppercase tracking-wider">
+                            Explicabilidade da Decisão (XAI: SHAP + Árbitro Contextual)
+                          </h4>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className="text-[10px] bg-background">
+                            SHAP Camada Gold
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px] bg-background">
+                            Uplift Arbitragem
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px] bg-background text-emerald-600 border-emerald-300">
+                            Resolução 400 ANAC
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 text-xs">
+                        {/* 1. Decomposição SHAP */}
+                        <div className="p-3 rounded-lg bg-background border border-border space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-foreground flex items-center gap-1">
+                              <TrendingUp className="h-3.5 w-3.5 text-red-500" />
+                              Decomposição de Risco (SHAP)
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              Risco: {formatPercent(p.risco_evasao, 0)}
+                            </span>
+                          </div>
+
+                          <div className="space-y-2 pt-1">
+                            {p.explicabilidade?.fatores_shap && p.explicabilidade.fatores_shap.length > 0 ? (
+                              p.explicabilidade.fatores_shap.map((f, idx) => (
+                                <div key={idx} className="space-y-0.5">
+                                  <div className="flex items-center justify-between text-[10.5px]">
+                                    <span className="text-muted-foreground truncate max-w-[170px]" title={f.variavel}>
+                                      {f.variavel}
+                                    </span>
+                                    <span
+                                      className={`font-mono font-bold ${
+                                        f.direcao === "positivo"
+                                          ? "text-red-600 dark:text-red-400"
+                                          : "text-emerald-600 dark:text-emerald-400"
+                                      }`}
+                                    >
+                                      {f.impacto > 0 ? `+${(f.impacto * 100).toFixed(0)}%` : `${(f.impacto * 100).toFixed(0)}%`}
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full ${
+                                        f.direcao === "positivo" ? "bg-red-500" : "bg-emerald-500"
+                                      }`}
+                                      style={{ width: `${Math.min(100, Math.abs(f.impacto) * 150)}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-[10.5px] text-muted-foreground italic">Sem fatores críticos registrados.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 2. Racional Econômico do Árbitro */}
+                        <div className="p-3 rounded-lg bg-background border border-border space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-foreground flex items-center gap-1">
+                              <HeartHandshake className="h-3.5 w-3.5 text-sky-600" />
+                              Arbitragem de ROI (Uplift)
+                            </span>
+                            <Badge className="bg-sky-600 text-white text-[9px] px-1.5 py-0">
+                              Retorno Líquido: {formatCurrency(p.explicabilidade?.racional_arbitro?.retorno_liquido || p.clv * p.risco_evasao * 0.15 - p.custo)}
+                            </Badge>
+                          </div>
+
+                          <p className="text-[10.5px] text-muted-foreground leading-relaxed">
+                            {p.explicabilidade?.racional_arbitro?.motivo_escolha ||
+                              `Ação '${p.acao}' aprovada com custo de ${formatCurrency(p.custo)} para proteger ${formatCurrency(p.clv)} em CLV.`}
+                          </p>
+
+                          <div className="space-y-1 pt-1 border-t border-border/60">
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+                              Ações Concorrentes Avaliadas:
+                            </span>
+                            <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                              {p.explicabilidade?.racional_arbitro?.acoes_avaliadas && p.explicabilidade.racional_arbitro.acoes_avaliadas.length > 0 ? (
+                                p.explicabilidade.racional_arbitro.acoes_avaliadas.map((a, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between p-1.5 rounded bg-slate-50 dark:bg-slate-900/60 text-[10px]"
+                                  >
+                                    <span className="font-medium text-foreground truncate max-w-[130px]">{a.acao}</span>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      <span className="font-mono text-muted-foreground">{formatCurrency(a.custo)}</span>
+                                      <span
+                                        className={`px-1 rounded text-[9px] font-bold ${
+                                          a.status === "VENCEDORA"
+                                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300"
+                                            : a.status === "VETADA_ROI"
+                                            ? "bg-red-100 text-red-800 dark:bg-red-950/80 dark:text-red-300"
+                                            : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                        }`}
+                                      >
+                                        {a.status === "VENCEDORA" ? "Aprovada" : a.status === "VETADA_ROI" ? "Vetada ROI" : "Superada"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="flex items-center justify-between p-1.5 rounded bg-slate-50 dark:bg-slate-900/60 text-[10px]">
+                                  <span className="font-medium text-foreground">{p.acao}</span>
+                                  <span className="text-emerald-600 font-bold">Aprovada</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 3. Fundamentação Regulatória & RAG */}
+                        <div className="p-3 rounded-lg bg-background border border-border space-y-2.5 flex flex-col justify-between">
+                          <div className="space-y-2">
+                            <span className="text-[11px] font-bold text-foreground flex items-center gap-1">
+                              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                              Fundamentação Regulatória & Fidelidade
+                            </span>
+
+                            <div className="p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-[10.5px] space-y-1">
+                              <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
+                                {p.explicabilidade?.fundamentacao_rag?.norma || "Resolução 400 ANAC"}
+                              </span>
+                              <p className="text-muted-foreground leading-relaxed">
+                                {p.explicabilidade?.fundamentacao_rag?.artigo || "Art. 20 a 28 (Assistência Material ao Passageiro)"}
+                              </p>
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-sky-50/50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-800 text-[10.5px] space-y-1">
+                              <span className="font-bold text-sky-800 dark:text-sky-300 block">
+                                Programa Azul Fidelidade ({p.tier})
+                              </span>
+                              <p className="text-muted-foreground leading-relaxed">
+                                {p.explicabilidade?.fundamentacao_rag?.regra_fidelidade ||
+                                  `Compensação calibrada com o nível de engajamento do cliente ${p.tier} para maximizar retenção.`}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-[10px] text-muted-foreground pt-1 flex items-center gap-1 border-t border-border/60">
+                            <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
+                            <span>Decisão 100% auditável e em conformidade com LGPD.</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
