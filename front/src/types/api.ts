@@ -152,6 +152,10 @@ export interface AssentoCliente {
   contexto_narrativo_llm?: string;
   mensagem_llm_batch?: string;
   llm_mensagem_comissaria?: string;
+  mensagem_llm_offboard?: string;
+  acao_vencedora?: string;
+  custo_acao?: number;
+  retorno_liquido?: number;
 }
 
 export interface AssentoVoo {
@@ -187,6 +191,8 @@ export interface AcaoRecomendadaLote {
   contexto_narrativo_llm?: string;
   mensagem_llm_batch?: string;
   llm_mensagem_comissaria?: string;
+  mensagem_llm_offboard?: string;
+  acao_vencedora?: string;
 }
 
 export interface ResumoLote {
