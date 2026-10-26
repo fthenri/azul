@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import {
   X,
   AlertTriangle,
+  AlertCircle,
   Crown,
   Users,
   Coffee,
@@ -419,6 +420,42 @@ export function PassengerDrawer({
             </span>
           </div>
         </div>
+
+        {/* ================================================================= */}
+        {/* CONTEXTO OPERACIONAL & CRM (DATA CONTRACT SATÉLITES GST DELTA/AZUL) */}
+        {/* ================================================================= */}
+        {cliente.contexto_narrativo_llm &&
+          cliente.contexto_narrativo_llm !== "Sem ocorrências recentes" && (
+            <div className="rounded-2xl border border-sky-200 dark:border-sky-800 bg-sky-50/70 dark:bg-sky-950/40 p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-lg bg-sky-100 dark:bg-sky-900 flex items-center justify-center text-sky-700 dark:text-sky-300">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-sky-900 dark:text-sky-200">
+                      Contexto Operacional & CRM (GST Delta/Azul)
+                    </h4>
+                    <p className="text-[10px] text-sky-700/80 dark:text-sky-300/80">
+                      Enriquecimento nativo via Data Contract (WorldTracer, SSR, SAC/Ouvidoria)
+                    </p>
+                  </div>
+                </div>
+                <Badge
+                  variant="outline"
+                  className="text-[9px] font-mono bg-sky-100 dark:bg-sky-900/60 text-sky-800 dark:text-sky-300 border-sky-300"
+                >
+                  Data Contract Gold
+                </Badge>
+              </div>
+
+              <div className="rounded-xl bg-white/90 dark:bg-slate-900/80 p-3 border border-sky-200/80 dark:border-sky-800/60 text-xs text-foreground leading-relaxed shadow-2xs">
+                <p className="text-[11.5px] font-medium text-slate-800 dark:text-slate-200">
+                  {cliente.contexto_narrativo_llm}
+                </p>
+              </div>
+            </div>
+          )}
 
         {/* ================================================================= */}
         {/* COMPONENTE TRANSPLANTADO 1: GRÁFICO SHAP (EXPLICABILIDADE REAL)   */}

@@ -26,10 +26,14 @@ class ParquetCatalog:
             "gold_clv": self.gold_dir / "clv_clientes.parquet",
             "gold_evasao": self.gold_dir / "evasao_clientes.parquet",
             "gold_personas": self.gold_dir / "personas_clientes.parquet",
-            # Fontes Silver (Entidades Normalizadas)
+            "gold_contexto_passageiro": self.gold_dir / "contexto_passageiro.parquet",
+            # Fontes Silver (Entidades Normalizadas e Tabelas Satélite de CRM)
             "silver_clientes": self.silver_dir / "clientes_silver.parquet",
             "silver_viagens": self.silver_dir / "viagens_silver.parquet",
             "silver_avaliacoes": self.silver_dir / "avaliacoes_silver.parquet",
+            "silver_bagagem_logs": self.silver_dir / "bagagem_logs_silver.parquet",
+            "silver_ssr_logs": self.silver_dir / "ssr_logs_silver.parquet",
+            "silver_sac_logs": self.silver_dir / "sac_logs_silver.parquet",
         }
 
     def validate_sources(self) -> None:

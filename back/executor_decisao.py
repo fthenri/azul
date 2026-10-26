@@ -423,8 +423,29 @@ def _obter_mock_bordo_padronizado(
     tier = str(perfil_cliente.get("tier_fidelidade", "Basico"))
     risco = float(perfil_cliente.get("risco_evasao", 0.0))
     id_curto = str(perfil_cliente.get("id_cliente", ""))[:8].upper()
+    ctx_narrativo = str(perfil_cliente.get("contexto_narrativo_llm") or "").strip()
+    tem_contexto = ctx_narrativo and ctx_narrativo != "Sem ocorrências recentes"
 
-    if acao_vencedora == "BEBIDA_CORTESIA":
+    if tem_contexto:
+        if acao_vencedora == "BEBIDA_CORTESIA":
+            msg = (
+                f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) possui ocorrência operacional recente: {ctx_narrativo}. "
+                "Ao iniciar o serviço de bordo, ofereça uma bebida cortesia (suco premium, cerveja especial ou refrigerante), "
+                "peça sinceras desculpas em nome da Azul pelos imprevistos e assegure acompanhamento prioritário da tripulação."
+            )
+        elif acao_vencedora == "SNACK_EXTRA":
+            msg = (
+                f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) possui registro operacional ativo: {ctx_narrativo}. "
+                "Durante a passagem da tripulação, ofereça um snack premium extra como cortesia personalizada, "
+                "demonstrando atenção aos detalhes e confirmando se suas necessidades de bordo foram acolhidas."
+            )
+        else:
+            msg = (
+                f"Passageiro(a) no assento {assento} (#{id_curto}, categoria {tier}) possui atenção especial registrada: {ctx_narrativo}. "
+                "O Chefe de Cabine deve realizar uma acolhida nominal cordial durante o voo, prestar assistência dedicada "
+                "e colocar toda a equipe à disposição para assegurar uma experiência perfeita."
+            )
+    elif acao_vencedora == "BEBIDA_CORTESIA":
         msg = (
             f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) enfrentou atrito operacional em voo recente "
             f"(risco de evasão {risco * 100:.1f}%). Ao iniciar o serviço de bordo, ofereça uma bebida cortesia "
@@ -469,6 +490,12 @@ def gerar_instrucao_bordo_llm(
         clv = float(perfil_cliente.get("clv_previsto", 0.0))
         risco = float(perfil_cliente.get("risco_evasao", 0.0))
         atrito = float(perfil_cliente.get("score_atrito_acumulado", 0.0))
+        ctx_narrativo = str(perfil_cliente.get("contexto_narrativo_llm") or "Sem ocorrências recentes")
+        ctx_prompt = (
+            f"- Contexto Operacional & Ocorrências CRM (WorldTracer/SSR/SAC): {ctx_narrativo}\n"
+            if ctx_narrativo != "Sem ocorrências recentes"
+            else ""
+        )
 
         prompt = f"""Você é o Assistente Digital da Tripulação de Cabine da Azul Linhas Aéreas (Guest Service Tool).
 Sua missão é instruir diretamente os comissários de voo e o chefe de cabine sobre como agir presencialmente com o passageiro no assento {assento}.
@@ -483,7 +510,7 @@ Sua missão é instruir diretamente os comissários de voo e o chefe de cabine s
 - CLV Previsto: R$ {clv:,.2f}
 - Risco de Evasão (Churn): {risco * 100:.1f}%
 - Histórico de Atrito: {atrito:.2f}
-
+{ctx_prompt}
 ### AÇÃO DE BORDO ARBITRADA:
 - Ação: {acao_vencedora}
 
@@ -564,11 +591,17 @@ def gerar_instrucoes_bordo_lote_llm(
         for i, item in enumerate(itens_lote):
             p = item["perfil"]
             nome_pax = p.get("nome", f"Passageiro {item['assento']}")
+            ctx_narrativo = str(p.get("contexto_narrativo_llm") or "").strip()
+            ctx_str = (
+                f" [Contexto/Ocorrências: {ctx_narrativo}]"
+                if ctx_narrativo and ctx_narrativo != "Sem ocorrências recentes"
+                else ""
+            )
             linhas_pax.append(
                 f"{i+1}. Assento {item['assento']} (PNR {item.get('pnr', 'N/A')}): {nome_pax}, "
                 f"Tier {p.get('tier_fidelidade', 'Basico')}, Persona {p.get('persona', 'Viajante')}, "
                 f"CLV R$ {float(p.get('clv_previsto', 0)):,.2f}, Risco Churn {float(p.get('risco_evasao', 0))*100:.1f}%, "
-                f"Atrito {float(p.get('score_atrito_acumulado', 0)):.2f}. Ação Arbitrada: {item['acao_vencedora']}."
+                f"Atrito {float(p.get('score_atrito_acumulado', 0)):.2f}{ctx_str}. Ação Arbitrada: {item['acao_vencedora']}."
             )
         pax_texto = "\n".join(linhas_pax)
 

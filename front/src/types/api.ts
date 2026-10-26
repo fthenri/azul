@@ -149,6 +149,7 @@ export interface AssentoCliente {
   pnr?: string;
   tamanho_grupo?: number;
   is_grupo_familiar?: boolean;
+  contexto_narrativo_llm?: string;
 }
 
 export interface AssentoVoo {
@@ -181,6 +182,7 @@ export interface AcaoRecomendadaLote {
   retorno_liquido: number;
   instrucao_comissario: string;
   valor_em_risco?: number;
+  contexto_narrativo_llm?: string;
 }
 
 export interface ResumoLote {

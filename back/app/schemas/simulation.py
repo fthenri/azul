@@ -72,6 +72,10 @@ class AssentoCliente(BaseModel):
     pnr: str = Field(default="", description="Código localizador da reserva PNR")
     tamanho_grupo: int = Field(default=1, description="Quantidade de passageiros vinculados a este PNR")
     is_grupo_familiar: bool = Field(default=False, description="Indica se o passageiro viaja acompanhado no mesmo PNR")
+    contexto_narrativo_llm: str = Field(
+        default="Sem ocorrências recentes",
+        description="Contexto narrativo operacional do passageiro (GST/CRM/WorldTracer/SSR)",
+    )
 
 
 class AssentoVoo(BaseModel):
@@ -116,6 +120,10 @@ class AcaoRecomendadaLote(BaseModel):
     retorno_liquido: float = Field(..., description="Retorno líquido projetado (R$)")
     instrucao_comissario: str = Field(..., description="Instrução tática gerada pela IA/RAG")
     valor_em_risco: float = Field(default=0.0, description="CLV ponderado pelo risco de evasão (R$)")
+    contexto_narrativo_llm: str = Field(
+        default="Sem ocorrências recentes",
+        description="Contexto operacional e ocorrências recentes do passageiro (WorldTracer/SSR/SAC)",
+    )
 
 
 class ResumoLote(BaseModel):

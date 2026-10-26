@@ -472,12 +472,14 @@ class CrewService:
             c.faixa_pareto,
             ROUND(e.risco_evasao, 4) AS risco_evasao,
             ROUND(e.score_atrito_acumulado, 2) AS score_atrito_acumulado,
-            ROUND(COALESCE(c.clv_previsto, 0) * COALESCE(e.risco_evasao, 0), 2) AS valor_em_risco
+            ROUND(COALESCE(c.clv_previsto, 0) * COALESCE(e.risco_evasao, 0), 2) AS valor_em_risco,
+            COALESCE(ctx.contexto_narrativo_llm, 'Sem ocorrências recentes') AS contexto_narrativo_llm
         FROM silver_viagens v
         JOIN gold_clv c ON v.id_cliente = c.id_cliente
         JOIN gold_evasao e ON v.id_cliente = e.id_cliente
         JOIN gold_personas p ON v.id_cliente = p.id_cliente
         JOIN silver_clientes s ON v.id_cliente = s.id_cliente
+        LEFT JOIN gold_contexto_passageiro ctx ON v.id_cliente = ctx.id_cliente
         WHERE v.numero_voo = ?
           AND v.situacao_voo IN ('A EMBARCAR', 'PROGRAMADO', 'EM EMBARQUE')
         ORDER BY valor_em_risco DESC
@@ -566,6 +568,7 @@ class CrewService:
                 pnr=pnr,
                 tamanho_grupo=tamanho_grupo,
                 is_grupo_familiar=is_grupo_familiar,
+                contexto_narrativo_llm=str(p.get("contexto_narrativo_llm") or "Sem ocorrências recentes"),
             )
 
             assentos_voo.append(
@@ -598,6 +601,7 @@ class CrewService:
                 "faixa_pareto": str(p.get("faixa_pareto") or "Cauda Longa"),
                 "risco_evasao": float(p.get("risco_evasao") or 0.0),
                 "score_atrito_acumulado": float(p.get("score_atrito_acumulado") or 0.0),
+                "contexto_narrativo_llm": str(p.get("contexto_narrativo_llm") or "Sem ocorrências recentes"),
             }
             decisao = arbitrar_acao_bordo(perfil)
             decisoes_arbitro.append(decisao)
@@ -662,6 +666,7 @@ class CrewService:
                     retorno_liquido=retorno,
                     instrucao_comissario=instrucao,
                     valor_em_risco=float(p.get("valor_em_risco") or 0.0),
+                    contexto_narrativo_llm=str(p.get("contexto_narrativo_llm") or "Sem ocorrências recentes"),
                 )
             )
 
@@ -743,11 +748,13 @@ class CrewService:
         # 1. Recupera o perfil analítico completo na Camada Gold via DuckDB (com faixa_pareto)
         sql = """
         SELECT c.id_cliente, s.tier_fidelidade, p.persona, c.clv_previsto,
-               c.faixa_pareto, e.risco_evasao, e.score_atrito_acumulado
+               c.faixa_pareto, e.risco_evasao, e.score_atrito_acumulado,
+               COALESCE(ctx.contexto_narrativo_llm, 'Sem ocorrências recentes') AS contexto_narrativo_llm
         FROM gold_clv c
         JOIN gold_evasao e ON c.id_cliente = e.id_cliente
         JOIN gold_personas p ON c.id_cliente = p.id_cliente
         JOIN silver_clientes s ON c.id_cliente = s.id_cliente
+        LEFT JOIN gold_contexto_passageiro ctx ON c.id_cliente = ctx.id_cliente
         WHERE c.id_cliente = ?
         LIMIT 1
         """
@@ -761,6 +768,7 @@ class CrewService:
                 "faixa_pareto": str(row["faixa_pareto"]),
                 "risco_evasao": float(row["risco_evasao"]),
                 "score_atrito_acumulado": float(row["score_atrito_acumulado"]),
+                "contexto_narrativo_llm": str(row.get("contexto_narrativo_llm") or "Sem ocorrências recentes"),
             }
         else:
             # Fallback resiliente para busca direta via Parquet se necessário
@@ -802,6 +810,7 @@ class CrewService:
                 "faixa_pareto": perfil.get("faixa_pareto", "Cauda Longa"),
                 "risco_evasao": perfil.get("risco_evasao"),
                 "score_atrito_acumulado": perfil.get("score_atrito_acumulado"),
+                "contexto_narrativo_llm": perfil.get("contexto_narrativo_llm", "Sem ocorrências recentes"),
             },
         )
 
