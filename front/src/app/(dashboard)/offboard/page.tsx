@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   MessageSquare,
@@ -46,6 +46,7 @@ export default function OffBoardPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [enviados, setEnviados] = useState<Set<string>>(new Set());
   const [expandedXaiId, setExpandedXaiId] = useState<string | null>(null);
+  const hasInitializedXai = useRef(false);
 
   // Consulta analítica dos dados de passageiros e recomendações
   const {
@@ -179,12 +180,13 @@ export default function OffBoardPage() {
     });
   }, [passageirosOffboard, filter, searchTerm]);
 
-  // Abre automaticamente a explicabilidade do primeiro passageiro em destaque
+  // Abre automaticamente a explicabilidade do primeiro passageiro apenas uma única vez na carga inicial
   useEffect(() => {
-    if (expandedXaiId === null && passageirosOffboard.length > 0) {
+    if (!hasInitializedXai.current && passageirosOffboard.length > 0) {
       setExpandedXaiId(passageirosOffboard[0].seatKey);
+      hasInitializedXai.current = true;
     }
-  }, [passageirosOffboard, expandedXaiId]);
+  }, [passageirosOffboard]);
 
   // Estatísticas do cabeçalho
   const totalElegiveis = passageirosOffboard.length;
