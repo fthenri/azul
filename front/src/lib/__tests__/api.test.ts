@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { api, ApiError } from "../api";
-import { DEMO_KPIS, DEMO_PERSONAS, DEMO_PARETO, DEMO_MOMENTOS, DEMO_SIMULACAO_RESULT, DEMO_AUDITORIA_DECISOES, DEMO_SHAP } from "../demo-data";
+import { DEMO_KPIS, DEMO_PERSONAS, DEMO_PARETO, DEMO_MOMENTOS, DEMO_SIMULACAO_RESULT, DEMO_AUDITORIA_DECISOES, DEMO_SHAP, DEMO_VOO_SIMULADO } from "../demo-data";
 
 describe("API Client Integration Tests (contract.md compliance)", () => {
   const originalFetch = global.fetch;
@@ -45,7 +45,7 @@ describe("API Client Integration Tests (contract.md compliance)", () => {
       expect.anything()
     );
     expect(data).toHaveLength(DEMO_PERSONAS.length);
-    expect(data[0].persona).toBe("Executivo Frequente");
+    expect(data[0].persona).toBe("Gestor Corporativo");
   });
 
   it("getPareto deve chamar GET /api/v1/dashboard/pareto", async () => {
@@ -154,5 +154,63 @@ describe("API Client Integration Tests (contract.md compliance)", () => {
       expect(err.statusCode).toBe(0);
       expect(err.message).toContain("Falha de conexão com o backend");
     }
+  });
+
+  it("registrarAcaoConcluida deve chamar POST /api/v1/motor/acao-concluida com payload tipado", async () => {
+    const mockResponse = {
+      status: "sucesso",
+      mensagem: "Ação registrada",
+      registro_id: 1,
+      flight_id: "AD4409",
+      assento: "14C",
+      id_cliente: "CLI_TEST_01",
+      acao_executada: "Acolhimento Pessoal + Voucher 1000pts",
+      custo: 50.0,
+      origem: "OFFBOARD_CRM",
+      timestamp: "2026-10-26T00:00:00Z",
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response);
+
+    const result = await api.registrarAcaoConcluida({
+      flight_id: "AD4409",
+      assento: "14C",
+      id_cliente: "CLI_TEST_01",
+      acao: "Acolhimento Pessoal + Voucher 1000pts",
+      custo: 50.0,
+      origem: "OFFBOARD_CRM",
+    });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/motor/acao-concluida"),
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"origem":"OFFBOARD_CRM"'),
+      })
+    );
+    expect(result.status).toBe("sucesso");
+    expect(result.origem).toBe("OFFBOARD_CRM");
+  });
+
+  it("getVooSimulado deve retornar assentos com explicabilidade XAI (SHAP, Árbitro e RAG)", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => DEMO_VOO_SIMULADO,
+    } as Response);
+
+    const data = await api.getVooSimulado();
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/voo-simulado"),
+      expect.anything()
+    );
+    expect(data.assentos.length).toBeGreaterThan(0);
+    const primeiro = data.assentos[0].dados_cliente;
+    expect(primeiro.explicabilidade).toBeDefined();
+    expect(primeiro.explicabilidade?.fatores_shap.length).toBeGreaterThan(0);
+    expect(primeiro.explicabilidade?.racional_arbitro?.formula).toContain("CLV");
+    expect(primeiro.explicabilidade?.fundamentacao_rag?.norma).toBe("Resolução 400 ANAC");
   });
 });

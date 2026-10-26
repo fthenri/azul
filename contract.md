@@ -177,3 +177,174 @@ Retorna os pesos dos fatores que elevaram o limite de dor/risco de evasão de um
   ]
 }
 ```
+
+---
+
+## 📱 Tela 4: Gestor de CRM (Off-Board) & Feedback Loop (MLOps)
+
+### 4.1. Obter Voo Simulado com Mensagens de Retenção (On-Board e Off-Board)
+Retorna a distribuição de passageiros da Camada Gold com instruções táticas para a comissária (`llm_mensagem_comissaria`) e mensagens personalizadas para WhatsApp/e-mail (`mensagem_llm_offboard`) geradas via RAG (Resolução 400 ANAC e Azul Fidelidade).
+
+- **Endpoint:** `GET /motor/voo-simulado` ou `GET /motor/voo/{flight_id}`
+- **Query Params:** `modelo` (opcional: `Airbus A320neo`, `Embraer E195-E2`, etc.)
+- **Resposta (200 OK):**
+```json
+{
+  "flight_id": "AD 4409",
+  "aeronave": {
+    "modelo": "Airbus A320neo",
+    "codigo": "A320neo",
+    "fileiras": 29,
+    "layout": ["A", "B", "C", "D", "E", "F"],
+    "total_assentos": 174
+  },
+  "assentos": [
+    {
+      "assento": "12A",
+      "status": "critico",
+      "dados_cliente": {
+        "id_cliente": "cli_123",
+        "nome": "Carlos Silva",
+        "tier_fidelidade": "Diamante",
+        "persona": "Gestor Corporativo",
+        "clv_previsto": 12500.00,
+        "faixa_pareto": "Top 10%",
+        "risco_evasao": 0.82,
+        "score_atrito_acumulado": 4.5,
+        "pnr": "XPT999",
+        "contexto_narrativo_llm": "Passageiro enfrentou extravio de bagagem e atraso crítico de 120min.",
+        "acao_vencedora": "Pontos Bônus Fidelidade (5.000)",
+        "custo_acao": 75.00,
+        "retorno_liquido": 650.00,
+        "llm_mensagem_comissaria": "[Ação de Bordo] Oferecer acolhimento e informar crédito de milhas...",
+        "mensagem_llm_offboard": "[RAG: Azul Fidelidade Res. 400] Olá Carlos, lamentamos o atraso no seu voo. Como cliente Diamante, creditamos 5.000 pontos em sua conta."
+      }
+    }
+  ]
+}
+```
+
+### 4.2. Registrar Ação Concluída para Feedback Loop (MLOps)
+Registra a conclusão de uma ação de retenção realizada pela tripulação de bordo (`ONBOARD_CREW`) ou disparada pelo gestor de CRM (`OFFBOARD_CRM`). Persiste no banco transacional SQLite (`mlops_logs.db`) com **trava anti-duplicação** para garantir idempotência e alimentar os pipelines de retreinamento de modelos (Uplift e Churn).
+
+- **Endpoint:** `POST /api/v1/motor/acao-concluida`
+- **Headers:** `Content-Type: application/json`
+
+#### Payload de Requisição (`AcaoConcluidaPayload`)
+- `flight_id` (string, obrigatório): Identificador do voo (ex: `"AD4409"`).
+- `assento` (string, obrigatório): Código do assento (ex: `"12A"`).
+- `id_cliente` (string, opcional): ID do cliente no Data Lake.
+- `acao` (string, obrigatório): Ação executada ou benefício concedido.
+- `custo` (float, opcional, default: `0.0`): Custo financeiro da ação concedida.
+- `origem` (string, opcional, default: `"ONBOARD_CREW"`): Canal da ação: `"ONBOARD_CREW"` ou `"OFFBOARD_CRM"`.
+
+---
+
+#### Cenário 1: Confirmação pelo Gestor de CRM (`origem = "OFFBOARD_CRM"`)
+
+**Requisição (POST):**
+```json
+{
+  "flight_id": "AD4409",
+  "assento": "12A",
+  "id_cliente": "cli_123",
+  "acao": "Pontos Bônus Fidelidade (5.000)",
+  "custo": 75.00,
+  "origem": "OFFBOARD_CRM"
+}
+```
+
+**Resposta Sucesso (200 OK):**
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Ação registrada no Data Lake para Feedback Loop (Holdout Group)",
+  "registro_id": 42,
+  "flight_id": "AD4409",
+  "assento": "12A",
+  "id_cliente": "cli_123",
+  "acao_executada": "Pontos Bônus Fidelidade (5.000)",
+  "custo": 75.00,
+  "origem": "OFFBOARD_CRM",
+  "timestamp": "2026-10-26T21:00:00Z",
+  "ciclo_mlops": {
+    "status": "INGESTED_INTO_SQLITE_LOGS",
+    "banco": "mlops_logs.db",
+    "tabela": "mlops_feedback",
+    "registro_id": 42,
+    "grupo_controle": "HOLDOUT_10PCT",
+    "total_registros_persistidos": 105
+  }
+}
+```
+
+---
+
+#### Cenário 2: Confirmação pela Tripulação a Bordo (`origem = "ONBOARD_CREW"`)
+
+**Requisição (POST):**
+```json
+{
+  "flight_id": "AD4409",
+  "assento": "3B",
+  "id_cliente": "cli_456",
+  "acao": "Kit Sobrevivência Kids",
+  "custo": 12.00,
+  "origem": "ONBOARD_CREW"
+}
+```
+
+**Resposta Sucesso (200 OK):**
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Ação registrada no Data Lake para Feedback Loop (Holdout Group)",
+  "registro_id": 43,
+  "flight_id": "AD4409",
+  "assento": "3B",
+  "id_cliente": "cli_456",
+  "acao_executada": "Kit Sobrevivência Kids",
+  "custo": 12.00,
+  "origem": "ONBOARD_CREW",
+  "timestamp": "2026-10-26T21:05:00Z",
+  "ciclo_mlops": {
+    "status": "INGESTED_INTO_SQLITE_LOGS",
+    "banco": "mlops_logs.db",
+    "tabela": "mlops_feedback",
+    "registro_id": 43,
+    "grupo_controle": "HOLDOUT_10PCT",
+    "total_registros_persistidos": 106
+  }
+}
+```
+
+---
+
+#### Cenário 3: Tentativa de Envio Duplicado (Trava Idempotente)
+
+Se a mesma tupla `(flight_id, assento, id_cliente, acao, origem, status='CONCLUIDA')` for submetida novamente, a API retorna `status="duplicado"` sem duplicar linhas no SQLite de retreinamento:
+
+**Resposta Idempotente (200 OK):**
+```json
+{
+  "status": "duplicado",
+  "mensagem": "Ação já registrada previamente",
+  "registro_id": 42,
+  "flight_id": "AD4409",
+  "assento": "12A",
+  "id_cliente": "cli_123",
+  "acao_executada": "Pontos Bônus Fidelidade (5.000)",
+  "custo": 75.00,
+  "origem": "OFFBOARD_CRM",
+  "timestamp": "2026-10-26T21:00:00Z",
+  "ciclo_mlops": {
+    "status": "ALREADY_INGESTED",
+    "banco": "mlops_logs.db",
+    "tabela": "mlops_feedback",
+    "registro_id": 42,
+    "grupo_controle": "HOLDOUT_10PCT",
+    "total_registros_persistidos": 106
+  }
+}
+```
+

@@ -13,6 +13,8 @@ import {
   VooDetalheResponse,
   SimularBordoPayload,
   SimularBordoResponse,
+  RegistrarAcaoPayload,
+  AcaoConcluidaResponse,
   LoginPayload,
   TokenResponse,
   UserOut,
@@ -149,4 +151,12 @@ export const api = {
         body: JSON.stringify(payload),
       }
     ),
+
+  registrarAcaoConcluida: (
+    payload: RegistrarAcaoPayload
+  ): Promise<AcaoConcluidaResponse> =>
+    request<AcaoConcluidaResponse>("/motor/acao-concluida", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };

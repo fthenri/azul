@@ -120,6 +120,35 @@ export interface ShapResponse {
   fatores_risco?: FatorRiscoShap[];
 }
 
+export interface AcaoConcorrente {
+  acao: string;
+  custo: number;
+  retorno_liquido: number;
+  status: "VENCEDORA" | "SUPERADA" | "VETADA_ROI";
+  motivo: string;
+}
+
+export interface RacionalArbitro {
+  acao_vencedora: string;
+  custo: number;
+  retorno_liquido: number;
+  formula?: string;
+  motivo_escolha: string;
+  acoes_avaliadas?: AcaoConcorrente[];
+}
+
+export interface FundamentacaoRag {
+  norma: string;
+  artigo?: string;
+  regra_fidelidade: string;
+}
+
+export interface ExplicabilidadeDecisao {
+  fatores_shap: FatorShap[];
+  racional_arbitro?: RacionalArbitro;
+  fundamentacao_rag?: FundamentacaoRag;
+}
+
 // ==========================================
 // Parâmetros de Simulação do Frontend
 // ==========================================
@@ -156,6 +185,7 @@ export interface AssentoCliente {
   acao_vencedora?: string;
   custo_acao?: number;
   retorno_liquido?: number;
+  explicabilidade?: ExplicabilidadeDecisao;
 }
 
 export interface AssentoVoo {
@@ -261,6 +291,36 @@ export interface SimularBordoResponse {
   retorno_liquido: number;
   instrucao_comissario: string;
   dados_cliente: Record<string, unknown>;
+}
+
+export interface RegistrarAcaoPayload {
+  flight_id: string;
+  assento: string;
+  id_cliente?: string;
+  acao: string;
+  custo?: number;
+  origem: "ONBOARD_CREW" | "OFFBOARD_CRM";
+}
+
+export interface AcaoConcluidaResponse {
+  status: string;
+  mensagem: string;
+  registro_id?: number | null;
+  flight_id: string;
+  assento: string;
+  id_cliente?: string | null;
+  acao_executada: string;
+  custo: number;
+  origem: string;
+  timestamp: string;
+  ciclo_mlops?: {
+    status: string;
+    banco: string;
+    tabela: string;
+    registro_id: number;
+    grupo_controle: string;
+    total_registros_persistidos: number;
+  };
 }
 
 export interface ApiErrorResponse {

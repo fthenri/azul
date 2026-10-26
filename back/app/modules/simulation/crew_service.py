@@ -10,13 +10,18 @@ from typing import Any, List
 from back.app.config import Settings, get_settings
 from back.app.core.exceptions import EntityNotFoundError
 from back.app.infrastructure.analytics.duckdb_client import DuckDBClient
+from back.app.schemas.audit import FatorShap
 from back.app.schemas.simulation import (
+    AcaoConcorrente,
     AcaoRecomendadaLote,
     AssentoCliente,
     AssentoVoo,
+    ExplicabilidadeDecisao,
+    FundamentacaoRag,
     ListaVoosResponse,
     LoteAcoes,
     MetadataAeronave,
+    RacionalArbitro,
     ResumoLote,
     SimularBordoResponse,
     VooDetalheResponse,
@@ -24,6 +29,7 @@ from back.app.schemas.simulation import (
     VooSimuladoResponse,
 )
 from back.executor_decisao import (
+    CATALOGO_ACOES_BORDO,
     FALLBACK_ROI_NEGATIVO,
     MENSAGEM_VETO_POLITICA,
     ROTULOS_ACOES_BORDO,
@@ -359,6 +365,103 @@ def alocar_assentos_aeronave(
 
 
 class CrewService:
+    def _build_explicabilidade(
+        self,
+        pax: dict[str, Any],
+        decisao: dict[str, Any],
+        rotulo_acao: str,
+        retorno_liquido: float,
+        custo_acao: float,
+    ) -> ExplicabilidadeDecisao:
+        """Monta o objeto estruturado de explicabilidade (SHAP + Árbitro + RAG) para o passageiro."""
+        ctx_narrativo = str(pax.get("contexto_narrativo_llm") or "")
+        tier = str(pax.get("tier_fidelidade") or "Azul")
+
+        fatores: List[FatorShap] = []
+
+        # Atrasos críticos
+        shap_atraso = abs(float(pax.get("shap_atrasos") or 0.0))
+        if shap_atraso > 0.001 or "atraso" in ctx_narrativo.lower():
+            val = round(max(0.20, shap_atraso if shap_atraso >= 0.05 else 0.35), 2)
+            fatores.append(FatorShap(variavel="Atraso crítico de voo (> 60 min)", impacto=val, direcao="positivo"))
+
+        # Bagagem
+        shap_bag = abs(float(pax.get("shap_bagagem") or 0.0))
+        if shap_bag > 0.0001 or "bagagem" in ctx_narrativo.lower() or "worldtracer" in ctx_narrativo.lower():
+            val = round(max(0.15, shap_bag if shap_bag >= 0.05 else 0.22), 2)
+            fatores.append(FatorShap(variavel="Ocorrência com bagagem despachada", impacto=val, direcao="positivo"))
+
+        # Cancelamento
+        shap_canc = abs(float(pax.get("shap_cancelamentos") or 0.0))
+        if shap_canc > 0.001 or "cancelad" in ctx_narrativo.lower():
+            val = round(max(0.25, shap_canc if shap_canc >= 0.05 else 0.30), 2)
+            fatores.append(FatorShap(variavel="Cancelamento recente de voo", impacto=val, direcao="positivo"))
+
+        # Falha de app / check-in
+        shap_app = abs(float(pax.get("shap_falha_app") or 0.0))
+        if shap_app > 0.0001 or "app" in ctx_narrativo.lower() or "check-in" in ctx_narrativo.lower() or "sac" in ctx_narrativo.lower():
+            val = round(max(0.10, shap_app if shap_app >= 0.05 else 0.12), 2)
+            fatores.append(FatorShap(variavel="Atrito em canal digital / SAC", impacto=val, direcao="positivo"))
+
+        # Fator atenuante (Engajamento / Fidelidade)
+        shap_rec = abs(float(pax.get("shap_recencia") or 0.0))
+        val_rec = round(max(0.05, shap_rec if shap_rec >= 0.03 else 0.08), 2)
+        fatores.append(FatorShap(variavel=f"Engajamento no programa ({tier})", impacto=-val_rec, direcao="negativo"))
+
+        tec_vencedora = decisao.get("acao_vencedora", "ABORDAGEM_CHEFE_CABINE")
+        avaliacoes = decisao.get("avaliacoes") or {}
+        acoes_avaliadas: List[AcaoConcorrente] = []
+
+        for k, info in CATALOGO_ACOES_BORDO.items():
+            rot = ROTULOS_ACOES_BORDO.get(k, k)
+            ret = float(avaliacoes.get(k, 0.0))
+            if k == tec_vencedora and retorno_liquido > 0:
+                st = "VENCEDORA"
+                mot = "Maior retorno líquido positivo ponderando risco e eficácia."
+            elif ret <= 0.0:
+                st = "VETADA_ROI"
+                mot = "Custo financeiro superior à projeção de perda evitada."
+            else:
+                st = "SUPERADA"
+                mot = "Retorno líquido positivo, porém superada pela ação de maior eficácia."
+
+            acoes_avaliadas.append(
+                AcaoConcorrente(
+                    acao=rot,
+                    custo=float(info["custo"]),
+                    retorno_liquido=ret,
+                    status=st,
+                    motivo=mot,
+                )
+            )
+
+        motivo_geral = (
+            f"Ação '{rotulo_acao}' selecionada por entregar retorno líquido de R$ {retorno_liquido:.2f} com custo de R$ {custo_acao:.2f}."
+            if retorno_liquido > 0
+            else "Nenhuma intervenção onerosa autorizada: proteção estrita de caixa (ROI Negativo)."
+        )
+
+        racional = RacionalArbitro(
+            acao_vencedora=rotulo_acao,
+            custo=custo_acao,
+            retorno_liquido=retorno_liquido,
+            formula="Valor Recuperado = CLV × Risco Evasão × Eficácia - Custo",
+            motivo_escolha=motivo_geral,
+            acoes_avaliadas=acoes_avaliadas,
+        )
+
+        fundamentacao = FundamentacaoRag(
+            norma="Resolução 400 ANAC",
+            artigo="Art. 20 a 28 (Assistência Material e Compensação)",
+            regra_fidelidade=f"Benefício personalizado alinhado à categoria {tier} e mitigações proativas da Azul.",
+        )
+
+        return ExplicabilidadeDecisao(
+            fatores_shap=fatores,
+            racional_arbitro=racional,
+            fundamentacao_rag=fundamentacao,
+        )
+
     """Serviço de aplicação para o Guest Service Tool da Tripulação (Voo ao Vivo)."""
 
     def __init__(
@@ -482,13 +585,19 @@ class CrewService:
             ctx.acao_vencedora,
             ctx.custo_acao,
             ctx.llm_mensagem_comissaria,
-            ctx.mensagem_llm_offboard
+            ctx.mensagem_llm_offboard,
+            COALESCE(sh.shap_qtd_atrasos_criticos, 0.0) AS shap_atrasos,
+            COALESCE(sh.shap_qtd_bagagem_extraviada, 0.0) AS shap_bagagem,
+            COALESCE(sh.shap_qtd_cancelamentos, 0.0) AS shap_cancelamentos,
+            COALESCE(sh.shap_qtd_falha_app, 0.0) AS shap_falha_app,
+            COALESCE(sh.shap_recencia_dias, 0.0) AS shap_recencia
         FROM silver_viagens v
         JOIN gold_clv c ON v.id_cliente = c.id_cliente
         JOIN gold_evasao e ON v.id_cliente = e.id_cliente
         JOIN gold_personas p ON v.id_cliente = p.id_cliente
         JOIN silver_clientes s ON v.id_cliente = s.id_cliente
         LEFT JOIN gold_contexto_passageiro ctx ON v.id_cliente = ctx.id_cliente
+        LEFT JOIN gold_shap sh ON v.id_cliente = sh.id_cliente
         WHERE v.numero_voo = ?
           AND v.situacao_voo IN ('A EMBARCAR', 'PROGRAMADO', 'EM EMBARQUE')
         ORDER BY valor_em_risco DESC
@@ -612,6 +721,14 @@ class CrewService:
                     msg_lake = FALLBACK_ROI_NEGATIVO
                     msg_offboard = FALLBACK_ROI_NEGATIVO
 
+            explicabilidade_obj = self._build_explicabilidade(
+                pax=p,
+                decisao=dec_assento,
+                rotulo_acao=rot_assento,
+                retorno_liquido=ret_assento,
+                custo_acao=custo_assento,
+            )
+
             cliente_dto = AssentoCliente(
                 id_cliente=str(p["id_cliente"]),
                 nome=gerar_nome_passageiro(p["id_cliente"]),
@@ -631,6 +748,7 @@ class CrewService:
                 acao_vencedora=rot_assento,
                 custo_acao=custo_assento,
                 retorno_liquido=ret_assento,
+                explicabilidade=explicabilidade_obj,
             )
 
             assentos_voo.append(
@@ -944,6 +1062,10 @@ class CrewService:
 
     def _get_mlops_db_path(self) -> Path:
         """Retorna o caminho do banco SQLite transacional de MLOps."""
+        if getattr(self.settings, "mlops_db_path", None) is not None:
+            p = Path(self.settings.mlops_db_path)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            return p
         db_dir = self.settings.project_root / "back"
         db_dir.mkdir(parents=True, exist_ok=True)
         return db_dir / "mlops_logs.db"
@@ -981,13 +1103,20 @@ class CrewService:
         self._init_mlops_db()
         db_path = self._get_mlops_db_path()
 
-        assento = str(payload.get("assento") or "").strip()
-        id_cliente = str(payload.get("id_cliente") or "").strip()
-        acao = str(payload.get("acao") or "Bebida Premium Cortesia").strip()
-        origem = str(payload.get("origem") or "ONBOARD_CREW").strip()
+        if hasattr(payload, "model_dump"):
+            p_dict = payload.model_dump()
+        elif isinstance(payload, dict):
+            p_dict = payload
+        else:
+            p_dict = dict(payload)
+
+        assento = str(p_dict.get("assento") or "").strip()
+        id_cliente = str(p_dict.get("id_cliente") or "").strip()
+        acao = str(p_dict.get("acao") or "Bebida Premium Cortesia").strip()
+        origem = str(p_dict.get("origem") or "ONBOARD_CREW").strip()
 
         # Mapeia custo real pelo catálogo
-        custo = float(payload.get("custo") or 0.0)
+        custo = float(p_dict.get("custo") or 0.0)
         if custo <= 0.0:
             if "kids" in acao.lower():
                 custo = 12.00
@@ -1001,7 +1130,60 @@ class CrewService:
         ts = datetime.now(timezone.utc).isoformat()
 
         with sqlite3.connect(str(db_path)) as con:
+            con.row_factory = sqlite3.Row
             cur = con.cursor()
+
+            # Verificação prévia contra confirmações duplicadas (idempotência transacional MLOps)
+            cur.execute(
+                """
+                SELECT id, flight_id, assento, id_cliente, acao_executada, custo, timestamp, status, grupo_controle, origem
+                FROM mlops_feedback
+                WHERE flight_id = ?
+                  AND assento = ?
+                  AND (id_cliente = ? OR (id_cliente IS NULL AND ? = ''))
+                  AND acao_executada = ?
+                  AND origem = ?
+                  AND status = 'CONCLUIDA'
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (flight_id, assento, id_cliente, id_cliente, acao, origem),
+            )
+            existing = cur.fetchone()
+            if existing:
+                cur.execute("SELECT count(*) FROM mlops_feedback")
+                total_persistidos = cur.fetchone()[0]
+                logger.info(
+                    "MLOps Feedback Loop duplicado ignorado [ID=%s | Total=%s]: voo=%s, assento=%s, cliente=%s, acao=%s, origem=%s",
+                    existing["id"],
+                    total_persistidos,
+                    flight_id,
+                    assento,
+                    id_cliente,
+                    acao,
+                    origem,
+                )
+                return {
+                    "status": "duplicado",
+                    "mensagem": "Ação já registrada previamente",
+                    "registro_id": existing["id"],
+                    "flight_id": flight_id,
+                    "assento": assento,
+                    "id_cliente": existing["id_cliente"] or id_cliente,
+                    "acao_executada": existing["acao_executada"],
+                    "custo": float(existing["custo"]),
+                    "origem": existing["origem"] or origem,
+                    "timestamp": existing["timestamp"],
+                    "ciclo_mlops": {
+                        "status": "ALREADY_INGESTED",
+                        "banco": "mlops_logs.db",
+                        "tabela": "mlops_feedback",
+                        "registro_id": existing["id"],
+                        "grupo_controle": existing["grupo_controle"] if "grupo_controle" in existing.keys() else "HOLDOUT_10PCT",
+                        "total_registros_persistidos": total_persistidos,
+                    },
+                }
+
             cur.execute(
                 """
                 INSERT INTO mlops_feedback (flight_id, assento, id_cliente, acao_executada, custo, timestamp, status, origem)

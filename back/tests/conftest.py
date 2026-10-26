@@ -26,6 +26,7 @@ def test_settings(tmp_path: Path) -> Settings:
         data_lake_dir=project_root / "data_lake",
         audit_db_path=tmp_path / "test_audit.db",
         auth_db_path=tmp_path / "test_audit.db",
+        mlops_db_path=tmp_path / "test_mlops_logs.db",
     )
 
 
