@@ -1,8 +1,18 @@
 "use client";
 
 import React from "react";
-import { Users, AlertTriangle, ShieldAlert, CheckCircle2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import Link from "next/link";
+import {
+  Users,
+  Briefcase,
+  User,
+  Plane,
+  AlertTriangle,
+  ShieldAlert,
+  CheckCircle2,
+  ArrowRight,
+  TrendingUp,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PersonaData } from "@/types/api";
 import { formatCurrency, formatPercent, formatNumber } from "@/lib/formatters";
@@ -14,110 +24,214 @@ interface PersonaMatrixProps {
 export function PersonaMatrix({ data }: PersonaMatrixProps) {
   if (!data || data.length === 0) return null;
 
-  const getFaixaValor = (clv: number) => {
-    if (clv >= 7000) return { label: "Tier Alto Valor", badge: "default" as const };
-    if (clv >= 3000) return { label: "Tier Médio Valor", badge: "secondary" as const };
-    return { label: "Tier Entrada", badge: "outline" as const };
+  const totalBase = data.reduce((acc, curr) => acc + curr.tamanho_bolha, 0);
+
+  const getPersonaIcon = (nome: string) => {
+    if (nome.includes("Corporativo")) return Briefcase;
+    if (nome.includes("Solo")) return User;
+    if (nome.includes("Familiar")) return Users;
+    return Plane;
   };
 
-  const getCriticidade = (risco: number) => {
-    if (risco >= 0.7) {
+  const getFaixaValor = (clv: number) => {
+    if (clv >= 25000) {
       return {
-        label: "Crítico (> 70%)",
-        icon: ShieldAlert,
-        color: "text-[#C43D4B] bg-[#C43D4B]/10 border-[#C43D4B]/20",
+        label: "Tier Diamante (Alto Valor)",
+        badgeClass: "bg-primary/10 text-primary border-primary/20",
       };
     }
-    if (risco >= 0.4) {
+    if (clv >= 7000) {
       return {
-        label: "Moderado (40-70%)",
-        icon: AlertTriangle,
-        color: "text-[#B96B08] bg-[#B96B08]/10 border-[#B96B08]/20",
+        label: "Tier Safira (Médio-Alto)",
+        badgeClass: "bg-secondary text-secondary-foreground border-border",
       };
     }
     return {
-      label: "Controlado (< 40%)",
+      label: "Tier Entrada / Ocasional",
+      badgeClass: "bg-muted text-muted-foreground border-border",
+    };
+  };
+
+  const getCriticidade = (risco: number) => {
+    if (risco >= 0.4) {
+      return {
+        label: "Crítico",
+        icon: ShieldAlert,
+        badgeClass: "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30",
+        barColor: "bg-rose-500",
+      };
+    }
+    if (risco >= 0.28) {
+      return {
+        label: "Atenção",
+        icon: AlertTriangle,
+        badgeClass: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30",
+        barColor: "bg-amber-500",
+      };
+    }
+    return {
+      label: "Estável",
       icon: CheckCircle2,
-      color: "text-[#16805D] bg-[#16805D]/10 border-[#16805D]/20",
+      badgeClass: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+      barColor: "bg-emerald-500",
     };
   };
 
   return (
-    <Card className="flex flex-col bg-card border-border shadow-xs">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-azul-action" />
+    <div className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
+      {/* Feixe Superior Luminous Edge Highlight */}
+      <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
+      {/* Header da Tabela */}
+      <div className="p-6 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
           <div>
-            <CardTitle className="text-base font-bold text-foreground">
-              Matriz Estratégica: Personas × Faixa de Valor
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">
-              Mapeamento de prioridades de retenção e proteção de margem por perfil de viajante
-            </CardDescription>
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                <Users className="h-4 w-4" />
+              </span>
+              <h3 className="text-base font-bold text-foreground font-outfit">
+                Matriz Estratégica de Personas & Diretrizes de Ação
+              </h3>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Clusterização preditiva de passageiros: priorização de contramedidas por CLV e risco de perda
+            </p>
           </div>
+
+          <Badge className="w-fit bg-secondary text-secondary-foreground border border-primary/20 text-[11px] font-semibold py-1 px-3">
+            {data.length} Clusters Ativos
+          </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="overflow-x-auto rounded-lg border border-border">
+      </div>
+
+      {/* Conteúdo da Tabela */}
+      <div className="px-6 pb-6 pt-0">
+        <div className="overflow-x-auto rounded-xl border border-border/70">
           <table className="w-full text-left text-xs">
-            <thead className="bg-secondary/60 text-secondary-foreground uppercase text-[11px] font-bold border-b border-border">
+            <thead className="bg-secondary/60 text-secondary-foreground uppercase text-[10px] font-bold tracking-wider border-b border-border/70">
               <tr>
-                <th className="py-3 px-4">Persona</th>
-                <th className="py-3 px-4">Faixa de Valor (CLV Médio)</th>
-                <th className="py-3 px-4 text-center">Risco de Evasão</th>
-                <th className="py-3 px-4 text-right">Efeito Manada (Volume)</th>
+                <th className="py-3 px-4">Persona & Perfil</th>
+                <th className="py-3 px-4">Faixa de Valor (CLV)</th>
+                <th className="py-3 px-4">Risco de Evasão (Churn)</th>
+                <th className="py-3 px-4 text-right">Base de Clientes</th>
                 <th className="py-3 px-4">Diretriz Estratégica</th>
+                <th className="py-3 px-4 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-border/60">
               {data.map((item) => {
                 const faixa = getFaixaValor(item.clv_medio);
                 const criticidade = getCriticidade(item.risco_evasao_medio);
                 const CritIcon = criticidade.icon;
+                const PersonaIcon = getPersonaIcon(item.persona);
+                const pctBase = totalBase > 0 ? (item.tamanho_bolha / totalBase) * 100 : 0;
 
                 return (
-                  <tr key={item.persona} className="hover:bg-muted/40 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-foreground">
-                      {item.persona}
-                    </td>
+                  <tr
+                    key={item.persona}
+                    className="hover:bg-muted/40 transition-colors duration-150"
+                  >
+                    {/* Persona & Perfil */}
                     <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-azul-navy dark:text-[#38BDF8]">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
+                          <PersonaIcon className="h-4.5 w-4.5" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-foreground text-sm block">
+                            {item.persona}
+                          </span>
+                          <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <span>Influência: {item.score_influencia ?? 50}/100</span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Faixa de Valor */}
+                    <td className="py-3.5 px-4">
+                      <div className="space-y-1">
+                        <div className="font-black text-sm text-foreground font-outfit">
                           {formatCurrency(item.clv_medio)}
-                        </span>
-                        <Badge variant={faixa.badge} className="text-[10px]">
+                        </div>
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-md border text-[10px] font-semibold ${faixa.badgeClass}`}
+                        >
                           {faixa.label}
-                        </Badge>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      <div
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${criticidade.color}`}
-                      >
-                        <CritIcon className="h-3.5 w-3.5" />
-                        <span>{formatPercent(item.risco_evasao_medio)}</span>
-                        <span className="text-[10px] font-normal opacity-80 hidden sm:inline">
-                          ({criticidade.label.split(" ")[0]})
                         </span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-right font-semibold text-foreground">
-                      {formatNumber(item.tamanho_bolha)} clientes
+
+                    {/* Risco de Evasão */}
+                    <td className="py-3.5 px-4">
+                      <div className="space-y-1.5 min-w-[130px]">
+                        <div className="flex items-center justify-between text-xs">
+                          <span
+                            className={`inline-flex items-center gap-1 font-bold ${
+                              criticidade.label === "Crítico"
+                                ? "text-rose-600 dark:text-rose-400"
+                                : criticidade.label === "Atenção"
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-emerald-600 dark:text-emerald-400"
+                            }`}
+                          >
+                            <CritIcon className="h-3.5 w-3.5" />
+                            <span>{formatPercent(item.risco_evasao_medio)}</span>
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-medium">
+                            {criticidade.label}
+                          </span>
+                        </div>
+                        {/* Barra de Progresso do Risco */}
+                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${criticidade.barColor} rounded-full`}
+                            style={{ width: `${Math.min(item.risco_evasao_medio * 100, 100)}%` }}
+                          />
+                        </div>
+                      </div>
                     </td>
-                    <td className="py-3.5 px-4 text-muted-foreground">
-                      {item.risco_evasao_medio >= 0.4 && item.clv_medio >= 4000 ? (
-                        <span className="text-[#C43D4B] font-semibold">
-                          Prioridade Máxima: Simulação Proativa
-                        </span>
-                      ) : item.risco_evasao_medio >= 0.4 ? (
-                        <span className="text-[#B96B08] font-medium">
-                          Atenção Operacional em Falhas
-                        </span>
+
+                    {/* Base de Clientes */}
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="font-bold text-foreground text-sm font-outfit">
+                        {formatNumber(item.tamanho_bolha)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {pctBase.toFixed(1)}% da carteira
+                      </div>
+                    </td>
+
+                    {/* Diretriz Estratégica */}
+                    <td className="py-3.5 px-4">
+                      {item.clv_medio >= 20000 ? (
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                          <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+                          <span>Blindagem Imediata: Upgrades & Ações On-Board</span>
+                        </div>
+                      ) : item.risco_evasao_medio >= 0.3 ? (
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                          <span>Mitigação Operacional & Recuperação de Falhas</span>
+                        </div>
                       ) : (
-                        <span className="text-[#16805D] font-medium">
-                          Fidelização Contínua
-                        </span>
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                          <span>Fidelização e Engajamento Contínuo</span>
+                        </div>
                       )}
+                    </td>
+
+                    {/* Ação */}
+                    <td className="py-3.5 px-4 text-center">
+                      <Link
+                        href="/dashboard/flights"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 text-[11px] font-semibold transition-all group-hover:border-primary/50"
+                      >
+                        <span>Ver Voos</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
                     </td>
                   </tr>
                 );
@@ -125,7 +239,7 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
             </tbody>
           </table>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
