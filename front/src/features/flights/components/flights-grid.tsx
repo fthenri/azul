@@ -122,7 +122,7 @@ export function FlightsGrid() {
           </div>
 
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground font-outfit">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground font-sans">
               Malha Aérea Comercial
             </h1>
             <Badge className="bg-secondary border border-border text-secondary-foreground text-[11px] font-bold px-3 py-0.5">
@@ -168,7 +168,7 @@ export function FlightsGrid() {
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-foreground font-outfit">
+            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-foreground font-sans">
               {metrics.totalVoos}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -188,7 +188,7 @@ export function FlightsGrid() {
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-foreground font-outfit">
+            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-foreground font-sans">
               {metrics.totalPax.toLocaleString("pt-BR")}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -208,7 +208,7 @@ export function FlightsGrid() {
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-rose-700 dark:text-rose-300 font-outfit">
+            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-rose-700 dark:text-rose-300 font-sans">
               {metrics.totalCriticos}
             </div>
             <p className="text-xs text-rose-600/80 dark:text-rose-400/80 mt-0.5">
@@ -228,7 +228,7 @@ export function FlightsGrid() {
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-foreground font-outfit">
+            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-foreground font-sans">
               {metrics.totalVips}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -358,7 +358,7 @@ export function FlightsGrid() {
                         <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
                           <Plane className="h-4 w-4" />
                         </div>
-                        <span className="font-outfit font-black text-sm text-foreground tracking-tight">
+                        <span className="font-sans font-black text-sm text-foreground tracking-tight">
                           {flight.numero_voo}
                         </span>
                       </div>
@@ -398,7 +398,7 @@ export function FlightsGrid() {
                       {flight.passageiros_criticos > 0 ? (
                         <Badge
                           variant="destructive"
-                          className="font-outfit font-black text-xs px-2.5 py-0.5 rounded-md shadow-xs"
+                          className="font-sans font-black text-xs px-2.5 py-0.5 rounded-md shadow-xs"
                         >
                           {flight.passageiros_criticos}
                         </Badge>
@@ -411,7 +411,7 @@ export function FlightsGrid() {
                     <TableCell className="py-3.5 px-4 text-center">
                       {flight.passageiros_vip > 0 ? (
                         <Badge
-                          className="bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 font-outfit font-black text-xs px-2.5 py-0.5 rounded-md shadow-xs"
+                          className="bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 font-sans font-black text-xs px-2.5 py-0.5 rounded-md shadow-xs"
                         >
                           {flight.passageiros_vip}
                         </Badge>

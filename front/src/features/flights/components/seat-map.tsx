@@ -202,7 +202,7 @@ export function SeatMap({
         {/* Header do Assento: Código + Ícone de Grupo/Status */}
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-0.5">
-            <span className="font-mono text-[11px] sm:text-xs font-black tracking-tight font-outfit">
+            <span className="font-mono text-[11px] sm:text-xs font-black tracking-tight font-sans">
               {seatCode}
             </span>
             {isFamily && (
@@ -234,7 +234,7 @@ export function SeatMap({
           {isAttended ? (
             <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400 ml-0.5" />
           ) : seat.status === "critico" ? (
-            <span className="text-[8px] font-black text-rose-600 dark:text-rose-400 font-outfit">
+            <span className="text-[8px] font-black text-rose-600 dark:text-rose-400 font-sans">
               {Math.round(seat.dados_cliente.risco_evasao * 100)}%
             </span>
           ) : isEspacoAzul ? (

@@ -376,7 +376,7 @@ export function PassengerDrawer({
         <div className="h-16 w-16 rounded-2xl bg-muted/50 border border-border/60 flex items-center justify-center mb-4 text-muted-foreground shadow-inner">
           <Plane className="h-8 w-8 opacity-60 text-primary" />
         </div>
-        <h4 className="text-base font-outfit font-black text-foreground mb-1">
+        <h4 className="text-base font-sans font-black text-foreground mb-1">
           Nenhum Assento Selecionado
         </h4>
         <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
@@ -401,7 +401,7 @@ export function PassengerDrawer({
             {/* Box com o Número do Assento */}
             <div
               className={cn(
-                "h-12 w-12 rounded-xl flex flex-col items-center justify-center font-outfit font-black text-base shrink-0 shadow-sm border transition-all",
+                "h-12 w-12 rounded-xl flex flex-col items-center justify-center font-sans font-black text-base shrink-0 shadow-sm border transition-all",
                 isCritico
                   ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
                   : tierConfig.badge
@@ -415,7 +415,7 @@ export function PassengerDrawer({
 
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-outfit font-black text-foreground tracking-tight">
+                <h3 className="text-base font-sans font-black text-foreground tracking-tight">
                   {cliente.nome}
                 </h3>
                 {isCritico && (
@@ -489,7 +489,7 @@ export function PassengerDrawer({
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
               CLV Estimado
             </span>
-            <span className="text-sm font-outfit font-black text-foreground block mt-0.5">
+            <span className="text-sm font-sans font-black text-foreground block mt-0.5">
               {formatCurrency(cliente.clv_previsto)}
             </span>
             <span className="text-[9px] text-muted-foreground block truncate mt-0.5">
@@ -503,7 +503,7 @@ export function PassengerDrawer({
             </span>
             <span
               className={cn(
-                "text-sm font-outfit font-black block mt-0.5",
+                "text-sm font-sans font-black block mt-0.5",
                 riscoPerc >= 60
                   ? "text-rose-500"
                   : riscoPerc >= 40
@@ -532,7 +532,7 @@ export function PassengerDrawer({
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
               Atrito Acumulado
             </span>
-            <span className="text-sm font-outfit font-black text-foreground block mt-0.5">
+            <span className="text-sm font-sans font-black text-foreground block mt-0.5">
               {cliente.score_atrito_acumulado.toFixed(1)} pts
             </span>
             <span className="text-[9px] text-muted-foreground block truncate mt-0.5">
@@ -555,7 +555,7 @@ export function PassengerDrawer({
                     <AlertCircle className="h-3.5 w-3.5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-outfit font-bold uppercase tracking-wider text-primary">
+                    <h4 className="text-xs font-sans font-bold uppercase tracking-wider text-primary">
                       Contexto Operacional & CRM (GST Delta/Azul)
                     </h4>
                     <p className="text-[10px] text-muted-foreground">
@@ -587,7 +587,7 @@ export function PassengerDrawer({
             <div className="flex items-center gap-2.5">
               <BarChart2 className="h-4 w-4 text-primary" />
               <div>
-                <h4 className="text-xs font-outfit font-bold uppercase tracking-wider text-foreground">
+                <h4 className="text-xs font-sans font-bold uppercase tracking-wider text-foreground">
                   Explicabilidade de Risco (Pesos SHAP)
                 </h4>
                 <p className="text-[10px] text-muted-foreground">
@@ -618,7 +618,7 @@ export function PassengerDrawer({
                   <span className="text-muted-foreground block text-[9px] font-semibold uppercase tracking-wider">
                     Risco Base (Prior da Carteira)
                   </span>
-                  <span className="text-xs font-outfit font-black text-foreground mt-0.5 block">
+                  <span className="text-xs font-sans font-black text-foreground mt-0.5 block">
                     {formatPercent(shapData.riscoBase)}
                   </span>
                 </div>
@@ -626,7 +626,7 @@ export function PassengerDrawer({
                   <span className="text-primary block text-[9px] font-semibold uppercase tracking-wider">
                     Risco Ponderado Final
                   </span>
-                  <span className="text-xs font-outfit font-black text-primary mt-0.5 block">
+                  <span className="text-xs font-sans font-black text-primary mt-0.5 block">
                     {formatPercent(shapData.riscoFinal)}
                   </span>
                 </div>
@@ -667,7 +667,7 @@ export function PassengerDrawer({
                         const isAumenta = item.impacto_raw > 0;
                         return (
                           <div className="rounded-xl border border-border/80 bg-popover/95 backdrop-blur-xl p-3 shadow-xl text-xs space-y-1">
-                            <p className="font-outfit font-bold text-foreground">
+                            <p className="font-sans font-bold text-foreground">
                               {item.variavel}
                             </p>
                             <p
@@ -751,7 +751,7 @@ export function PassengerDrawer({
                     )}
                   </div>
                   <div>
-                    <h4 className="text-xs font-outfit font-bold uppercase tracking-wider text-foreground">
+                    <h4 className="text-xs font-sans font-bold uppercase tracking-wider text-foreground">
                       {isVetoPolitica
                         ? "Decisão Analítica — Política Comercial"
                         : isVetada
@@ -818,7 +818,7 @@ export function PassengerDrawer({
                     </span>
                     <span
                       className={cn(
-                        "text-sm font-outfit font-black block mt-0.5",
+                        "text-sm font-sans font-black block mt-0.5",
                         isVetoPolitica
                           ? "text-purple-600 dark:text-purple-300"
                           : isVetada
@@ -969,7 +969,7 @@ export function PassengerDrawer({
           disabled={isSubmittingFeedback || isAcaoVetada}
           onClick={handleMarkCompleted}
           className={cn(
-            "text-xs gap-1.5 font-outfit font-bold rounded-xl transition-all shadow-md",
+            "text-xs gap-1.5 font-sans font-bold rounded-xl transition-all shadow-md",
             isAcaoVetada
               ? "bg-muted text-muted-foreground cursor-not-allowed border border-border/70"
               : isAttended

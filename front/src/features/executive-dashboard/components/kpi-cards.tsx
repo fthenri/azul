@@ -169,7 +169,7 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2.5 flex-wrap">
                   <span
-                    className={`text-2xl sm:text-[27px] font-black tracking-tight font-outfit ${
+                    className={`text-2xl sm:text-[27px] font-black tracking-tight font-sans ${
                       isSpecial
                         ? "text-primary"
                         : "text-foreground"

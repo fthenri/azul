@@ -38,7 +38,7 @@ export function ExecutiveView() {
           </div>
 
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground font-outfit">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground font-sans">
               Painel de Valor
             </h1>
             <span className="rounded-full bg-secondary border border-border text-secondary-foreground text-[11px] font-bold px-3 py-0.5">

@@ -233,7 +233,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
         <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm font-semibold text-foreground font-outfit">
+        <p className="text-sm font-semibold text-foreground font-sans">
           Carregando dados reais do voo no DuckDB e processando lote de IA...
         </p>
         <p className="text-xs text-muted-foreground">
@@ -247,7 +247,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
         <AlertTriangle className="h-10 w-10 text-rose-600" />
-        <h2 className="text-lg font-bold text-foreground font-outfit">Falha ao carregar voo</h2>
+        <h2 className="text-lg font-bold text-foreground font-sans">Falha ao carregar voo</h2>
         <p className="text-xs text-muted-foreground max-w-md">
           {error?.message || "Não foi possível carregar os dados deste voo."}
         </p>
@@ -291,7 +291,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
 
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-black text-foreground font-outfit tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-foreground font-sans tracking-tight">
                 Voo {flight.numero_voo}
               </h1>
               <Badge className="bg-secondary text-secondary-foreground border border-border text-xs font-mono font-bold px-2.5 py-0.5 rounded-md">
@@ -428,7 +428,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                       <Sparkles className="h-4.5 w-4.5" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-foreground font-outfit">
+                      <h3 className="text-sm font-bold text-foreground font-sans">
                         5 Ações Recomendadas pela IA
                       </h3>
                       <p className="text-[11px] text-muted-foreground">
@@ -449,7 +449,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                       <span className="text-[10px] font-semibold text-muted-foreground uppercase block">
                         Custo Total
                       </span>
-                      <span className="text-xs font-black text-foreground block mt-0.5 font-outfit">
+                      <span className="text-xs font-black text-foreground block mt-0.5 font-sans">
                         {formatCurrency(loteAcoes.resumo.custo_total)}
                       </span>
                     </div>
@@ -458,7 +458,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                       <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase block">
                         Retorno Líquido
                       </span>
-                      <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block mt-0.5 font-outfit">
+                      <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block mt-0.5 font-sans">
                         {formatCurrency(loteAcoes.resumo.retorno_liquido_total)}
                       </span>
                     </div>
@@ -467,7 +467,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                       <span className="text-[10px] font-semibold text-primary uppercase block">
                         ROI Estimado
                       </span>
-                      <span className="text-xs font-black text-primary block mt-0.5 font-outfit">
+                      <span className="text-xs font-black text-primary block mt-0.5 font-sans">
                         {loteAcoes.resumo.roi_projetado}x
                       </span>
                     </div>
@@ -537,7 +537,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                             {acao.assento}
                           </span>
                           <div>
-                            <div className="font-bold text-foreground flex items-center gap-1.5 font-outfit text-sm">
+                            <div className="font-bold text-foreground flex items-center gap-1.5 font-sans text-sm">
                               <span>{acao.passageiro}</span>
                               <span className="text-[10px] text-muted-foreground font-mono font-normal">
                                 (PNR: {acao.pnr})
@@ -583,7 +583,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                         <div>
                           <span className="text-muted-foreground text-[10px] block font-medium">Ação do Árbitro:</span>
                           <strong className={cn(
-                            "font-outfit",
+                            "font-sans",
                             isVetoPolitica ? "text-purple-700 dark:text-purple-400" : isAcaoVetada ? "text-amber-700 dark:text-amber-400" : "text-foreground"
                           )}>
                             {isAcaoVetada ? "Nenhuma Ação" : acao.acao_sugerida}
@@ -592,7 +592,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
                         <div className="text-right">
                           <span className="text-[10px] text-muted-foreground block font-medium">Retorno Líquido:</span>
                           <strong className={cn(
-                            "font-outfit",
+                            "font-sans",
                             isAcaoVetada ? "text-muted-foreground" : "text-emerald-600 dark:text-emerald-400"
                           )}>
                             {isAcaoVetada ? "R$ 0,00" : formatCurrency(acao.retorno_liquido)}
@@ -642,7 +642,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
 
             <div className="p-5 border-b border-border/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h3 className="text-base font-bold text-foreground font-outfit">
+                <h3 className="text-base font-bold text-foreground font-sans">
                   Planta da Cabine & Agrupamento por PNR
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">

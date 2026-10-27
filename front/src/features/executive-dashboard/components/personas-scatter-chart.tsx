@@ -120,7 +120,7 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
               <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                 <Compass className="h-4 w-4" />
               </span>
-              <h3 className="text-base font-bold text-foreground flex items-center gap-1.5 font-outfit">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-1.5 font-sans">
                 Mapeamento Multidimensional: CLV vs Influência
                 <InfoTooltip
                   title="Matriz de Segmentação Analítica"
@@ -206,7 +206,7 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
                   return (
                     <div className="rounded-xl border border-border/80 bg-popover/95 backdrop-blur-xl p-3.5 shadow-xl text-xs space-y-2 min-w-[220px]">
                       <div className="flex items-center justify-between border-b border-border pb-1.5">
-                        <span className="font-bold text-foreground text-sm font-outfit">
+                        <span className="font-bold text-foreground text-sm font-sans">
                           {item.persona}
                         </span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
@@ -217,14 +217,14 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">CLV Médio:</span>
-                          <span className="font-bold text-foreground font-outfit">
+                          <span className="font-bold text-foreground font-sans">
                             {formatCurrency(item.clv_previsto || item.clv_medio)}
                           </span>
                         </div>
 
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Poder de Influência:</span>
-                          <span className="font-bold text-primary font-outfit">
+                          <span className="font-bold text-primary font-sans">
                             {item.score_influencia} / 100
                           </span>
                         </div>

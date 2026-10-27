@@ -90,7 +90,7 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
               <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                 <Users className="h-4 w-4" />
               </span>
-              <h3 className="text-base font-bold text-foreground font-outfit">
+              <h3 className="text-base font-bold text-foreground font-sans">
                 Matriz Estratégica de Personas & Diretrizes de Ação
               </h3>
             </div>
@@ -152,7 +152,7 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
                     {/* Faixa de Valor */}
                     <td className="py-3.5 px-4">
                       <div className="space-y-1">
-                        <div className="font-black text-sm text-foreground font-outfit">
+                        <div className="font-black text-sm text-foreground font-sans">
                           {formatCurrency(item.clv_medio)}
                         </div>
                         <span
@@ -195,7 +195,7 @@ export function PersonaMatrix({ data }: PersonaMatrixProps) {
 
                     {/* Base de Clientes */}
                     <td className="py-3.5 px-4 text-right">
-                      <div className="font-bold text-foreground text-sm font-outfit">
+                      <div className="font-bold text-foreground text-sm font-sans">
                         {formatNumber(item.tamanho_bolha)}
                       </div>
                       <div className="text-[10px] text-muted-foreground">

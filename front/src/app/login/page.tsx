@@ -215,7 +215,7 @@ function LoginFormContent() {
 
               {/* Slogan & Proposta de Valor */}
               <div className="space-y-1.5 px-1">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground leading-snug font-outfit">
+                <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground leading-snug font-sans">
                   Antecipe o risco. Preserve o valor.
                 </h1>
                 <p className="text-xs sm:text-[13px] text-muted-foreground font-normal leading-relaxed max-w-sm mx-auto">

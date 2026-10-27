@@ -86,7 +86,7 @@ export function ParetoChart({ data, isLoading }: ParetoChartProps) {
               <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                 <TrendingUp className="h-4 w-4" />
               </span>
-              <h3 className="text-base font-bold text-foreground flex items-center gap-1.5 font-outfit">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-1.5 font-sans">
                 Curva de Concentração de Valor (Pareto 80/20)
                 <InfoTooltip
                   title="Princípio de Pareto (80/20)"
