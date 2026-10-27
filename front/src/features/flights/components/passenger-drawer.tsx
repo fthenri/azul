@@ -883,10 +883,10 @@ export function PassengerDrawer({
         <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-border text-xs text-muted-foreground flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-[#0077C8]" />
-            <span>Despacho para a cabine via <strong>Lote Único de 5 Ações</strong></span>
+            <span>Despacho via <strong>Lote Único de 5 Ações</strong></span>
           </div>
-          <Badge variant="outline" className="text-[10px] font-mono">
-            /crew sincronizado
+          <Badge variant="outline" className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+            Plano On-Board Aprovado
           </Badge>
         </div>
       </CardContent>

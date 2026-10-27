@@ -13,7 +13,6 @@ import {
   ArrowRight,
   Clock,
   Compass,
-  Smartphone,
   ShieldCheck,
   Radio,
   CheckCircle2,
@@ -135,16 +134,6 @@ export function FlightsGrid() {
             <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
             <span>Atualizar Malha</span>
           </Button>
-
-          <Link href="/crew" target="_blank" rel="noopener noreferrer">
-            <Button
-              size="sm"
-              className="text-xs gap-1.5 h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer"
-            >
-              <Smartphone className="h-3.5 w-3.5" />
-              <span>Abrir App da Comissária (/crew)</span>
-            </Button>
-          </Link>
         </div>
       </div>
 

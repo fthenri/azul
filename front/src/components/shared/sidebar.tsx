@@ -45,8 +45,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         Boolean(pathname?.startsWith("/flights")) ||
         pathname === "/dashboard/dispatch" ||
         pathname === "/flight-dispatch" ||
-        pathname === "/dispatch" ||
-        pathname === "/crew-view",
+        pathname === "/dispatch",
     },
     {
       href: "/offboard",
@@ -177,7 +176,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <div className="flex flex-col truncate pr-2">
                 <span className="font-bold text-white truncate text-xs">{user.name}</span>
                 <span className="text-[10px] text-[#38BDF8] uppercase font-semibold tracking-wider">
-                  Perfil: {user.role === "manager" ? "Gestor CRM" : "Tripulação"}
+                  Perfil: Gestor CRM
                 </span>
               </div>
               <button

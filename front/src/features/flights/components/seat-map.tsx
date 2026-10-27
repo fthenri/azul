@@ -12,34 +12,31 @@ import {
   Plane,
 } from "lucide-react";
 import { AssentoVoo, MetadataAeronave } from "@/types/api";
-import { SeatFilter } from "../hooks/use-crew-flight";
 import { Mission } from "@/lib/flight-state";
 import { SyncMission } from "@/lib/sync-storage";
 import { cn } from "@/lib/utils";
 import { getTierConfig } from "@/lib/tier-colors";
 
+export type SeatFilter = "todos" | "atencao" | "critico" | "vip";
 export type SeatMapRole = "gestor" | "crew";
 
-export interface CrewSeatMapProps {
+export interface SeatMapProps {
   metadata: any;
   seats: AssentoVoo[];
   selectedSeat: AssentoVoo | null;
   onSelectSeat: (seat: AssentoVoo) => void;
   filter?: SeatFilter;
   attendedSeats?: Set<string>;
-  // RBAC Prop
   role?: SeatMapRole;
   missions?: (SyncMission | Mission)[];
   onSelectMissionSeat?: (mission: SyncMission | Mission, seat: AssentoVoo) => void;
-  // Propriedades dinâmicas de planta e aeronave recebidas do despacho
   layout?: string | string[];
   aircraftModel?: string;
-  // Compatibilidade retroativa com código existente
   isDirectionalOnly?: boolean;
   missionSeatMap?: Map<string, SyncMission | Mission>;
 }
 
-export function CrewSeatMap({
+export function SeatMap({
   metadata,
   seats,
   selectedSeat,
@@ -53,7 +50,7 @@ export function CrewSeatMap({
   aircraftModel,
   isDirectionalOnly = false,
   missionSeatMap,
-}: CrewSeatMapProps) {
+}: SeatMapProps) {
   // Indexa assentos por código (ex: "1A", "34D") para acesso O(1)
   const seatMap = useMemo(() => {
     const map = new Map<string, AssentoVoo>();
@@ -61,7 +58,7 @@ export function CrewSeatMap({
     return map;
   }, [seats]);
 
-  // Indexa missões por assento para o modo crew (RBAC)
+  // Indexa missões por assento
   const activeMissionMap = useMemo(() => {
     const map = new Map<string, SyncMission | Mission>();
     if (Array.isArray(missions)) {
@@ -155,8 +152,6 @@ export function CrewSeatMap({
     const seatPnr = (seat.dados_cliente?.pnr || (seat as any).pnr || "SOLO").trim();
     const isFamily = Boolean(seat.dados_cliente?.is_grupo_familiar ?? (seat as any).is_grupo_familiar);
 
-    // Lógica de Destaque Visual PNR:
-    // const isGroupMember = selectedSeat?.pnr === seat.pnr && seat.pnr !== 'SOLO' && seat.is_grupo_familiar
     const isGroupMember = Boolean(
       activePnr &&
       activePnr === seatPnr &&
@@ -164,152 +159,9 @@ export function CrewSeatMap({
       isFamily
     );
 
-    // Contraste tátil: reduz opacidade (opacity-60) nos assentos que NÃO pertencem ao PNR selecionado
     const belongsToSelection = isSelected || isGroupMember;
     const isDimmed = hasSelection && !belongsToSelection;
 
-    // =========================================================================
-    // RBAC: MODO TRIPULAÇÃO (role === 'crew' ou isDirectionalOnly)
-    // Se role === 'crew': O componente varre o array de missions.
-    // Se o assento TEM uma missão associada, ele fica destacado (ativo) e clicável.
-    // Se o assento NÃO TEM missão, ele recebe classes como opacity-40 cursor-not-allowed grayscale
-    // e o clique é desabilitado.
-    // =========================================================================
-    const isCrewMode = role === "crew" || isDirectionalOnly;
-
-    if (isCrewMode) {
-      const mission = activeMissionMap.get(seatCode);
-
-      // Assento SEM missão vinculada no modo tripulação:
-      // grayscale opacity-40 pointer-events-none estritamente nos assentos que não possuem missão vinculada
-      if (!mission) {
-        return (
-          <div
-            key={seatCode}
-            aria-disabled="true"
-            className="relative flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border border-slate-200/50 dark:border-slate-800/40 bg-slate-100/30 dark:bg-slate-900/30 text-slate-400 dark:text-slate-600 grayscale opacity-40 pointer-events-none cursor-not-allowed select-none"
-            title={`${seatCode}: Sem missão operacional associada`}
-          >
-            <div className="flex items-center justify-between w-full">
-              <span className="font-mono text-[11px] font-bold text-slate-400 dark:text-slate-600">
-                {seatCode}
-              </span>
-            </div>
-            <span className="text-[9px] text-muted-foreground/50 font-medium truncate max-w-full">
-              {seat.dados_cliente?.nome ? seat.dados_cliente.nome.split(" ")[0] : "Livre"}
-            </span>
-            <span className="text-[8px] opacity-30 font-mono">
-              {seat.dados_cliente?.tier_fidelidade ? seat.dados_cliente.tier_fidelidade.slice(0, 3) : "STD"}
-            </span>
-          </div>
-        );
-      }
-
-      // Assento COM missão no modo tripulação:
-      // Destacado (ativo), colorido com pulso ou check de concluído, e clicável
-      const isDone = mission.status === "concluida" || (mission as any).concluida;
-      const isAtrito = mission.tipo === "atrito";
-      const missionTierConfig = getTierConfig(mission.tier || seat.dados_cliente?.tier_fidelidade);
-
-      return (
-        <button
-          key={seatCode}
-          type="button"
-          onClick={() => {
-            if (onSelectMissionSeat) {
-              onSelectMissionSeat(mission, seat);
-            } else {
-              onSelectSeat(seat);
-            }
-          }}
-          className={cn(
-            "relative group flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border text-left transition-all duration-300 cursor-pointer shadow-md",
-            isDone
-              ? "bg-emerald-50 text-emerald-950 border-emerald-400 dark:bg-emerald-950/70 dark:text-emerald-100 dark:border-emerald-500 ring-2 ring-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/70"
-              : isAtrito
-              ? "bg-rose-50 text-rose-950 border-rose-400 dark:bg-rose-950/70 dark:text-rose-100 dark:border-rose-500 ring-2 ring-rose-500 ring-offset-2 hover:bg-rose-100 dark:hover:bg-rose-900/70 animate-pulse"
-              : cn(
-                  missionTierConfig.seat,
-                  "ring-2 ring-sky-500 ring-offset-2 animate-pulse"
-                ),
-            isGroupMember &&
-              "ring-4 ring-blue-500 ring-offset-2 scale-105 z-10 bg-blue-50 dark:bg-blue-950/70 dark:ring-blue-400 shadow-md transition-all duration-300",
-            isSelected && "scale-105 ring-4 ring-blue-600 dark:ring-blue-400 z-20 shadow-xl",
-            isDimmed && "opacity-60 hover:opacity-100"
-          )}
-          title={`Missão IA: ${seatCode} - ${mission.passageiro || seat.dados_cliente?.nome} (${isDone ? "Concluída" : "Pendente"})`}
-        >
-          {/* Header do Assento com Missão */}
-          <div className="flex items-center justify-between w-full">
-            <span className="font-mono text-[11px] sm:text-xs font-black tracking-tight">
-              {seatCode}
-            </span>
-            {isDone ? (
-              <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            ) : isAtrito ? (
-              <AlertTriangle className="h-3 w-3 text-rose-600 dark:text-rose-400 shrink-0" />
-            ) : (
-              <Sparkles
-                className={cn(
-                  "h-3 w-3 shrink-0",
-                  missionTierConfig.key === "diamante"
-                    ? "text-white dark:text-indigo-200"
-                    : "text-sky-600 dark:text-sky-400"
-                )}
-              />
-            )}
-          </div>
-
-          {/* Nome do Passageiro da Missão */}
-          <div className="w-full truncate text-[9px] sm:text-[10px] font-bold leading-tight">
-            {(mission.passageiro || seat.dados_cliente?.nome || "").split(" ")[0]}
-          </div>
-
-          {/* Rodapé: Tier e Badge de IA */}
-          <div className="flex items-center justify-between w-full text-[8px] font-black uppercase">
-            <span className="truncate">
-              {mission.tier?.slice(0, 3) || seat.dados_cliente?.tier_fidelidade?.slice(0, 3) || missionTierConfig.shortLabel}
-            </span>
-            <span
-              className={cn(
-                "rounded px-1 text-[7px] font-bold",
-                isDone
-                  ? "bg-emerald-600 text-white"
-                  : isAtrito
-                  ? "bg-rose-600 text-white"
-                  : "bg-sky-600 text-white"
-              )}
-            >
-              {isDone ? "OK" : "MISSÃO"}
-            </span>
-          </div>
-
-          {/* Marcador Ping se Pendente */}
-          {!isDone && (
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span
-                className={cn(
-                  "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                  isAtrito ? "bg-rose-400" : "bg-sky-400"
-                )}
-              />
-              <span
-                className={cn(
-                  "relative inline-flex rounded-full h-2.5 w-2.5",
-                  isAtrito ? "bg-rose-500" : "bg-sky-500"
-                )}
-              />
-            </span>
-          )}
-        </button>
-      );
-    }
-
-    // =========================================================================
-    // RBAC: MODO GESTOR (role === 'gestor')
-    // Se role === 'gestor': Todos os assentos são renderizados normalmente.
-    // O clique no assento abre o modal/agente LLM para gerar a missão.
-    // =========================================================================
     const tierConfig = getTierConfig(seat.dados_cliente?.tier_fidelidade);
     let statusStyles = "";
     let indicatorIcon = null;
@@ -397,7 +249,6 @@ export function CrewSeatMap({
           <span className="truncate">
             {seat.dados_cliente.tier_fidelidade.slice(0, 3)}
           </span>
-
           {isAttended ? (
             <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400 ml-0.5" />
           ) : seat.status === "critico" ? (
@@ -586,3 +437,6 @@ export function CrewSeatMap({
     </div>
   );
 }
+
+// Alias para compatibilidade retroativa
+export const CrewSeatMap = SeatMap;

@@ -49,8 +49,6 @@ function LoginFormContent() {
       // Redirecionamento baseado no perfil autenticado ou no redirect solicitado
       if (redirectPath) {
         router.push(redirectPath);
-      } else if (response.role === "commissioner") {
-        router.push("/crew");
       } else {
         router.push("/dashboard");
       }
@@ -106,7 +104,7 @@ function LoginFormContent() {
             </div>
             <h1 className="text-2xl font-black text-white">Login Corporativo</h1>
             <p className="text-xs text-white/70">
-              Autentique-se para acessar o Cockpit de CRM ou a Operação de Bordo.
+              Autentique-se para acessar o Cockpit de Retenção & CRM de Alto Valor.
             </p>
           </div>
 

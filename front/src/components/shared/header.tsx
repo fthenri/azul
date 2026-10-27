@@ -25,8 +25,7 @@ export function Header({ onOpenMobileMenu }: HeaderProps) {
       pathname?.startsWith("/flights") ||
       pathname === "/dashboard/dispatch" ||
       pathname === "/flight-dispatch" ||
-      pathname === "/dispatch" ||
-      pathname === "/crew-view"
+      pathname === "/dispatch"
     ) {
       return {
         title: "Ações On-Board (Em Voo)",

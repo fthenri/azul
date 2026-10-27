@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   Sparkles,
   ArrowLeft,
-  Smartphone,
+
   Send,
   Clock,
   DollarSign,
@@ -28,9 +28,9 @@ import { api } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
 import { getDemoFlightDetail } from "@/lib/demo-data";
 import { AssentoVoo, VooDetalheResponse } from "@/types/api";
-import { CrewSeatMap, SeatMapRole } from "@/features/crew-view/components/crew-seat-map";
+import { SeatMap, SeatFilter } from "./seat-map";
 import { PassengerDrawer } from "./passenger-drawer";
-import { SeatFilter } from "@/features/crew-view/hooks/use-crew-flight";
+
 import {
   dispatchBatchFlightAndMissions,
   getActiveFlight,
@@ -150,7 +150,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
     });
   };
 
-  // Aprovação em Lote (Batch) e Sincronização Única com a Cabine (/crew)
+  // Aprovação em Lote (Batch) do Plano de Ações
   const handleBatchApproveAndSync = () => {
     if (!flight || !loteAcoes) return;
 
@@ -318,15 +318,8 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
             className="text-xs gap-2 h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md cursor-pointer"
           >
             <Send className="h-3.5 w-3.5" />
-            <span>Aprovar e Sincronizar com a Cabine</span>
+            <span>Aprovar Plano de Ações</span>
           </Button>
-
-          <Link href="/crew" target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="sm" className="text-xs gap-1.5 h-9">
-              <Smartphone className="h-3.5 w-3.5 text-emerald-600" />
-              <span>Ver App Comissária</span>
-            </Button>
-          </Link>
         </div>
       </div>
 
@@ -336,7 +329,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
           <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           <AlertTitle className="text-xs font-bold">Lote Aprovado com Sucesso!</AlertTitle>
           <AlertDescription className="text-xs text-emerald-800 dark:text-emerald-200">
-            O plano tático com as 5 ações recomendadas e a planta de cabine foram despachados para a tripulação de bordo em tempo real.
+            O plano tático com as 5 ações recomendadas e a planta de cabine foram aprovados com sucesso.
           </AlertDescription>
         </Alert>
       )}
@@ -696,7 +689,7 @@ export function FlightDetailView({ flightId }: FlightDetailViewProps) {
 
               {/* Renderização do Mapa */}
               <div className="w-full flex justify-center overflow-x-auto py-2">
-                <CrewSeatMap
+                <SeatMap
                   metadata={metadata}
                   seats={seats}
                   selectedSeat={selectedSeat}
