@@ -23,11 +23,13 @@ import {
   ChevronDown,
   Clock,
   X,
+  ListFilter,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AnimatedTabs, type TabItem } from "@/components/ui/animated-tabs";
 import { api } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
 import { getDemoVooSimulado } from "@/lib/demo-data";
@@ -197,6 +199,30 @@ export default function OffBoardPage() {
   const totalEnviados = passageirosOffboard.filter((p) => p.isEnviado).length;
   const totalPendentes = totalElegiveis - totalEnviados;
 
+  // Configuração das Abas de Filtro Animadas (AnimatedTabs)
+  const filterTabs = useMemo<TabItem<FilterType>[]>(
+    () => [
+      {
+        id: "todos",
+        label: "Todos",
+        badge: totalElegiveis,
+      },
+      {
+        id: "pendentes",
+        label: "Pendentes",
+        badge: totalPendentes,
+        activeBadgeClassName: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
+      },
+      {
+        id: "enviados",
+        label: "Concluídos",
+        badge: totalEnviados,
+        activeBadgeClassName: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+      },
+    ],
+    [totalElegiveis, totalPendentes, totalEnviados]
+  );
+
   const handleCopy = async (id: string, text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -223,31 +249,42 @@ export default function OffBoardPage() {
   };
 
   return (
-    <div className="space-y-7 animate-in fade-in duration-300 relative">
-      {/* Luz ambiente aero de fundo */}
-      <div className="pointer-events-none absolute -top-12 left-1/4 h-96 w-96 rounded-full bg-primary/10 blur-[130px] -z-10" />
-      <div className="pointer-events-none absolute top-48 right-8 h-80 w-80 rounded-full bg-sky-500/10 blur-[110px] -z-10" />
+    <div className="space-y-8 animate-in fade-in duration-300 relative">
+      {/* ─────────────────────────────────────────────────────────────
+          ATMOSFERA AERO: MICRO-GRID TÉCNICO & ORBS DE LUZ DIFUSA
+         ───────────────────────────────────────────────────────────── */}
+      <div className="pointer-events-none absolute inset-0 mesh-grid opacity-60 -z-10" />
+      <div className="pointer-events-none absolute -top-16 left-1/4 h-[420px] w-[420px] rounded-full bg-primary/15 blur-[140px] -z-10" />
+      <div className="pointer-events-none absolute top-64 right-6 h-96 w-96 rounded-full bg-sky-500/10 blur-[130px] -z-10" />
+      <div className="pointer-events-none absolute bottom-48 left-10 h-80 w-80 rounded-full bg-emerald-500/10 blur-[120px] -z-10" />
 
-      {/* Header Principal Pulso */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 border-b border-border/80 pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2.5 flex-wrap">
-            <span className="h-6 px-3 rounded-full bg-primary/10 text-primary text-[11px] font-bold border border-primary/20 flex items-center gap-1.5 shadow-2xs">
+      {/* ─────────────────────────────────────────────────────────────
+          HEADER PRINCIPAL PULSO LIQUID GLASS
+         ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 border-b border-white/10 dark:border-white/5 pb-7">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="h-6 px-3 rounded-full bg-primary/10 text-primary text-[11px] font-bold border border-primary/25 backdrop-blur-md flex items-center gap-1.5 shadow-2xs">
               <Sparkles className="h-3 w-3 text-primary" />
               Central de Relacionamento & Retenção Proativa
             </span>
-            <span className="h-6 px-3 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold border border-emerald-500/20 flex items-center gap-1.5 shadow-2xs">
+            <span className="h-6 px-3 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold border border-emerald-500/25 backdrop-blur-md flex items-center gap-1.5 shadow-2xs">
               <ShieldCheck className="h-3 w-3 text-emerald-500" />
               Conformidade LGPD (Art. 7º e 18)
             </span>
-            <Badge variant="outline" className="text-[10px] font-mono rounded-full border-border/70 text-muted-foreground bg-muted/30">
+            <Badge
+              variant="outline"
+              className="text-[10px] font-mono rounded-full border-white/15 dark:border-white/10 text-muted-foreground bg-card/40 backdrop-blur-md"
+            >
               Voo {flightId} • Viracopos (VCP)
             </Badge>
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-outfit font-black tracking-tight text-foreground">
+
+          <h1 className="text-3xl sm:text-4xl font-sans font-black tracking-tight text-foreground">
             Central de Ações Off-Board (Pós-Voo)
           </h1>
-          <p className="text-sm text-muted-foreground mt-2 max-w-3xl leading-relaxed">
+
+          <p className="text-sm text-muted-foreground max-w-3xl leading-relaxed">
             Gestão humanizada e disparo proativo via WhatsApp e E-mail para clientes que sofreram atrito operacional.
             Comunicações calibradas pelo Árbitro Contextual com a Resolução 400 da ANAC.
           </p>
@@ -259,81 +296,88 @@ export default function OffBoardPage() {
             size="sm"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="h-10 gap-2 text-xs font-outfit font-bold rounded-xl border-border/80 bg-card/70 backdrop-blur-md px-4 shadow-sm hover:bg-card/95 cursor-pointer transition-all"
+            className="h-10 gap-2 text-xs font-sans font-bold rounded-2xl border-white/15 dark:border-white/10 bg-card/50 dark:bg-card/40 backdrop-blur-2xl px-4 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.18),0_4px_16px_0_rgba(0,0,0,0.08)] hover:bg-card/80 cursor-pointer transition-all"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin text-primary" : ""}`} />
             <span>Atualizar Fila</span>
           </Button>
 
-          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 backdrop-blur-md p-2.5 px-4 shadow-sm text-right relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-emerald-500/40 before:to-transparent">
+          <div className="rounded-[1.35rem] border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/25 backdrop-blur-2xl p-2.5 px-4 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.15),0_8px_24px_0_rgba(16,185,129,0.1)] text-right relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-emerald-400/50 before:to-transparent">
             <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
               Recuperação Estimada
             </span>
-            <span className="text-xl font-outfit font-black text-emerald-500 block leading-tight mt-0.5">
+            <span className="text-xl font-sans font-black text-emerald-500 block leading-tight mt-0.5">
               +48 pts NPS
             </span>
           </div>
         </div>
       </div>
 
-      {/* Cards de Métricas Consolidadas (2 KPIs Rebalanceados) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* ─────────────────────────────────────────────────────────────
+          HERO KPIS: DISPAROS PENDENTES & AÇÕES CONCLUÍDAS (LIQUID GLASS)
+         ───────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {/* Card 1: Disparos Pendentes */}
-        <Card className="rounded-2xl border border-amber-500/25 bg-card/75 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-amber-500/40 hover:shadow-xl before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-amber-500/40 before:to-transparent">
-          <CardContent className="p-5 sm:p-6 flex items-start justify-between gap-4">
-            <div className="space-y-2">
+        <Card className="rounded-[1.75rem] border border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/20 backdrop-blur-3xl shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.18),0_12px_36px_-6px_rgba(245,158,11,0.12)] relative overflow-hidden transition-all duration-300 hover:border-amber-500/50 hover:shadow-2xl before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-amber-400/60 before:to-transparent">
+          <CardContent className="p-6 sm:p-7 flex items-start justify-between gap-4">
+            <div className="space-y-2.5">
               <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider block">
                 Disparos Pendentes (Fila de Retenção)
               </span>
               <div className="flex items-baseline gap-3">
-                <span className="text-3xl sm:text-4xl font-outfit font-black text-amber-500 tracking-tight">
+                <span className="text-4xl sm:text-5xl font-sans font-black text-amber-500 tracking-tight">
                   {totalPendentes}
                 </span>
-                <span className="text-xs font-outfit font-semibold text-muted-foreground">
+                <span className="text-xs font-sans font-semibold text-muted-foreground">
                   de {totalElegiveis} passageiros
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-sm pt-0.5">
                 Mensagens geradas pelo Árbitro RAG aguardando conferência e disparo do gestor de CRM.
               </p>
             </div>
 
-            <div className="h-12 w-12 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-500 flex items-center justify-center shrink-0 shadow-inner">
-              <Clock className="h-6 w-6" />
+            <div className="h-14 w-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.2)]">
+              <Clock className="h-7 w-7" />
             </div>
           </CardContent>
         </Card>
 
         {/* Card 2: Ações Concluídas */}
-        <Card className="rounded-2xl border border-emerald-500/25 bg-card/75 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-emerald-500/40 hover:shadow-xl before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-emerald-500/40 before:to-transparent">
-          <CardContent className="p-5 sm:p-6 flex items-start justify-between gap-4">
-            <div className="space-y-2">
+        <Card className="rounded-[1.75rem] border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 backdrop-blur-3xl shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.18),0_12px_36px_-6px_rgba(16,185,129,0.12)] relative overflow-hidden transition-all duration-300 hover:border-emerald-500/50 hover:shadow-2xl before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-emerald-400/60 before:to-transparent">
+          <CardContent className="p-6 sm:p-7 flex items-start justify-between gap-4">
+            <div className="space-y-2.5">
               <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider block">
                 Ações Concluídas (MLOps Loop)
               </span>
               <div className="flex items-baseline gap-3">
-                <span className="text-3xl sm:text-4xl font-outfit font-black text-emerald-500 tracking-tight">
+                <span className="text-4xl sm:text-5xl font-sans font-black text-emerald-500 tracking-tight">
                   {totalEnviados}
                 </span>
-                <Badge variant="outline" className="text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-500 border-emerald-500/25">
+                <Badge
+                  variant="outline"
+                  className="text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-500 border-emerald-500/30 shadow-2xs"
+                >
                   MLOps Gravado
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-sm pt-0.5">
                 Comunicações enviadas e registradas no banco de auditoria SQLite para mensuração de retenção.
               </p>
             </div>
 
-            <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-500 flex items-center justify-center shrink-0 shadow-inner">
-              <CheckCircle2 className="h-6 w-6" />
+            <div className="h-14 w-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center shrink-0 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.2)]">
+              <CheckCircle2 className="h-7 w-7" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Toolbar Unificada: Multicanal + Busca + Filtros */}
-      <div className="rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl p-3 sm:p-3.5 shadow-md space-y-3.5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      {/* ─────────────────────────────────────────────────────────────
+          TOOLBAR LIQUID GLASS COM ABAS ANIMADAS EM "FILTRAR:"
+         ───────────────────────────────────────────────────────────── */}
+      <div className="rounded-[1.5rem] border border-white/15 dark:border-white/10 bg-card/45 dark:bg-card/35 backdrop-blur-3xl p-3 sm:p-4 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.18),0_10px_32px_-6px_rgba(0,0,0,0.1)] space-y-4 relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/25 before:to-transparent">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Seletor de Canais */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
             <Button
@@ -341,10 +385,10 @@ export default function OffBoardPage() {
               size="sm"
               onClick={() => setSelectedChannel("whatsapp")}
               className={cn(
-                "h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer transition-all",
+                "h-9 text-xs font-sans font-bold rounded-xl gap-2 cursor-pointer transition-all",
                 selectedChannel === "whatsapp"
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/25"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/5"
               )}
             >
               <MessageSquare className="h-3.5 w-3.5" />
@@ -355,7 +399,7 @@ export default function OffBoardPage() {
               variant={selectedChannel === "email" ? "default" : "ghost"}
               size="sm"
               onClick={() => setSelectedChannel("email")}
-              className="h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/40"
+              className="h-9 text-xs font-sans font-bold rounded-xl gap-2 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/5"
             >
               <Mail className="h-3.5 w-3.5" />
               <span>E-mail Transacional</span>
@@ -365,49 +409,30 @@ export default function OffBoardPage() {
               variant={selectedChannel === "push" ? "default" : "ghost"}
               size="sm"
               onClick={() => setSelectedChannel("push")}
-              className="h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/40"
+              className="h-9 text-xs font-sans font-bold rounded-xl gap-2 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/5"
             >
               <Bell className="h-3.5 w-3.5" />
               <span>Push Notification</span>
             </Button>
           </div>
 
-          {/* Filtros de Status */}
-          <div className="flex items-center gap-1.5 self-end lg:self-auto shrink-0">
-            <span className="text-xs text-muted-foreground mr-1 font-medium">Filtrar:</span>
-            <Button
-              variant={filter === "todos" ? "secondary" : "ghost"}
+          {/* Abas de Filtro Animadas (AnimatedTabs) em "Filtrar:" */}
+          <div className="flex items-center gap-2 self-start lg:self-auto shrink-0">
+            <span className="text-xs text-muted-foreground font-sans font-semibold flex items-center gap-1">
+              <ListFilter className="h-3.5 w-3.5 text-primary" />
+              Filtrar:
+            </span>
+
+            <AnimatedTabs<FilterType>
+              tabs={filterTabs}
+              activeTab={filter}
+              onChange={setFilter}
               size="sm"
-              onClick={() => setFilter("todos")}
-              className={cn(
-                "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all",
-                filter === "todos" && "bg-primary/10 text-primary border border-primary/20"
-              )}
-            >
-              Todos ({totalElegiveis})
-            </Button>
-            <Button
-              variant={filter === "pendentes" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setFilter("pendentes")}
-              className={cn(
-                "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all text-amber-600 dark:text-amber-400",
-                filter === "pendentes" && "bg-amber-500/10 border border-amber-500/20"
-              )}
-            >
-              Pendentes ({totalPendentes})
-            </Button>
-            <Button
-              variant={filter === "enviados" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setFilter("enviados")}
-              className={cn(
-                "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all text-emerald-600 dark:text-emerald-400",
-                filter === "enviados" && "bg-emerald-500/10 border border-emerald-500/20"
-              )}
-            >
-              Concluídos ({totalEnviados})
-            </Button>
+              showConnectors={false}
+              showTrack={false}
+              className="w-auto"
+              containerClassName="border-white/15 dark:border-white/10 bg-card/60 dark:bg-card/40 p-1"
+            />
           </div>
         </div>
 
@@ -419,7 +444,7 @@ export default function OffBoardPage() {
             placeholder="Buscar por passageiro, PNR, assento ou tier..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-10 pl-10 pr-9 text-xs rounded-xl border border-border/80 bg-background/60 backdrop-blur-md focus:outline-none focus:ring-1 focus:ring-primary shadow-xs transition-all placeholder:text-muted-foreground/70"
+            className="w-full h-10 pl-10 pr-9 text-xs rounded-xl border border-white/15 dark:border-white/10 bg-background/50 backdrop-blur-md focus:outline-none focus:ring-1 focus:ring-primary shadow-inner transition-all placeholder:text-muted-foreground/70"
           />
           {searchTerm && (
             <button
@@ -432,11 +457,13 @@ export default function OffBoardPage() {
         </div>
       </div>
 
-      {/* Lista de Cards de Ação Off-Board */}
+      {/* ─────────────────────────────────────────────────────────────
+          LISTA DE CARDS DE AÇÃO OFF-BOARD (LIQUID GLASS FROSTED CARDS)
+         ───────────────────────────────────────────────────────────── */}
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="rounded-2xl border border-border/80 bg-card/60 backdrop-blur-xl">
+            <Card key={i} className="rounded-[1.75rem] border border-white/15 bg-card/40 backdrop-blur-2xl">
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <Skeleton className="h-6 w-48 rounded-lg" />
@@ -449,27 +476,27 @@ export default function OffBoardPage() {
           ))}
         </div>
       ) : isError ? (
-        <Card className="rounded-2xl border border-rose-500/30 bg-rose-500/5 backdrop-blur-xl">
+        <Card className="rounded-[1.75rem] border border-rose-500/30 bg-rose-500/5 backdrop-blur-2xl">
           <CardContent className="p-8 text-center space-y-3">
             <AlertTriangle className="h-8 w-8 text-rose-500 mx-auto" />
-            <h3 className="font-outfit font-bold text-sm text-foreground">
+            <h3 className="font-sans font-bold text-sm text-foreground">
               Falha ao carregar passageiros elegíveis
             </h3>
             <p className="text-xs text-muted-foreground max-w-md mx-auto">
               Não foi possível consultar os dados analíticos do voo no Data Lake. Verifique se o backend está em execução.
             </p>
-            <Button size="sm" onClick={() => refetch()} className="rounded-xl font-outfit font-bold cursor-pointer">
+            <Button size="sm" onClick={() => refetch()} className="rounded-xl font-sans font-bold cursor-pointer">
               Tentar Novamente
             </Button>
           </CardContent>
         </Card>
       ) : passageirosFiltrados.length === 0 ? (
-        <Card className="rounded-2xl border border-dashed border-border/80 bg-card/60 backdrop-blur-xl">
+        <Card className="rounded-[1.75rem] border border-dashed border-white/20 bg-card/40 backdrop-blur-2xl">
           <CardContent className="p-12 text-center space-y-2.5">
-            <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20">
+            <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20 shadow-inner">
               <CheckCircle2 className="h-6 w-6" />
             </div>
-            <h3 className="font-outfit font-black text-base text-foreground pt-1">
+            <h3 className="font-sans font-black text-base text-foreground pt-1">
               Nenhum passageiro pendente encontrado
             </h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
@@ -480,7 +507,7 @@ export default function OffBoardPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4.5">
+        <div className="space-y-5">
           {passageirosFiltrados.map((p) => {
             const tierConf = getTierConfig(p.tier);
             const isCopied = copiedId === p.seatKey;
@@ -489,21 +516,24 @@ export default function OffBoardPage() {
               <Card
                 key={p.seatKey}
                 className={cn(
-                  "rounded-2xl border transition-all duration-300 shadow-md backdrop-blur-xl relative overflow-hidden",
+                  "rounded-[1.75rem] border transition-all duration-300 backdrop-blur-3xl relative overflow-hidden",
                   p.isEnviado
-                    ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/10"
-                    : "border-border/80 bg-card/85 hover:border-primary/40 hover:shadow-xl"
+                    ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.18),0_8px_32px_-6px_rgba(16,185,129,0.12)]"
+                    : "border-white/15 dark:border-white/10 bg-card/50 dark:bg-card/40 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.15),0_10px_32px_-6px_rgba(0,0,0,0.1)] hover:border-primary/45 hover:shadow-2xl"
                 )}
               >
+                {/* Feixe especular no topo do card */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/25 to-transparent" />
+
                 <CardContent className="p-5 sm:p-6 space-y-4.5">
                   {/* Topo do Card: Identificação do Passageiro e Status */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-border/70">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-white/10 dark:border-white/5">
                     <div className="flex items-center gap-3 flex-wrap">
-                      {/* Box do Assento */}
-                      <span className="h-8 px-3 rounded-xl bg-muted/80 text-foreground font-outfit font-black text-xs flex items-center border border-border/70 shadow-2xs">
+                      {/* Box do Assento com Vidro Líquido */}
+                      <span className="h-8 px-3 rounded-xl bg-muted/70 text-foreground font-sans font-black text-xs flex items-center border border-white/15 dark:border-white/10 shadow-inner">
                         {p.assento}
                       </span>
-                      <span className="font-outfit font-black text-base text-foreground tracking-tight">
+                      <span className="font-sans font-black text-base text-foreground tracking-tight">
                         {p.nome}
                       </span>
                       <Badge variant="outline" className={cn("text-[10px] font-bold rounded-full border shadow-2xs", tierConf.badge)}>
@@ -520,7 +550,7 @@ export default function OffBoardPage() {
                     <div className="flex items-center gap-2">
                       <span
                         className={cn(
-                          "text-[11px] font-outfit font-bold px-3 py-0.5 rounded-full border shadow-2xs",
+                          "text-[11px] font-sans font-bold px-3 py-0.5 rounded-full border shadow-2xs",
                           p.risco_evasao > 0.6
                             ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
                             : "bg-amber-500/10 text-amber-500 border-amber-500/30"
@@ -529,7 +559,7 @@ export default function OffBoardPage() {
                         Risco Churn: {formatPercent(p.risco_evasao, 0)}
                       </span>
                       {p.isEnviado ? (
-                        <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] gap-1 font-bold rounded-full shadow-2xs">
+                        <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] gap-1 font-bold rounded-full shadow-md shadow-emerald-600/20">
                           <Check className="h-3 w-3" />
                           Enviado via WhatsApp
                         </Badge>
@@ -543,7 +573,7 @@ export default function OffBoardPage() {
 
                   {/* Diagnóstico do Atrito e Ação Recomendada */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
-                    <div className="p-3.5 rounded-xl bg-card/60 border border-border/70 space-y-1.5 backdrop-blur-xs">
+                    <div className="p-3.5 rounded-2xl bg-card/60 dark:bg-card/40 border border-white/15 dark:border-white/10 space-y-1.5 backdrop-blur-xl shadow-xs">
                       <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider flex items-center gap-1.5">
                         <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                         Diagnóstico de Atrito Operacional (XAI)
@@ -551,12 +581,12 @@ export default function OffBoardPage() {
                       <p className="text-foreground font-medium leading-relaxed">{p.contexto}</p>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/20 space-y-1.5 backdrop-blur-xs">
+                    <div className="p-3.5 rounded-2xl bg-primary/5 dark:bg-primary/10 border border-primary/25 space-y-1.5 backdrop-blur-xl shadow-xs">
                       <span className="text-[10px] text-primary uppercase font-bold tracking-wider flex items-center gap-1.5">
                         <HeartHandshake className="h-3.5 w-3.5 text-primary" />
                         Ação Aprovada pelo Árbitro (Uplift)
                       </span>
-                      <p className="font-outfit font-black text-primary text-sm">{p.acao}</p>
+                      <p className="font-sans font-black text-primary text-sm">{p.acao}</p>
                       <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono pt-0.5">
                         <span>Custo: {formatCurrency(p.custo)}</span>
                         <span>•</span>
@@ -565,10 +595,10 @@ export default function OffBoardPage() {
                     </div>
                   </div>
 
-                  {/* Balão da Mensagem WhatsApp (Autêntico Concierge) */}
+                  {/* Balão da Mensagem WhatsApp (Autêntico Concierge em Vidro Esmeralda) */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <span className="font-semibold text-muted-foreground flex items-center gap-1.5 font-sans">
                         <Smartphone className="h-3.5 w-3.5 text-emerald-500" />
                         Mensagem Humanizada WhatsApp (Pronta para Cópia e Disparo):
                       </span>
@@ -583,7 +613,7 @@ export default function OffBoardPage() {
                       )}
                     </div>
 
-                    <div className="relative rounded-2xl p-4 bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/25 text-xs text-foreground leading-relaxed shadow-inner backdrop-blur-xs">
+                    <div className="relative rounded-2xl p-4 bg-emerald-500/10 dark:bg-emerald-950/30 border border-emerald-500/30 text-xs text-foreground leading-relaxed shadow-inner backdrop-blur-2xl">
                       <p className="italic text-foreground font-medium">&ldquo;{p.mensagem}&rdquo;</p>
                     </div>
                   </div>
@@ -597,10 +627,10 @@ export default function OffBoardPage() {
                         size="sm"
                         onClick={() => setExpandedXaiId(expandedXaiId === p.seatKey ? null : p.seatKey)}
                         className={cn(
-                          "h-8 text-xs gap-1.5 font-outfit font-bold rounded-xl cursor-pointer transition-all",
+                          "h-8 text-xs gap-1.5 font-sans font-bold rounded-xl cursor-pointer transition-all",
                           expandedXaiId === p.seatKey
-                            ? "bg-primary/15 text-primary border border-primary/30"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                            ? "bg-primary/20 text-primary border border-primary/35"
+                            : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                         )}
                       >
                         <Sparkles className="h-3.5 w-3.5 text-primary" />
@@ -616,8 +646,8 @@ export default function OffBoardPage() {
                         size="sm"
                         onClick={() => handleCopy(p.seatKey, p.mensagem)}
                         className={cn(
-                          "h-8 text-xs gap-1.5 font-outfit font-bold rounded-xl border border-border/80 bg-card/60 backdrop-blur-md cursor-pointer transition-all",
-                          isCopied && "bg-emerald-500/20 border-emerald-500 text-emerald-600 dark:text-emerald-300"
+                          "h-8 text-xs gap-1.5 font-sans font-bold rounded-xl border border-white/15 dark:border-white/10 bg-card/60 backdrop-blur-md cursor-pointer transition-all shadow-xs",
+                          isCopied && "bg-emerald-500/25 border-emerald-500 text-emerald-600 dark:text-emerald-300"
                         )}
                       >
                         {isCopied ? (
@@ -639,10 +669,10 @@ export default function OffBoardPage() {
                         disabled={p.isEnviado || confirmMutation.isPending}
                         onClick={() => handleConfirmarDisparo(p)}
                         className={cn(
-                          "h-8 text-xs gap-1.5 font-outfit font-bold rounded-xl cursor-pointer transition-all shadow-md",
+                          "h-8 text-xs gap-1.5 font-sans font-bold rounded-xl cursor-pointer transition-all shadow-md",
                           p.isEnviado
-                            ? "bg-muted text-muted-foreground cursor-not-allowed border border-border"
-                            : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                            ? "bg-muted text-muted-foreground cursor-not-allowed border border-border/60"
+                            : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20"
                         )}
                       >
                         {p.isEnviado ? (
@@ -667,13 +697,13 @@ export default function OffBoardPage() {
 
                   {/* Painel Expansível de Explicabilidade (XAI: SHAP + Árbitro Contextual + RAG) */}
                   {expandedXaiId === p.seatKey && (
-                    <div className="mt-3.5 p-4 rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-xl space-y-3.5 animate-in fade-in duration-200">
+                    <div className="mt-3.5 p-4.5 rounded-[1.35rem] border border-primary/25 bg-primary/5 dark:bg-primary/10 backdrop-blur-3xl space-y-4 animate-in fade-in duration-200">
                       <div className="flex items-center justify-between border-b border-primary/20 pb-2.5 flex-wrap gap-2">
                         <div className="flex items-center gap-2">
                           <div className="h-6 w-6 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
                             <Sparkles className="h-3.5 w-3.5" />
                           </div>
-                          <h4 className="font-outfit font-bold text-xs text-foreground uppercase tracking-wider">
+                          <h4 className="font-sans font-bold text-xs text-foreground uppercase tracking-wider">
                             Explicabilidade da Decisão (XAI: SHAP + Árbitro Contextual)
                           </h4>
                         </div>
@@ -692,9 +722,9 @@ export default function OffBoardPage() {
 
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 text-xs">
                         {/* 1. Decomposição SHAP */}
-                        <div className="p-3.5 rounded-xl bg-card/90 border border-border/70 backdrop-blur-md space-y-2.5">
+                        <div className="p-3.5 rounded-2xl bg-card/70 dark:bg-card/50 border border-white/15 dark:border-white/10 backdrop-blur-2xl space-y-2.5 shadow-xs">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-outfit font-bold text-foreground flex items-center gap-1.5">
+                            <span className="text-[11px] font-sans font-bold text-foreground flex items-center gap-1.5">
                               <TrendingUp className="h-3.5 w-3.5 text-rose-500" />
                               Decomposição de Risco (SHAP)
                             </span>
@@ -740,9 +770,9 @@ export default function OffBoardPage() {
                         </div>
 
                         {/* 2. Racional Econômico do Árbitro */}
-                        <div className="p-3.5 rounded-xl bg-card/90 border border-border/70 backdrop-blur-md space-y-2.5">
+                        <div className="p-3.5 rounded-2xl bg-card/70 dark:bg-card/50 border border-white/15 dark:border-white/10 backdrop-blur-2xl space-y-2.5 shadow-xs">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-outfit font-bold text-foreground flex items-center gap-1.5">
+                            <span className="text-[11px] font-sans font-bold text-foreground flex items-center gap-1.5">
                               <HeartHandshake className="h-3.5 w-3.5 text-primary" />
                               Arbitragem de ROI (Uplift)
                             </span>
@@ -774,9 +804,9 @@ export default function OffBoardPage() {
                                         className={cn(
                                           "px-1.5 py-0.5 rounded-full text-[9px] font-bold",
                                           a.status === "VENCEDORA"
-                                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                            ? "bg-emerald-500/15 text-emerald-500 border border-emerald-500/30"
                                             : a.status === "VETADA_ROI"
-                                            ? "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                                            ? "bg-rose-500/15 text-rose-500 border border-rose-500/30"
                                             : "bg-muted text-muted-foreground"
                                         )}
                                       >
@@ -796,15 +826,15 @@ export default function OffBoardPage() {
                         </div>
 
                         {/* 3. Fundamentação Regulatória & RAG */}
-                        <div className="p-3.5 rounded-xl bg-card/90 border border-border/70 backdrop-blur-md space-y-2.5 flex flex-col justify-between">
+                        <div className="p-3.5 rounded-2xl bg-card/70 dark:bg-card/50 border border-white/15 dark:border-white/10 backdrop-blur-2xl space-y-2.5 flex flex-col justify-between shadow-xs">
                           <div className="space-y-2">
-                            <span className="text-[11px] font-outfit font-bold text-foreground flex items-center gap-1.5">
+                            <span className="text-[11px] font-sans font-bold text-foreground flex items-center gap-1.5">
                               <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
                               Fundamentação Regulatória & Fidelidade
                             </span>
 
-                            <div className="p-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-[10.5px] space-y-1">
-                              <span className="font-outfit font-bold text-emerald-600 dark:text-emerald-400 block">
+                            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-[10.5px] space-y-1">
+                              <span className="font-sans font-bold text-emerald-600 dark:text-emerald-400 block">
                                 {p.explicabilidade?.fundamentacao_rag?.norma || "Resolução 400 ANAC"}
                               </span>
                               <p className="text-muted-foreground leading-relaxed">
@@ -812,8 +842,8 @@ export default function OffBoardPage() {
                               </p>
                             </div>
 
-                            <div className="p-2.5 rounded-xl bg-primary/5 border border-primary/20 text-[10.5px] space-y-1">
-                              <span className="font-outfit font-bold text-primary block">
+                            <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/25 text-[10.5px] space-y-1">
+                              <span className="font-sans font-bold text-primary block">
                                 Programa Azul Fidelidade ({p.tier})
                               </span>
                               <p className="text-muted-foreground leading-relaxed">
@@ -838,48 +868,50 @@ export default function OffBoardPage() {
         </div>
       )}
 
-      {/* Banner de Governança, LGPD e IA Responsável */}
-      <Card className="rounded-2xl border border-border/80 bg-gradient-to-br from-slate-900 via-slate-900 to-[#002855] text-white overflow-hidden shadow-xl relative before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/30 before:to-transparent">
-        <CardContent className="p-6 sm:p-7">
+      {/* ─────────────────────────────────────────────────────────────
+          BANNER DE GOVERNANÇA, LGPD E IA RESPONSÁVEL (DEEP AERO-NAVY)
+         ───────────────────────────────────────────────────────────── */}
+      <Card className="rounded-[2rem] border border-white/15 bg-gradient-to-br from-slate-950 via-slate-900 to-[#002855] text-white overflow-hidden shadow-2xl relative before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/35 before:to-transparent">
+        <CardContent className="p-6 sm:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-            <div className="lg:col-span-2 space-y-3.5">
+            <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-xl bg-sky-400/20 text-sky-400 flex items-center justify-center border border-sky-400/30">
-                  <Lock className="h-4 w-4" />
+                <div className="h-9 w-9 rounded-2xl bg-sky-400/20 text-sky-400 flex items-center justify-center border border-sky-400/30 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.2)]">
+                  <Lock className="h-4.5 w-4.5" />
                 </div>
-                <h3 className="font-outfit font-black text-lg text-white tracking-tight">
+                <h3 className="font-sans font-black text-lg sm:text-xl text-white tracking-tight">
                   Governança, IA Responsável & Conformidade LGPD
                 </h3>
               </div>
-              <p className="text-xs text-white/80 leading-relaxed max-w-2xl">
+              <p className="text-xs sm:text-sm text-white/80 leading-relaxed max-w-2xl">
                 A camada analítica opera sob princípios estritos de <strong>Zero Viés</strong> e minimização de dados.
                 Nenhum dado sensível (como gênero, etnia ou idade) é utilizado para precificação ou priorização de ações.
                 A inferência baseia-se exclusivamente em histórico transacional, risco analítico de evasão e regras regulatórias (ANAC Resolução 400).
               </p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/15 flex items-center gap-1.5 shadow-2xs">
+                <span className="px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-xl text-[11px] font-semibold text-white/95 border border-white/15 flex items-center gap-1.5 shadow-2xs">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                   Anonimização de Identificadores
                 </span>
-                <span className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/15 flex items-center gap-1.5 shadow-2xs">
+                <span className="px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-xl text-[11px] font-semibold text-white/95 border border-white/15 flex items-center gap-1.5 shadow-2xs">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                   Sentimento Público ANAC VRA
                 </span>
-                <span className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/15 flex items-center gap-1.5 shadow-2xs">
+                <span className="px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-xl text-[11px] font-semibold text-white/95 border border-white/15 flex items-center gap-1.5 shadow-2xs">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                   Auditabilidade SQLite Transacional (mlops_logs.db)
                 </span>
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 space-y-2 text-center lg:text-right shadow-inner">
+            <div className="p-6 rounded-[1.5rem] bg-white/5 backdrop-blur-2xl border border-white/10 space-y-2 text-center lg:text-right shadow-inner">
               <span className="text-[10px] text-white/60 uppercase font-bold tracking-wider block">
                 Métrica de Equidade
               </span>
-              <span className="text-3xl sm:text-4xl font-outfit font-black text-sky-400 block tracking-tight">
+              <span className="text-4xl sm:text-5xl font-sans font-black text-sky-400 block tracking-tight">
                 100%
               </span>
-              <span className="text-[11px] text-white/70 block">
+              <span className="text-xs text-white/70 block">
                 Auditoria de Paridade Estatística (Zero Viés Demográfico)
               </span>
             </div>
