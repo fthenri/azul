@@ -755,7 +755,7 @@ export default function OffBoardPage() {
                     type="button"
                     onClick={() => setExpandedXaiId(expandedXaiId === p.seatKey ? null : p.seatKey)}
                     className={cn(
-                      "h-7.5 px-3 text-xs font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors flex items-center gap-1.5 border border-transparent hover:border-border/60 cursor-pointer",
+                      "h-7.5 p-3 text-xs font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors flex items-center gap-1.5 cursor-pointer",
                       expandedXaiId === p.seatKey && "bg-muted/60 text-foreground border-border/70"
                     )}
                   >

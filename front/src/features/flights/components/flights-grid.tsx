@@ -15,7 +15,8 @@ import {
   Sparkles,
   Database,
   ShieldAlert,
-  ChevronRight,
+  ArrowUpRight,
+  X,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/demo-mode-context";
@@ -23,6 +24,8 @@ import { DEMO_MALHA_VOOS } from "@/lib/demo-data";
 import { ListaVoosResponse } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { InfoTooltip } from "@/components/shared/info-tooltip";
 import {
   Table,
   TableBody,
@@ -81,6 +84,15 @@ export function FlightsGrid() {
     };
   }, [flights]);
 
+  const totalCriticosFlights = useMemo(
+    () => flights.filter((f) => f.passageiros_criticos > 0).length,
+    [flights]
+  );
+  const totalVipsFlights = useMemo(
+    () => flights.filter((f) => f.passageiros_vip > 0).length,
+    [flights]
+  );
+
   // Filtragem e busca
   const filteredFlights = useMemo(() => {
     return flights.filter((f) => {
@@ -104,10 +116,75 @@ export function FlightsGrid() {
     });
   }, [flights, searchTerm, selectedFilter]);
 
+  const kpis = [
+    {
+      title: "Voos na Malha",
+      value: String(metrics.totalVoos),
+      description: "Rotas comerciais ativas monitoradas em tempo real com DuckDB",
+      icon: Plane,
+      iconColor: "text-primary",
+      iconBg: "bg-primary/10 border-primary/20",
+      tooltip: "Total de voos comerciais programados ativos na camada Gold do Data Lake.",
+      metricPill: "Malha em Operação",
+      footerAction: "Ver Rotas",
+      highlightBeam: "via-primary/40",
+      accentGlow: "from-primary/15 to-transparent",
+      isSpecial: false,
+    },
+    {
+      title: "Passageiros",
+      value: metrics.totalPax.toLocaleString("pt-BR"),
+      description: `Alocados em ${metrics.totalPnrs} reservas (PNR) com agrupamento familiar`,
+      icon: Users,
+      iconColor: "text-sky-500 dark:text-sky-400",
+      iconBg: "bg-sky-500/10 border-sky-500/20",
+      tooltip: "Passageiros mapeados com histórico de fidelidade e agrupamento contíguo por PNR.",
+      metricPill: "Agrupamento Familiar",
+      footerAction: "Explorar PNRs",
+      highlightBeam: "via-sky-400",
+      accentGlow: "from-sky-500/15 to-transparent",
+      isSpecial: false,
+    },
+    {
+      title: "Risco Crítico (Evasão)",
+      value: String(metrics.totalCriticos),
+      description: "Atrito operacional elevado ou Churn > 60% elegíveis a ações de cabine",
+      icon: ShieldAlert,
+      iconColor: "text-rose-600 dark:text-rose-400",
+      iconBg: "bg-rose-500/15 border-rose-500/30",
+      tooltip: "Passageiros prioritários que sofreram atritos recentes com alto potencial de evasão.",
+      metricPill: "Prioridade Imediata",
+      footerAction: "Intervir",
+      highlightBeam: "via-rose-500",
+      accentGlow: "from-rose-500/20 to-transparent",
+      isSpecial: true,
+      cardStyle: "border-rose-500/40 bg-gradient-to-br from-card via-card to-rose-500/5 shadow-md hover:border-rose-500/60",
+      valueColor: "text-rose-600 dark:text-rose-400",
+      badgeText: "Atenção Crítica",
+    },
+    {
+      title: "Alto Valor (Tiers)",
+      value: String(metrics.totalVips),
+      description: "Diamante & Safira responsáveis pela maior fatia de receita recorrente",
+      icon: Crown,
+      iconColor: "text-indigo-600 dark:text-indigo-400",
+      iconBg: "bg-indigo-500/10 border-indigo-500/20",
+      tooltip: "Clientes categorizados no topo do princípio de Pareto da Azul Fidelidade.",
+      metricPill: "Top Pareto Fidelidade",
+      footerAction: "Auditar",
+      highlightBeam: "via-indigo-500",
+      accentGlow: "from-indigo-500/20 to-transparent",
+      isSpecial: true,
+      cardStyle: "border-indigo-500/40 bg-gradient-to-br from-card via-card to-indigo-500/5 shadow-md hover:border-indigo-500/60",
+      valueColor: "text-indigo-600 dark:text-indigo-400",
+      badgeText: "Top Pareto",
+    },
+  ];
+
   return (
     <div className="relative space-y-7 selection:bg-primary/30 selection:text-primary">
       {/* ─────────────────────────────────────────────────────────────
-          ATMOSFERA VISUAL SUPERIOR (AERO GLOW)
+          ELEMENTO ATMOSFÉRICO DE PROFUNDIDADE (AERO GLOW SUTIL)
          ───────────────────────────────────────────────────────────── */}
       <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-full max-w-5xl h-64 bg-primary/5 blur-[120px] pointer-events-none -z-10 rounded-full" />
 
@@ -116,6 +193,7 @@ export function FlightsGrid() {
          ───────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between pb-2 border-b border-border/80">
         <div>
+          {/* Micro-badge de Ecossistema */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-semibold tracking-wide shadow-xs mb-2">
             <Sparkles className="h-3 w-3 text-primary" />
             <span>Ecossistema Azul Fidelidade • Operações On-Board</span>
@@ -125,15 +203,16 @@ export function FlightsGrid() {
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground font-sans">
               Malha Aérea Comercial
             </h1>
-            <Badge className="bg-secondary border border-border text-secondary-foreground text-[11px] font-bold px-3 py-0.5">
+            <span className="rounded-full bg-secondary border border-border text-secondary-foreground text-[11px] font-bold px-3 py-0.5">
               DuckDB Real
-            </Badge>
+            </span>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             pulso: Selecione um voo programado para inspecionar mapa de assentos, atrito e ações recomendadas de cabine
           </p>
         </div>
 
+        {/* Controles de Atualização & Badges de Governança */}
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/80 border border-border text-xs text-muted-foreground shadow-xs">
             <Database className="h-3.5 w-3.5 text-primary" />
@@ -154,92 +233,126 @@ export function FlightsGrid() {
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          KPI CARDS DA MALHA
+          KPI CARDS DA MALHA (IDENTIDADE PULSO DASHBOARD COM GLOW)
          ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {/* Voos na Malha */}
-        <div className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-xs hover:border-primary/30 hover:shadow-sm transition-all overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Voos na Malha
-            </span>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
-              <Plane className="h-4.5 w-4.5" />
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="relative rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-5 shadow-sm space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-9 w-9 rounded-xl" />
+              </div>
+              <Skeleton className="h-8 w-36" />
+              <Skeleton className="h-3 w-48" />
             </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-foreground font-sans">
-              {metrics.totalVoos}
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Rotas comerciais ativas
-            </p>
-          </div>
+          ))}
         </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {kpis.map((kpi) => {
+            const Icon = kpi.icon;
+            const isSpecial = kpi.isSpecial;
 
-        {/* Passageiros Monitorados */}
-        <div className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-xs hover:border-primary/30 hover:shadow-sm transition-all overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Passageiros
-            </span>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/20 text-azul-action dark:text-sky-400">
-              <Users className="h-4.5 w-4.5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-foreground font-sans">
-              {metrics.totalPax.toLocaleString("pt-BR")}
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Em {metrics.totalPnrs} reservas (PNR)
-            </p>
-          </div>
-        </div>
+            return (
+              <div
+                key={kpi.title}
+                className={cn(
+                  "group relative rounded-2xl border transition-all duration-300 overflow-hidden flex flex-col justify-between",
+                  kpi.cardStyle ||
+                    "border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:border-primary/30 hover:shadow-sm"
+                )}
+              >
+                {/* Faixa de Luz Superior em Gradiente (Luminous Edge Highlight) */}
+                <div
+                  className={cn(
+                    "absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent to-transparent opacity-85 group-hover:opacity-100 transition-opacity",
+                    kpi.highlightBeam || "via-primary/30"
+                  )}
+                />
 
-        {/* Risco Crítico */}
-        <div className="group relative rounded-2xl border border-rose-500/30 bg-rose-500/5 dark:bg-rose-500/10 backdrop-blur-xl p-5 shadow-xs hover:border-rose-500/50 hover:shadow-sm transition-all overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">
-              Risco Crítico (Evasão)
-            </span>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400">
-              <ShieldAlert className="h-4.5 w-4.5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-rose-700 dark:text-rose-300 font-sans">
-              {metrics.totalCriticos}
-            </div>
-            <p className="text-xs text-rose-600/80 dark:text-rose-400/80 mt-0.5">
-              Atrito elevado / Churn &gt; 60%
-            </p>
-          </div>
-        </div>
+                {/* Glow sutil de fundo */}
+                {kpi.accentGlow && (
+                  <div
+                    className={cn(
+                      "absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl blur-2xl rounded-full pointer-events-none",
+                      kpi.accentGlow
+                    )}
+                  />
+                )}
 
-        {/* Clientes Alto Valor */}
-        <div className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-xs hover:border-primary/30 hover:shadow-sm transition-all overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Alto Valor (Tiers)
-            </span>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400">
-              <Crown className="h-4.5 w-4.5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-[27px] font-black tracking-tight text-foreground font-sans">
-              {metrics.totalVips}
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Diamante & Safira (Top Pareto)
-            </p>
-          </div>
+                <div className="relative p-5 flex flex-col justify-between h-full space-y-3">
+                  {/* Cabeçalho do Card */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                      {kpi.title}
+                      <InfoTooltip
+                        text={kpi.tooltip}
+                        title={kpi.title}
+                        badge={isSpecial ? "Crítico" : "Malha"}
+                        side="bottom"
+                      />
+                    </span>
+
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-transform duration-200 group-hover:scale-105",
+                        kpi.iconBg,
+                        kpi.iconColor
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                  </div>
+
+                  {/* Valor Principal */}
+                  <div className="space-y-1">
+                    <div className="flex items-baseline gap-2.5 flex-wrap">
+                      <span
+                        className={cn(
+                          "text-2xl sm:text-[27px] font-black tracking-tight font-sans",
+                          kpi.valueColor || "text-foreground"
+                        )}
+                      >
+                        {kpi.value}
+                      </span>
+
+                      {kpi.badgeText && (
+                        <Badge className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 shadow-xs inline-flex items-center gap-1">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          <span>{kpi.badgeText}</span>
+                        </Badge>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                      {kpi.description}
+                    </p>
+                  </div>
+
+                  {/* Rodapé / Micro-pill de Indicador */}
+                  <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px]">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md border border-border/40">
+                      {kpi.metricPill}
+                    </span>
+
+                    <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-primary group-hover:translate-x-0.5 transition-transform">
+                      <span>{kpi.footerAction}</span>
+                      <ArrowUpRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
-          BARRA DE FILTROS E BUSCA
+          BARRA DE FILTROS E BUSCA (IDENTIDADE PULSO DASHBOARD)
          ───────────────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-3.5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:w-80">
@@ -249,12 +362,22 @@ export function FlightsGrid() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar voo, rota (ex: 6002, SBSP, SBFI)..."
-            className="w-full h-10 pl-9 pr-3 text-xs rounded-xl border border-input bg-background/80 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-all shadow-inner"
+            className="w-full h-10 pl-9 pr-8 text-xs rounded-xl border border-input bg-background/80 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-all shadow-inner"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
-          <span className="text-xs text-muted-foreground mr-1 hidden sm:inline font-medium">Filtrar:</span>
+          <span className="text-xs text-muted-foreground mr-1 hidden sm:inline font-medium">
+            Filtrar:
+          </span>
           <Button
             variant={selectedFilter === "todos" ? "default" : "outline"}
             size="sm"
@@ -279,7 +402,7 @@ export function FlightsGrid() {
                 : "border-border hover:bg-muted text-foreground"
             )}
           >
-            Com Críticos ({flights.filter((f) => f.passageiros_criticos > 0).length})
+            Com Críticos ({totalCriticosFlights})
           </Button>
           <Button
             variant={selectedFilter === "vips" ? "default" : "outline"}
@@ -292,13 +415,13 @@ export function FlightsGrid() {
                 : "border-border hover:bg-muted text-foreground"
             )}
           >
-            Diamante / Safira ({flights.filter((f) => f.passageiros_vip > 0).length})
+            Diamante / Safira ({totalVipsFlights})
           </Button>
         </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          TABELA DE VOOS (ESTILO LIQUID GLASS PULSO)
+          TABELA DE VOOS (ESTILO LIQUID GLASS PULSO COM LUMINOUS EDGE)
          ───────────────────────────────────────────────────────────── */}
       <div className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
         {/* Feixe Superior Luminous Edge Highlight */}
@@ -337,7 +460,12 @@ export function FlightsGrid() {
                       <span className="text-xs font-semibold">
                         Erro ao carregar malha aérea: {error?.message}
                       </span>
-                      <Button size="sm" variant="outline" onClick={() => refetch()} className="text-xs rounded-xl mt-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => refetch()}
+                        className="text-xs rounded-xl mt-1 cursor-pointer"
+                      >
                         Tentar Novamente
                       </Button>
                     </div>
@@ -351,7 +479,10 @@ export function FlightsGrid() {
                 </TableRow>
               ) : (
                 filteredFlights.map((flight) => (
-                  <TableRow key={flight.id} className="hover:bg-muted/40 transition-colors duration-150">
+                  <TableRow
+                    key={flight.id}
+                    className="hover:bg-muted/40 transition-colors duration-150"
+                  >
                     {/* Número do Voo */}
                     <TableCell className="py-3.5 px-4">
                       <div className="flex items-center gap-2.5">
@@ -410,9 +541,7 @@ export function FlightsGrid() {
                     {/* VIPs */}
                     <TableCell className="py-3.5 px-4 text-center">
                       {flight.passageiros_vip > 0 ? (
-                        <Badge
-                          className="bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 font-sans font-black text-xs px-2.5 py-0.5 rounded-md shadow-xs"
-                        >
+                        <Badge className="bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 font-sans font-black text-xs px-2.5 py-0.5 rounded-md shadow-xs">
                           {flight.passageiros_vip}
                         </Badge>
                       ) : (
