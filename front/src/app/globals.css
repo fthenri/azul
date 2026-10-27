@@ -111,3 +111,113 @@ body {
     box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.12), 0 20px 50px -12px rgba(0, 0, 0, 0.45);
   }
 }
+
+
+/* ==========================================================================
+   DRIVER.JS - TEMA MINIMALISTA E MODERNO (PULSO / AZUL)
+   ========================================================================== */
+.pulso-driver-popover {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 0.875rem !important;
+  box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.22), 0 0 0 1px hsl(var(--border) / 0.4) !important;
+  font-family: var(--font-inter), sans-serif !important;
+  padding: 1.25rem !important;
+  max-width: 380px !important;
+}
+
+.pulso-driver-popover .driver-popover-title {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  color: hsl(var(--foreground)) !important;
+  margin-bottom: 0.375rem !important;
+}
+
+.pulso-driver-popover .driver-popover-description {
+  font-size: 0.8125rem !important;
+  line-height: 1.5 !important;
+  color: hsl(var(--muted-foreground)) !important;
+  margin-bottom: 1.125rem !important;
+}
+
+.pulso-driver-popover .driver-popover-close-btn {
+  color: hsl(var(--muted-foreground)) !important;
+  font-size: 1.25rem !important;
+  top: 0.75rem !important;
+  right: 0.75rem !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 0.375rem !important;
+  transition: all 0.15s ease !important;
+}
+
+.pulso-driver-popover .driver-popover-close-btn:hover {
+  color: hsl(var(--foreground)) !important;
+  background-color: hsl(var(--muted)) !important;
+}
+
+.pulso-driver-popover .driver-popover-footer {
+  margin-top: 0.5rem !important;
+  padding-top: 0.75rem !important;
+  border-top: 1px solid hsl(var(--border) / 0.5) !important;
+}
+
+.pulso-driver-popover .driver-popover-progress-text {
+  font-size: 0.6875rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.pulso-driver-popover .driver-popover-footer-btn {
+  border-radius: 0.5rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 0.4rem 0.85rem !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+}
+
+.pulso-driver-popover .driver-popover-next-btn {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border: 1px solid transparent !important;
+}
+
+.pulso-driver-popover .driver-popover-next-btn:hover {
+  opacity: 0.92 !important;
+  transform: translateY(-1px) !important;
+}
+
+.pulso-driver-popover .driver-popover-prev-btn {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+.pulso-driver-popover .driver-popover-prev-btn:hover {
+  background-color: hsl(var(--muted) / 0.8) !important;
+}
+
+.pulso-driver-popover .driver-popover-arrow-side-left {
+  border-left-color: hsl(var(--card)) !important;
+}
+
+.pulso-driver-popover .driver-popover-arrow-side-right {
+  border-right-color: hsl(var(--card)) !important;
+}
+
+.pulso-driver-popover .driver-popover-arrow-side-top {
+  border-top-color: hsl(var(--card)) !important;
+}
+
+.pulso-driver-popover .driver-popover-arrow-side-bottom {
+  border-bottom-color: hsl(var(--card)) !important;
+}

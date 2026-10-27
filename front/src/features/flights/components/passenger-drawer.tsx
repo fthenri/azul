@@ -724,7 +724,7 @@ export function PassengerDrawer({
           return (
             <div
               className={cn(
-                "rounded-2xl p-4.5 space-y-3.5 shadow-sm transition-all border",
+                "rounded-2xl p-4.5 space-y-3.5 shadow-sm transition-all border p-3",
                 isVetoPolitica
                   ? "border-purple-500/30 bg-purple-500/5 backdrop-blur-sm"
                   : isVetada

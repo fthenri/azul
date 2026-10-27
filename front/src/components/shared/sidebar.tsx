@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { PulsoLogo } from "@/components/shared/pulso-logo";
-import { UserAvatar } from "@/components/shared/user-avatar";
 import {
   Tooltip,
   TooltipTrigger,
@@ -39,7 +38,7 @@ export function Sidebar({
   onToggleCollapse,
 }: SidebarProps) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
 
   const navItems = [
     {
@@ -218,9 +217,9 @@ export function Sidebar({
                             <div className="flex flex-col text-left">
                               <span
                                 className={cn(
-                                  "leading-tight font-bold text-xs",
+                                  "leading-tight font-medium text-xs",
                                   item.active
-                                    ? "text-foreground font-black"
+                                    ? "text-foreground font-bold"
                                     : "text-foreground/80"
                                 )}
                               >
@@ -333,7 +332,7 @@ export function Sidebar({
             </div>
           </div>
 
-          {/* Footer: Dados DuckDB Gold + Perfil do Usuário + Logout */}
+          {/* Footer: Dados DuckDB Gold + Logout */}
           <div
             className={cn(
               "p-3.5 border-t space-y-3 border-border bg-card",
@@ -370,21 +369,6 @@ export function Sidebar({
                   </div>
                 </TooltipContent>
               </Tooltip>
-            )}
-
-            {/* Perfil Autenticado Compacto */}
-            {user && !isCollapsed && (
-              <div className="p-2.5 rounded-xl bg-muted/40 border border-border/80 flex items-center justify-between">
-                <div className="flex items-center gap-2.5 truncate">
-                  <UserAvatar name={user.name} size="xs" />
-                  <div className="flex flex-col truncate">
-                    <span className="font-bold text-foreground truncate text-xs">{user.name}</span>
-                    <span className="text-[10px] text-primary uppercase font-semibold tracking-wider">
-                      {user.role === "manager" ? "Gestor CRM" : "Operações"}
-                    </span>
-                  </div>
-                </div>
-              </div>
             )}
 
             {/* Botão Encerrar Sessão */}

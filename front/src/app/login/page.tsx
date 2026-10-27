@@ -11,11 +11,6 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Building2,
-  CheckCircle2,
-  Sparkles,
-  Plane,
-  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,8 +33,6 @@ function LoginFormContent() {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
-  const [demoSelected, setDemoSelected] = useState<"manager" | "commissioner" | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,12 +42,10 @@ function LoginFormContent() {
     }
 
     setErrorMessage(null);
-    setInfoMessage(null);
     setLoading(true);
 
     try {
       await login(email, password);
-      // Redirecionamento preservado conforme a branch do colega
       if (redirectPath) {
         router.push(redirectPath);
       } else {
@@ -68,21 +59,6 @@ function LoginFormContent() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickDemo = (role: "manager" | "commissioner") => {
-    if (role === "manager") {
-      setEmail("gestor@azul.com.br");
-      setPassword("azul1234");
-      setDemoSelected("manager");
-      setInfoMessage("Credenciais selecionadas: Carlos Silveira (Gestor CRM)");
-    } else {
-      setEmail("comissario@azul.com.br");
-      setPassword("azul1234");
-      setDemoSelected("commissioner");
-      setInfoMessage("Credenciais selecionadas: Mariana Souza (Chefe de Cabine)");
-    }
-    setErrorMessage(null);
   };
 
   return (
@@ -224,14 +200,6 @@ function LoginFormContent() {
               </div>
             </div>
 
-            {/* Alerta de Feedback / Sucesso de Seleção */}
-            {infoMessage && !errorMessage && (
-              <div className="mb-5 flex items-center gap-2.5 p-3 rounded-xl bg-primary/10 border border-primary/30 text-primary text-xs animate-in fade-in duration-200">
-                <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                <span className="leading-snug">{infoMessage}</span>
-              </div>
-            )}
-
             {/* Alerta de Erro com Alto Contraste */}
             {errorMessage && (
               <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-200 text-xs animate-in fade-in duration-200">
@@ -283,7 +251,7 @@ function LoginFormContent() {
                     tabIndex={-1}
                     onClick={() => {
                       setErrorMessage(
-                        "Para redefinir sua credencial, contate o Suporte de TI Azul ou utilize as contas de demonstração abaixo."
+                        "Para redefinir sua credencial, contate o Suporte de TI Azul."
                       );
                     }}
                     className="text-xs font-medium text-primary hover:underline transition-colors focus:outline-none"
@@ -375,91 +343,6 @@ function LoginFormContent() {
                 )}
               </Button>
             </form>
-
-            {/* Divisor com Traço Tecnológico */}
-            <div className="relative my-5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-[10px] uppercase">
-                <span className="bg-card px-3 text-muted-foreground font-semibold tracking-wider">
-                  ou autenticação federada
-                </span>
-              </div>
-            </div>
-
-            {/* Botão SSO Corporativo */}
-            <button
-              type="button"
-              onClick={() => {
-                setErrorMessage(
-                  "Redirecionamento para o Provedor de Identidade Corporativo (Microsoft Azure AD). Para avaliação imediata, selecione um perfil de demonstração abaixo."
-                );
-              }}
-              className="w-full h-11 rounded-xl border border-border bg-background/60 hover:bg-muted/50 hover:border-border text-xs text-muted-foreground hover:text-foreground font-medium transition-all duration-200 flex items-center justify-center gap-2.5 shadow-xs cursor-pointer"
-            >
-              <Building2 className="h-4 w-4 text-primary" />
-              <span>Acessar via Microsoft Azure AD / SSO</span>
-            </button>
-
-            {/* Acesso Rápido de Demonstração (1-Clique) */}
-            <div className="mt-6 pt-4 border-t border-border">
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground flex items-center gap-1.5">
-                  <Plane className="h-3 w-3 text-primary" />
-                  Acesso Rápido de Demonstração
-                </span>
-                <span className="text-[10px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
-                  1-Clique
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo("manager")}
-                  className={`p-2.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
-                    demoSelected === "manager"
-                      ? "border-primary bg-primary/15 text-foreground shadow-sm"
-                      : "border-border bg-background/60 hover:bg-muted/40 hover:border-border text-muted-foreground"
-                  }`}
-                >
-                  <div className="text-[11px] font-bold text-foreground flex items-center justify-between">
-                    <span>Gestor CRM</span>
-                    {demoSelected === "manager" ? (
-                      <CheckCircle2 className="h-3 w-3 text-primary" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
-                    )}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground truncate mt-0.5">
-                    Cockpit Executivo
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo("commissioner")}
-                  className={`p-2.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
-                    demoSelected === "commissioner"
-                      ? "border-primary bg-primary/15 text-foreground shadow-sm"
-                      : "border-border bg-background/60 hover:bg-muted/40 hover:border-border text-muted-foreground"
-                  }`}
-                >
-                  <div className="text-[11px] font-bold text-foreground flex items-center justify-between">
-                    <span>Chefe de Cabine</span>
-                    {demoSelected === "commissioner" ? (
-                      <CheckCircle2 className="h-3 w-3 text-primary" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
-                    )}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground truncate mt-0.5">
-                    Visão de Bordo
-                  </div>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </main>

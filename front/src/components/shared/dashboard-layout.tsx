@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
+import { AppTourTrigger } from "./app-tour";
 import { cn } from "@/lib/utils";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -70,6 +71,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       />
 
       {/* Sidebar Fixa à Esquerda (Dinâmica Light/Dark com Colapso) */}
+      <AppTourTrigger />
       <Sidebar
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
