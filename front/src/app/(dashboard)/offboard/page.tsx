@@ -320,11 +320,14 @@ export default function OffBoardPage() {
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          HERO KPIS: DISPAROS PENDENTES & AÇÕES CONCLUÍDAS (COMPACTOS E NEUTROS)
+          HERO KPIS: DISPAROS PENDENTES & AÇÕES CONCLUÍDAS (COMPACTOS COM BORDAS COLORIDAS)
          ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         {/* Card 1: Disparos Pendentes */}
-        <div className="group relative rounded-xl border border-border/80 bg-card/85 p-4 shadow-2xs hover:border-border transition-all duration-200 overflow-hidden">
+        <div className="group relative rounded-xl border border-amber-500/35 hover:border-amber-500/60 bg-card/85 p-4 shadow-2xs transition-all duration-200 overflow-hidden">
+          {/* Feixe luminoso superior estilo @dashboard */}
+          <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400/50 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
@@ -367,7 +370,10 @@ export default function OffBoardPage() {
         </div>
 
         {/* Card 2: Ações Concluídas */}
-        <div className="group relative rounded-xl border border-border/80 bg-card/85 p-4 shadow-2xs hover:border-border transition-all duration-200 overflow-hidden">
+        <div className="group relative rounded-xl border border-emerald-500/35 hover:border-emerald-500/60 bg-card/85 p-4 shadow-2xs transition-all duration-200 overflow-hidden">
+          {/* Feixe luminoso superior estilo @dashboard */}
+          <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
@@ -559,12 +565,29 @@ export default function OffBoardPage() {
               <div
                 key={p.seatKey}
                 className={cn(
-                  "rounded-xl border transition-all duration-200 p-4 sm:p-4.5 space-y-3 shadow-2xs",
+                  "group relative rounded-xl border transition-all duration-200 p-4 sm:p-4.5 space-y-3 shadow-2xs overflow-hidden",
                   p.isEnviado
-                    ? "border-border/90 bg-card/90"
-                    : "border-border/70 bg-card/75 hover:border-border"
+                    ? "border-emerald-500/35 hover:border-emerald-500/60 bg-card/85"
+                    : riscoPerc > 60
+                    ? "border-rose-500/35 hover:border-rose-500/60 bg-card/85"
+                    : riscoPerc >= 40
+                    ? "border-amber-500/35 hover:border-amber-500/60 bg-card/85"
+                    : "border-primary/30 hover:border-primary/60 bg-card/85"
                 )}
               >
+                {/* Feixe luminoso superior com cores estilo @dashboard */}
+                <div
+                  className={cn(
+                    "absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity",
+                    p.isEnviado
+                      ? "via-emerald-400/60"
+                      : riscoPerc > 60
+                      ? "via-rose-400/60"
+                      : riscoPerc >= 40
+                      ? "via-amber-400/60"
+                      : "via-primary/50"
+                  )}
+                />
                 {/* ─────────────────────────────────────────────────────────────
                     ZONA 1: DOSSIÊ DO PASSAGEIRO (COMPACTO E NEUTRO)
                    ───────────────────────────────────────────────────────────── */}
@@ -755,7 +778,7 @@ export default function OffBoardPage() {
                       "h-7.5 text-xs font-semibold rounded-lg px-3.5 gap-1.5 cursor-pointer transition-all shadow-2xs active:scale-95 p-2",
                       p.isEnviado
                         ? "bg-muted text-muted-foreground border border-border/60 cursor-not-allowed"
-                        : "bg-secondary hover:bg-foreground/90 text-background"
+                        : "bg-primary hover:bg-primary/70 text-background"
                     )}
                   >
                     {p.isEnviado ? (
