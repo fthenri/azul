@@ -18,13 +18,11 @@ import {
   Search,
   RefreshCw,
   AlertTriangle,
-  User,
-  Plane,
   Loader2,
   TrendingUp,
   ChevronDown,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,6 +32,7 @@ import { getDemoVooSimulado } from "@/lib/demo-data";
 import { getTierConfig } from "@/lib/tier-colors";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 import { AssentoVoo, VooSimuladoResponse } from "@/types/api";
+import { cn } from "@/lib/utils";
 
 type ChannelType = "whatsapp" | "email" | "push";
 type FilterType = "todos" | "pendentes" | "enviados";
@@ -119,19 +118,22 @@ export default function OffBoardPage() {
           c.acao_vencedora ||
           (c.contexto_narrativo_llm?.toLowerCase().includes("pet")
             ? "Kit Snack Premium + Atenção Pet"
-            : c.contexto_narrativo_llm?.toLowerCase().includes("chml") || c.contexto_narrativo_llm?.toLowerCase().includes("criança")
+            : c.contexto_narrativo_llm?.toLowerCase().includes("chml") ||
+              c.contexto_narrativo_llm?.toLowerCase().includes("criança")
             ? "Kit Sobrevivência Kids"
             : c.risco_evasao > 0.6
             ? "Acolhimento Pessoal + Voucher 1000pts"
             : "Bebida Premium Cortesia");
 
-        const isFallback =
-          Boolean(!c.mensagem_llm_offboard ||
-          c.mensagem_llm_offboard.includes("Mensagem pendente") ||
-          c.mensagem_llm_offboard.includes("régua de relacionamento padrão"));
+        const isFallback = Boolean(
+          !c.mensagem_llm_offboard ||
+            c.mensagem_llm_offboard.includes("Mensagem pendente") ||
+            c.mensagem_llm_offboard.includes("régua de relacionamento padrão")
+        );
 
         const msgOffboard =
-          c.mensagem_llm_offboard && c.mensagem_llm_offboard.startsWith("[RAG: Azul Fidelidade Res. 400]")
+          c.mensagem_llm_offboard &&
+          c.mensagem_llm_offboard.startsWith("[RAG: Azul Fidelidade Res. 400]")
             ? c.mensagem_llm_offboard
             : `[RAG: Azul Fidelidade Res. 400] Olá, ${c.nome}! Notamos o atrito recente em sua jornada conosco. Como cliente ${c.tier_fidelidade}, disponibilizamos ${acaoRecomendada} para garantir seu bem-estar. Conte sempre com a Azul! ✈️💙`;
 
@@ -219,46 +221,50 @@ export default function OffBoardPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300 relative">
+      {/* Luz ambiente aero de fundo */}
+      <div className="pointer-events-none absolute -top-10 left-1/4 h-80 w-80 rounded-full bg-primary/10 blur-[120px] -z-10" />
+      <div className="pointer-events-none absolute top-40 right-10 h-72 w-72 rounded-full bg-sky-500/10 blur-[100px] -z-10" />
+
       {/* Header Principal */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-6">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="h-6 px-2.5 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 text-[11px] font-bold border border-sky-300 dark:border-sky-800 flex items-center gap-1.5">
-              <Sparkles className="h-3 w-3 text-sky-600 dark:text-sky-400" />
+          <div className="flex items-center gap-2 mb-2">
+            <span className="h-6 px-3 rounded-full bg-primary/10 text-primary text-[11px] font-bold border border-primary/20 flex items-center gap-1.5 shadow-2xs">
+              <Sparkles className="h-3 w-3 text-primary" />
               Gestor de CRM Multicanal
             </span>
-            <span className="h-6 px-2.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold border border-emerald-300 dark:border-emerald-800 flex items-center gap-1.5">
-              <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+            <span className="h-6 px-3 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold border border-emerald-500/20 flex items-center gap-1.5 shadow-2xs">
+              <ShieldCheck className="h-3 w-3 text-emerald-500" />
               Conformidade LGPD (Art. 7º e 18)
             </span>
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
-            Central de Ações Off-Board (Fora do Voo)
+          <h1 className="text-2xl sm:text-3xl font-outfit font-black tracking-tight text-foreground">
+            Central de Ações Off-Board (Pós-Voo)
           </h1>
-          <p className="text-sm text-muted-foreground mt-1 max-w-3xl leading-relaxed">
+          <p className="text-sm text-muted-foreground mt-1.5 max-w-3xl leading-relaxed">
             Gestão humanizada e disparo proativo via WhatsApp e E-mail para clientes que sofreram atrito operacional.
             Comunicações calibradas pelo Árbitro Contextual com a Resolução 400 da ANAC.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="h-9 gap-1.5 text-xs font-semibold cursor-pointer"
+            className="h-10 gap-2 text-xs font-outfit font-bold rounded-xl border-border/80 bg-card/60 backdrop-blur-md px-4 shadow-sm hover:bg-card/90 cursor-pointer transition-all"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin text-primary" : ""}`} />
             <span>Atualizar Fila</span>
           </Button>
 
-          <div className="rounded-xl border border-border/80 bg-card p-2.5 px-3.5 shadow-xs text-right">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 backdrop-blur-md p-2.5 px-4 shadow-sm text-right">
+            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
               Recuperação Estimada
             </span>
-            <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+            <span className="text-lg font-outfit font-black text-emerald-500 block">
               +48 pts NPS
             </span>
           </div>
@@ -266,15 +272,17 @@ export default function OffBoardPage() {
       </div>
 
       {/* Cards de Métricas Consolidadas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <Card className="border-border shadow-xs">
-          <CardContent className="p-4 space-y-1">
-            <span className="text-[11px] text-muted-foreground uppercase font-semibold block">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-primary/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/20 before:to-transparent">
+          <CardContent className="p-4 sm:p-5 space-y-1.5">
+            <span className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider block">
               Passageiros com Atrito
             </span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-black text-foreground">{totalElegiveis}</span>
-              <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300">
+              <span className="text-2xl sm:text-3xl font-outfit font-black text-foreground">
+                {totalElegiveis}
+              </span>
+              <Badge variant="outline" className="text-[10px] font-bold rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
                 Voo {flightId}
               </Badge>
             </div>
@@ -282,14 +290,16 @@ export default function OffBoardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-xs">
-          <CardContent className="p-4 space-y-1">
-            <span className="text-[11px] text-muted-foreground uppercase font-semibold block">
+        <Card className="rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-primary/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/20 before:to-transparent">
+          <CardContent className="p-4 sm:p-5 space-y-1.5">
+            <span className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider block">
               Mensagens WhatsApp RAG
             </span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-black text-sky-600 dark:text-sky-400">{totalElegiveis}</span>
-              <Badge variant="outline" className="text-[10px] bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300">
+              <span className="text-2xl sm:text-3xl font-outfit font-black text-primary">
+                {totalElegiveis}
+              </span>
+              <Badge variant="outline" className="text-[10px] font-bold rounded-full bg-primary/10 text-primary border-primary/20">
                 100% Prontas
               </Badge>
             </div>
@@ -297,27 +307,31 @@ export default function OffBoardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-xs">
-          <CardContent className="p-4 space-y-1">
-            <span className="text-[11px] text-muted-foreground uppercase font-semibold block">
+        <Card className="rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-primary/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/20 before:to-transparent">
+          <CardContent className="p-4 sm:p-5 space-y-1.5">
+            <span className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider block">
               Disparos Pendentes
             </span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-black text-amber-600 dark:text-amber-400">{totalPendentes}</span>
-              <span className="text-xs font-semibold text-muted-foreground">Aguardando CRM</span>
+              <span className="text-2xl sm:text-3xl font-outfit font-black text-amber-500">
+                {totalPendentes}
+              </span>
+              <span className="text-xs font-outfit font-bold text-muted-foreground">Aguardando CRM</span>
             </div>
             <p className="text-[10px] text-muted-foreground">Requer cópia e envio do gestor</p>
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-xs">
-          <CardContent className="p-4 space-y-1">
-            <span className="text-[11px] text-muted-foreground uppercase font-semibold block">
+        <Card className="rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-primary/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/20 before:to-transparent">
+          <CardContent className="p-4 sm:p-5 space-y-1.5">
+            <span className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider block">
               Ações Concluídas
             </span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{totalEnviados}</span>
-              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <span className="text-2xl sm:text-3xl font-outfit font-black text-emerald-500">
+                {totalEnviados}
+              </span>
+              <Badge variant="outline" className="text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
                 MLOps Gravado
               </Badge>
             </div>
@@ -327,16 +341,19 @@ export default function OffBoardPage() {
       </div>
 
       {/* Seleção de Canal Multicanal */}
-      <div className="flex items-center gap-2 border-b border-border pb-2">
+      <div className="flex items-center gap-2 border-b border-border/70 pb-3 overflow-x-auto">
         <Button
           variant={selectedChannel === "whatsapp" ? "default" : "ghost"}
           size="sm"
           onClick={() => setSelectedChannel("whatsapp")}
-          className={`h-8 text-xs font-semibold gap-1.5 cursor-pointer ${
-            selectedChannel === "whatsapp" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""
-          }`}
+          className={cn(
+            "h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer transition-all",
+            selectedChannel === "whatsapp"
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+              : "text-muted-foreground hover:text-foreground"
+          )}
         >
-          <MessageSquare className="h-3.5 w-3.5" />
+          <MessageSquare className="h-4 w-4" />
           <span>WhatsApp Concierge ({totalElegiveis})</span>
         </Button>
 
@@ -344,9 +361,9 @@ export default function OffBoardPage() {
           variant={selectedChannel === "email" ? "default" : "ghost"}
           size="sm"
           onClick={() => setSelectedChannel("email")}
-          className="h-8 text-xs font-semibold gap-1.5 cursor-pointer text-muted-foreground"
+          className="h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/40"
         >
-          <Mail className="h-3.5 w-3.5" />
+          <Mail className="h-4 w-4" />
           <span>E-mail Transacional</span>
         </Button>
 
@@ -354,9 +371,9 @@ export default function OffBoardPage() {
           variant={selectedChannel === "push" ? "default" : "ghost"}
           size="sm"
           onClick={() => setSelectedChannel("push")}
-          className="h-8 text-xs font-semibold gap-1.5 cursor-pointer text-muted-foreground"
+          className="h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/40"
         >
-          <Bell className="h-3.5 w-3.5" />
+          <Bell className="h-4 w-4" />
           <span>Push Notification</span>
         </Button>
       </div>
@@ -364,23 +381,26 @@ export default function OffBoardPage() {
       {/* Barra de Filtros e Busca */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-3 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Buscar por passageiro, PNR, assento ou tier..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-9 pl-9 pr-3 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full h-9.5 pl-9.5 pr-3 text-xs rounded-xl border border-border/80 bg-card/60 backdrop-blur-md focus:outline-none focus:ring-1 focus:ring-primary shadow-xs transition-all placeholder:text-muted-foreground/70"
           />
         </div>
 
         <div className="flex items-center gap-1.5 self-end sm:self-auto">
-          <span className="text-xs text-muted-foreground mr-1">Filtrar:</span>
+          <span className="text-xs text-muted-foreground mr-1.5 font-medium">Filtrar:</span>
           <Button
             variant={filter === "todos" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setFilter("todos")}
-            className="h-7 text-xs px-2.5 cursor-pointer"
+            className={cn(
+              "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all",
+              filter === "todos" && "bg-primary/10 text-primary border border-primary/20"
+            )}
           >
             Todos ({totalElegiveis})
           </Button>
@@ -388,7 +408,10 @@ export default function OffBoardPage() {
             variant={filter === "pendentes" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setFilter("pendentes")}
-            className="h-7 text-xs px-2.5 cursor-pointer text-amber-700 dark:text-amber-400"
+            className={cn(
+              "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all text-amber-600 dark:text-amber-400",
+              filter === "pendentes" && "bg-amber-500/10 border border-amber-500/20"
+            )}
           >
             Pendentes ({totalPendentes})
           </Button>
@@ -396,7 +419,10 @@ export default function OffBoardPage() {
             variant={filter === "enviados" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setFilter("enviados")}
-            className="h-7 text-xs px-2.5 cursor-pointer text-emerald-700 dark:text-emerald-400"
+            className={cn(
+              "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all text-emerald-600 dark:text-emerald-400",
+              filter === "enviados" && "bg-emerald-500/10 border border-emerald-500/20"
+            )}
           >
             Concluídos ({totalEnviados})
           </Button>
@@ -407,38 +433,44 @@ export default function OffBoardPage() {
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="border-border">
+            <Card key={i} className="rounded-2xl border border-border/80 bg-card/60 backdrop-blur-xl">
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <Skeleton className="h-5 w-48" />
-                  <Skeleton className="h-5 w-24" />
+                  <Skeleton className="h-5 w-48 rounded-lg" />
+                  <Skeleton className="h-5 w-24 rounded-lg" />
                 </div>
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-8 w-32" />
+                <Skeleton className="h-16 w-full rounded-xl" />
+                <Skeleton className="h-8 w-32 rounded-xl" />
               </CardContent>
             </Card>
           ))}
         </div>
       ) : isError ? (
-        <Card className="border-red-200 dark:border-red-900 bg-red-50/40 dark:bg-red-950/20">
-          <CardContent className="p-6 text-center space-y-3">
-            <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400 mx-auto" />
-            <h3 className="font-bold text-sm text-foreground">Falha ao carregar passageiros elegíveis</h3>
+        <Card className="rounded-2xl border border-rose-500/30 bg-rose-500/5 backdrop-blur-xl">
+          <CardContent className="p-8 text-center space-y-3">
+            <AlertTriangle className="h-8 w-8 text-rose-500 mx-auto" />
+            <h3 className="font-outfit font-bold text-sm text-foreground">
+              Falha ao carregar passageiros elegíveis
+            </h3>
             <p className="text-xs text-muted-foreground max-w-md mx-auto">
               Não foi possível consultar os dados analíticos do voo no Data Lake. Verifique se o backend está em execução.
             </p>
-            <Button size="sm" onClick={() => refetch()} className="cursor-pointer">
+            <Button size="sm" onClick={() => refetch()} className="rounded-xl font-outfit font-bold cursor-pointer">
               Tentar Novamente
             </Button>
           </CardContent>
         </Card>
       ) : passageirosFiltrados.length === 0 ? (
-        <Card className="border-border bg-slate-50/50 dark:bg-slate-900/30">
-          <CardContent className="p-8 text-center space-y-2">
-            <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400 mx-auto" />
-            <h3 className="font-bold text-sm text-foreground">Nenhum passageiro pendente encontrado</h3>
+        <Card className="rounded-2xl border border-dashed border-border/80 bg-card/60 backdrop-blur-xl">
+          <CardContent className="p-10 text-center space-y-2">
+            <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto" />
+            <h3 className="font-outfit font-bold text-sm text-foreground">
+              Nenhum passageiro pendente encontrado
+            </h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              {searchTerm ? "Nenhum resultado corresponde à sua busca." : "Todas as mensagens de retenção para este lote foram disparadas com sucesso!"}
+              {searchTerm
+                ? "Nenhum resultado corresponde à sua busca."
+                : "Todas as mensagens de retenção para este lote foram disparadas com sucesso!"}
             </p>
           </CardContent>
         </Card>
@@ -451,46 +483,52 @@ export default function OffBoardPage() {
             return (
               <Card
                 key={p.seatKey}
-                className={`border transition-all duration-200 ${
+                className={cn(
+                  "rounded-2xl border transition-all duration-300 shadow-md backdrop-blur-xl relative overflow-hidden",
                   p.isEnviado
-                    ? "border-emerald-300/80 dark:border-emerald-800/60 bg-emerald-50/20 dark:bg-emerald-950/10"
-                    : "border-border hover:border-primary/40 bg-card shadow-xs"
-                }`}
+                    ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/10"
+                    : "border-border/80 bg-card/80 hover:border-primary/40 hover:shadow-lg"
+                )}
               >
-                <CardContent className="p-4 sm:p-5 space-y-3.5">
+                <CardContent className="p-4 sm:p-5 space-y-4">
                   {/* Topo do Card: Identificação do Passageiro e Status */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-border/80">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-border/70">
                     <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className="h-7 px-2.5 rounded-lg bg-slate-900 dark:bg-slate-800 text-white font-mono font-bold text-xs flex items-center">
+                      <span className="h-7 px-3 rounded-xl bg-muted/80 text-foreground font-outfit font-black text-xs flex items-center border border-border/70 shadow-2xs">
                         {p.assento}
                       </span>
-                      <span className="font-bold text-sm text-foreground">{p.nome}</span>
-                      <Badge variant="outline" className={`text-[10px] font-bold ${tierConf.badge}`}>
+                      <span className="font-outfit font-black text-base text-foreground tracking-tight">
+                        {p.nome}
+                      </span>
+                      <Badge variant="outline" className={cn("text-[10px] font-bold rounded-full border shadow-2xs", tierConf.badge)}>
                         {tierConf.name}
                       </Badge>
-                      <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">
+                      <Badge variant="outline" className="text-[10px] font-medium rounded-full text-muted-foreground border-border/70 bg-muted/30">
                         {p.persona}
                       </Badge>
-                      <span className="text-[11px] text-muted-foreground font-mono">PNR: {p.pnr}</span>
+                      <span className="text-[11px] text-primary font-mono font-bold">
+                        PNR: {p.pnr}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <span
-                        className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                        className={cn(
+                          "text-[11px] font-outfit font-bold px-2.5 py-0.5 rounded-full border shadow-2xs",
                           p.risco_evasao > 0.6
-                            ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300"
-                            : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300"
-                        }`}
+                            ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
+                            : "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                        )}
                       >
                         Risco: {formatPercent(p.risco_evasao, 0)}
                       </span>
                       {p.isEnviado ? (
-                        <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] gap-1 font-bold">
+                        <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] gap-1 font-bold rounded-full shadow-2xs">
                           <Check className="h-3 w-3" />
                           Enviado via WhatsApp
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 dark:text-amber-400">
+                        <Badge variant="outline" className="text-[10px] font-bold rounded-full text-amber-500 border-amber-500/30 bg-amber-500/5">
                           Aguardando Envio
                         </Badge>
                       )}
@@ -499,22 +537,23 @@ export default function OffBoardPage() {
 
                   {/* Diagnóstico do Atrito e Ação Recomendada */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                    <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3 text-amber-500" />
+                    <div className="p-3 rounded-xl bg-card/60 border border-border/70 space-y-1 backdrop-blur-xs">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider flex items-center gap-1.5">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                         Diagnóstico de Atrito Operacional (XAI)
                       </span>
                       <p className="text-foreground font-medium leading-relaxed">{p.contexto}</p>
                     </div>
 
-                    <div className="p-2.5 rounded-lg bg-sky-50/60 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 space-y-1">
-                      <span className="text-[10px] text-sky-800 dark:text-sky-300 uppercase font-bold flex items-center gap-1">
-                        <HeartHandshake className="h-3 w-3 text-sky-600 dark:text-sky-400" />
+                    <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-1 backdrop-blur-xs">
+                      <span className="text-[10px] text-primary uppercase font-bold tracking-wider flex items-center gap-1.5">
+                        <HeartHandshake className="h-3.5 w-3.5 text-primary" />
                         Ação Aprovada pelo Árbitro (Uplift)
                       </span>
-                      <p className="font-bold text-sky-900 dark:text-sky-200">{p.acao}</p>
-                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground pt-0.5">
+                      <p className="font-outfit font-black text-primary text-sm">{p.acao}</p>
+                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono pt-0.5">
                         <span>Custo: {formatCurrency(p.custo)}</span>
+                        <span>•</span>
                         <span>CLV Protegido: {formatCurrency(p.clv)}</span>
                       </div>
                     </div>
@@ -523,23 +562,23 @@ export default function OffBoardPage() {
                   {/* Balão da Mensagem WhatsApp Pronta para Envio */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-semibold text-muted-foreground flex items-center gap-1">
-                        <Smartphone className="h-3.5 w-3.5 text-emerald-600" />
+                      <span className="font-semibold text-muted-foreground flex items-center gap-1.5">
+                        <Smartphone className="h-3.5 w-3.5 text-emerald-500" />
                         Mensagem Humanizada WhatsApp (Pronta para Cópia e Disparo):
                       </span>
                       {p.isFallback ? (
-                        <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 font-mono">
+                        <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-mono rounded-md">
                           Protocolo Padrão (Fallback)
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 font-mono">
+                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-mono rounded-md">
                           RAG Resolução 400 ANAC
                         </Badge>
                       )}
                     </div>
 
-                    <div className="relative rounded-xl p-3.5 bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/25 text-xs text-foreground leading-relaxed font-sans shadow-inner">
-                      <p className="italic text-slate-800 dark:text-slate-200">&ldquo;{p.mensagem}&rdquo;</p>
+                    <div className="relative rounded-2xl p-4 bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/25 text-xs text-foreground leading-relaxed shadow-inner backdrop-blur-xs">
+                      <p className="italic text-foreground font-medium">&ldquo;{p.mensagem}&rdquo;</p>
                     </div>
                   </div>
 
@@ -551,15 +590,16 @@ export default function OffBoardPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setExpandedXaiId(expandedXaiId === p.seatKey ? null : p.seatKey)}
-                        className={`h-8 text-xs gap-1.5 font-bold cursor-pointer transition-colors ${
+                        className={cn(
+                          "h-8 text-xs gap-1.5 font-outfit font-bold rounded-xl cursor-pointer transition-all",
                           expandedXaiId === p.seatKey
                             ? "bg-primary/15 text-primary border border-primary/30"
-                            : "text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
-                        }`}
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                        )}
                       >
                         <Sparkles className="h-3.5 w-3.5 text-primary" />
                         <span>{expandedXaiId === p.seatKey ? "Ocultar Explicabilidade" : "Explicar Decisão (XAI)"}</span>
-                        <ChevronDown className={`h-3 w-3 transition-transform ${expandedXaiId === p.seatKey ? "rotate-180" : ""}`} />
+                        <ChevronDown className={cn("h-3 w-3 transition-transform", expandedXaiId === p.seatKey && "rotate-180")} />
                       </Button>
                     </div>
 
@@ -569,15 +609,14 @@ export default function OffBoardPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleCopy(p.seatKey, p.mensagem)}
-                        className={`h-8 text-xs gap-1.5 font-semibold cursor-pointer transition-colors ${
-                          isCopied
-                            ? "bg-emerald-100 dark:bg-emerald-950 border-emerald-400 text-emerald-800 dark:text-emerald-200"
-                            : ""
-                        }`}
+                        className={cn(
+                          "h-8 text-xs gap-1.5 font-outfit font-bold rounded-xl border border-border/80 bg-card/60 backdrop-blur-md cursor-pointer transition-all",
+                          isCopied && "bg-emerald-500/20 border-emerald-500 text-emerald-600 dark:text-emerald-300"
+                        )}
                       >
                         {isCopied ? (
                           <>
-                            <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <Check className="h-3.5 w-3.5 text-emerald-500" />
                             <span>Copiado!</span>
                           </>
                         ) : (
@@ -593,15 +632,16 @@ export default function OffBoardPage() {
                         size="sm"
                         disabled={p.isEnviado || confirmMutation.isPending}
                         onClick={() => handleConfirmarDisparo(p)}
-                        className={`h-8 text-xs gap-1.5 font-bold cursor-pointer transition-colors ${
+                        className={cn(
+                          "h-8 text-xs gap-1.5 font-outfit font-bold rounded-xl cursor-pointer transition-all shadow-md",
                           p.isEnviado
-                            ? "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed border border-border"
-                            : "bg-[#0077C8] hover:bg-[#005a99] text-white"
-                        }`}
+                            ? "bg-muted text-muted-foreground cursor-not-allowed border border-border"
+                            : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                        )}
                       >
                         {p.isEnviado ? (
                           <>
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                             <span>Registrado</span>
                           </>
                         ) : confirmMutation.isPending ? (
@@ -621,24 +661,24 @@ export default function OffBoardPage() {
 
                   {/* Painel Expansível de Explicabilidade (XAI: SHAP + Árbitro Contextual + RAG) */}
                   {expandedXaiId === p.seatKey && (
-                    <div className="mt-3 p-4 rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 space-y-3.5 animate-in fade-in duration-200">
+                    <div className="mt-3 p-4 rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-xl space-y-3.5 animate-in fade-in duration-200">
                       <div className="flex items-center justify-between border-b border-primary/20 pb-2.5 flex-wrap gap-2">
                         <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-md bg-primary/20 flex items-center justify-center text-primary">
+                          <div className="h-6 w-6 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
                             <Sparkles className="h-3.5 w-3.5" />
                           </div>
-                          <h4 className="font-bold text-xs text-foreground uppercase tracking-wider">
+                          <h4 className="font-outfit font-bold text-xs text-foreground uppercase tracking-wider">
                             Explicabilidade da Decisão (XAI: SHAP + Árbitro Contextual)
                           </h4>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Badge variant="outline" className="text-[10px] bg-background">
+                          <Badge variant="outline" className="text-[10px] font-mono bg-background/80 rounded-md">
                             SHAP Camada Gold
                           </Badge>
-                          <Badge variant="outline" className="text-[10px] bg-background">
+                          <Badge variant="outline" className="text-[10px] font-mono bg-background/80 rounded-md">
                             Uplift Arbitragem
                           </Badge>
-                          <Badge variant="outline" className="text-[10px] bg-background text-emerald-600 border-emerald-300">
+                          <Badge variant="outline" className="text-[10px] font-mono bg-background/80 text-emerald-500 border-emerald-500/30 rounded-md">
                             Resolução 400 ANAC
                           </Badge>
                         </div>
@@ -646,10 +686,10 @@ export default function OffBoardPage() {
 
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 text-xs">
                         {/* 1. Decomposição SHAP */}
-                        <div className="p-3 rounded-lg bg-background border border-border space-y-2.5">
+                        <div className="p-3.5 rounded-xl bg-card/90 border border-border/70 backdrop-blur-md space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold text-foreground flex items-center gap-1">
-                              <TrendingUp className="h-3.5 w-3.5 text-red-500" />
+                            <span className="text-[11px] font-outfit font-bold text-foreground flex items-center gap-1.5">
+                              <TrendingUp className="h-3.5 w-3.5 text-rose-500" />
                               Decomposição de Risco (SHAP)
                             </span>
                             <span className="text-[10px] text-muted-foreground font-mono">
@@ -666,20 +706,22 @@ export default function OffBoardPage() {
                                       {f.variavel}
                                     </span>
                                     <span
-                                      className={`font-mono font-bold ${
+                                      className={cn(
+                                        "font-mono font-bold",
                                         f.direcao === "positivo"
-                                          ? "text-red-600 dark:text-red-400"
-                                          : "text-emerald-600 dark:text-emerald-400"
-                                      }`}
+                                          ? "text-rose-500"
+                                          : "text-emerald-500"
+                                      )}
                                     >
                                       {f.impacto > 0 ? `+${(f.impacto * 100).toFixed(0)}%` : `${(f.impacto * 100).toFixed(0)}%`}
                                     </span>
                                   </div>
-                                  <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                                     <div
-                                      className={`h-full rounded-full ${
-                                        f.direcao === "positivo" ? "bg-red-500" : "bg-emerald-500"
-                                      }`}
+                                      className={cn(
+                                        "h-full rounded-full transition-all",
+                                        f.direcao === "positivo" ? "bg-rose-500" : "bg-emerald-500"
+                                      )}
                                       style={{ width: `${Math.min(100, Math.abs(f.impacto) * 150)}%` }}
                                     />
                                   </div>
@@ -692,13 +734,13 @@ export default function OffBoardPage() {
                         </div>
 
                         {/* 2. Racional Econômico do Árbitro */}
-                        <div className="p-3 rounded-lg bg-background border border-border space-y-2.5">
+                        <div className="p-3.5 rounded-xl bg-card/90 border border-border/70 backdrop-blur-md space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold text-foreground flex items-center gap-1">
-                              <HeartHandshake className="h-3.5 w-3.5 text-sky-600" />
+                            <span className="text-[11px] font-outfit font-bold text-foreground flex items-center gap-1.5">
+                              <HeartHandshake className="h-3.5 w-3.5 text-primary" />
                               Arbitragem de ROI (Uplift)
                             </span>
-                            <Badge className="bg-sky-600 text-white text-[9px] px-1.5 py-0">
+                            <Badge className="bg-primary text-primary-foreground text-[9px] px-2 py-0 rounded-full font-bold">
                               Retorno Líquido: {formatCurrency(p.explicabilidade?.racional_arbitro?.retorno_liquido || p.clv * p.risco_evasao * 0.15 - p.custo)}
                             </Badge>
                           </div>
@@ -708,8 +750,8 @@ export default function OffBoardPage() {
                               `Ação '${p.acao}' aprovada com custo de ${formatCurrency(p.custo)} para proteger ${formatCurrency(p.clv)} em CLV.`}
                           </p>
 
-                          <div className="space-y-1 pt-1 border-t border-border/60">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+                          <div className="space-y-1.5 pt-1 border-t border-border/60">
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
                               Ações Concorrentes Avaliadas:
                             </span>
                             <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
@@ -717,19 +759,20 @@ export default function OffBoardPage() {
                                 p.explicabilidade.racional_arbitro.acoes_avaliadas.map((a, idx) => (
                                   <div
                                     key={idx}
-                                    className="flex items-center justify-between p-1.5 rounded bg-slate-50 dark:bg-slate-900/60 text-[10px]"
+                                    className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40 border border-border/40 text-[10px]"
                                   >
                                     <span className="font-medium text-foreground truncate max-w-[130px]">{a.acao}</span>
                                     <div className="flex items-center gap-1.5 shrink-0">
                                       <span className="font-mono text-muted-foreground">{formatCurrency(a.custo)}</span>
                                       <span
-                                        className={`px-1 rounded text-[9px] font-bold ${
+                                        className={cn(
+                                          "px-1.5 py-0.5 rounded-full text-[9px] font-bold",
                                           a.status === "VENCEDORA"
-                                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300"
+                                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
                                             : a.status === "VETADA_ROI"
-                                            ? "bg-red-100 text-red-800 dark:bg-red-950/80 dark:text-red-300"
-                                            : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                        }`}
+                                            ? "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                                            : "bg-muted text-muted-foreground"
+                                        )}
                                       >
                                         {a.status === "VENCEDORA" ? "Aprovada" : a.status === "VETADA_ROI" ? "Vetada ROI" : "Superada"}
                                       </span>
@@ -737,9 +780,9 @@ export default function OffBoardPage() {
                                   </div>
                                 ))
                               ) : (
-                                <div className="flex items-center justify-between p-1.5 rounded bg-slate-50 dark:bg-slate-900/60 text-[10px]">
+                                <div className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40 text-[10px]">
                                   <span className="font-medium text-foreground">{p.acao}</span>
-                                  <span className="text-emerald-600 font-bold">Aprovada</span>
+                                  <span className="text-emerald-500 font-bold">Aprovada</span>
                                 </div>
                               )}
                             </div>
@@ -747,15 +790,15 @@ export default function OffBoardPage() {
                         </div>
 
                         {/* 3. Fundamentação Regulatória & RAG */}
-                        <div className="p-3 rounded-lg bg-background border border-border space-y-2.5 flex flex-col justify-between">
+                        <div className="p-3.5 rounded-xl bg-card/90 border border-border/70 backdrop-blur-md space-y-2.5 flex flex-col justify-between">
                           <div className="space-y-2">
-                            <span className="text-[11px] font-bold text-foreground flex items-center gap-1">
-                              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                            <span className="text-[11px] font-outfit font-bold text-foreground flex items-center gap-1.5">
+                              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
                               Fundamentação Regulatória & Fidelidade
                             </span>
 
-                            <div className="p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-[10.5px] space-y-1">
-                              <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
+                            <div className="p-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-[10.5px] space-y-1">
+                              <span className="font-outfit font-bold text-emerald-600 dark:text-emerald-400 block">
                                 {p.explicabilidade?.fundamentacao_rag?.norma || "Resolução 400 ANAC"}
                               </span>
                               <p className="text-muted-foreground leading-relaxed">
@@ -763,8 +806,8 @@ export default function OffBoardPage() {
                               </p>
                             </div>
 
-                            <div className="p-2 rounded-lg bg-sky-50/50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-800 text-[10.5px] space-y-1">
-                              <span className="font-bold text-sky-800 dark:text-sky-300 block">
+                            <div className="p-2.5 rounded-xl bg-primary/5 border border-primary/20 text-[10.5px] space-y-1">
+                              <span className="font-outfit font-bold text-primary block">
                                 Programa Azul Fidelidade ({p.tier})
                               </span>
                               <p className="text-muted-foreground leading-relaxed">
@@ -774,7 +817,7 @@ export default function OffBoardPage() {
                             </div>
                           </div>
 
-                          <div className="text-[10px] text-muted-foreground pt-1 flex items-center gap-1 border-t border-border/60">
+                          <div className="text-[10px] text-muted-foreground pt-1.5 flex items-center gap-1.5 border-t border-border/60">
                             <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
                             <span>Decisão 100% auditável e em conformidade com LGPD.</span>
                           </div>
@@ -790,15 +833,15 @@ export default function OffBoardPage() {
       )}
 
       {/* Banner de Governança, LGPD e IA Responsável */}
-      <Card className="border-border bg-gradient-to-br from-slate-900 via-slate-900 to-[#002855] text-white overflow-hidden shadow-md">
-        <CardContent className="p-6">
+      <Card className="rounded-2xl border border-border/80 bg-gradient-to-br from-slate-900 via-slate-900 to-[#002855] text-white overflow-hidden shadow-xl relative before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/30 before:to-transparent">
+        <CardContent className="p-6 sm:p-7">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-            <div className="lg:col-span-2 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-lg bg-[#38BDF8]/20 text-[#38BDF8] flex items-center justify-center">
+            <div className="lg:col-span-2 space-y-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-sky-400/20 text-sky-400 flex items-center justify-center border border-sky-400/30">
                   <Lock className="h-4 w-4" />
                 </div>
-                <h3 className="font-bold text-base text-white">
+                <h3 className="font-outfit font-black text-lg text-white tracking-tight">
                   Governança, IA Responsável & Conformidade LGPD
                 </h3>
               </div>
@@ -808,26 +851,26 @@ export default function OffBoardPage() {
                 A inferência baseia-se exclusivamente em histórico transacional, risco analítico de evasão e regras regulatórias (ANAC Resolução 400).
               </p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="px-2.5 py-1 rounded-md bg-white/10 text-[10px] font-semibold text-white/90 border border-white/15 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                <span className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/15 flex items-center gap-1.5 shadow-2xs">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                   Anonimização de Identificadores
                 </span>
-                <span className="px-2.5 py-1 rounded-md bg-white/10 text-[10px] font-semibold text-white/90 border border-white/15 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                <span className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/15 flex items-center gap-1.5 shadow-2xs">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                   Sentimento Público ANAC VRA
                 </span>
-                <span className="px-2.5 py-1 rounded-md bg-white/10 text-[10px] font-semibold text-white/90 border border-white/15 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                <span className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/15 flex items-center gap-1.5 shadow-2xs">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                   Auditabilidade SQLite Transacional (mlops_logs.db)
                 </span>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2 text-center lg:text-right">
+            <div className="p-5 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 space-y-2 text-center lg:text-right shadow-inner">
               <span className="text-[10px] text-white/60 uppercase font-bold tracking-wider block">
                 Métrica de Equidade
               </span>
-              <span className="text-3xl font-black text-[#38BDF8] block">
+              <span className="text-3xl sm:text-4xl font-outfit font-black text-sky-400 block tracking-tight">
                 100%
               </span>
               <span className="text-[11px] text-white/70 block">
