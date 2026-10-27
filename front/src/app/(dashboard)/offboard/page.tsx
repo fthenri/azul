@@ -743,7 +743,7 @@ export default function OffBoardPage() {
                     <span>{expandedXaiId === p.seatKey ? "Ocultar Suíte de Decisão (XAI)" : "Explicar Decisão (XAI)"}</span>
                     <ChevronDown
                       className={cn(
-                        "h-3.5 w-3.5 transition-transform",
+                        "h-3.5 w-3.5 transition-transform duration-300 ease-out",
                         expandedXaiId === p.seatKey && "rotate-180"
                       )}
                     />
@@ -783,11 +783,19 @@ export default function OffBoardPage() {
                 </div>
 
                 {/* ─────────────────────────────────────────────────────────────
-                    ZONA 5: SUÍTE DE DECISÃO & EXPLICABILIDADE (INSPECTOR APPLE)
+                    ZONA 5: SUÍTE DE DECISÃO & EXPLICABILIDADE (ANIMAÇÃO APPLE OPEN/CLOSE)
                    ───────────────────────────────────────────────────────────── */}
-                {expandedXaiId === p.seatKey && (
-                  <div className="mt-3 p-5 sm:p-6 rounded-2xl border border-blue-500/20 bg-blue-500/[0.03] dark:bg-blue-950/20 space-y-5 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between border-b border-border/40 pb-3 flex-wrap gap-2">
+                <div
+                  className={cn(
+                    "grid transition-all duration-300 ease-out",
+                    expandedXaiId === p.seatKey
+                      ? "grid-rows-[1fr] opacity-100 mt-4"
+                      : "grid-rows-[0fr] opacity-0 mt-0 pointer-events-none"
+                  )}
+                >
+                  <div className="overflow-hidden">
+                    <div className="p-5 sm:p-6 rounded-2xl border border-blue-500/20 bg-blue-500/[0.03] dark:bg-blue-950/20 space-y-5 shadow-xs">
+                      <div className="flex items-center justify-between border-b border-border/40 pb-3 flex-wrap gap-2">
                       <div className="flex items-center gap-2.5">
                         <div className="h-7 w-7 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
                           <Sparkles className="h-4 w-4" />
@@ -973,7 +981,8 @@ export default function OffBoardPage() {
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
+              </div>
               </div>
             );
           })}
