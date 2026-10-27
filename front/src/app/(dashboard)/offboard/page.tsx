@@ -272,41 +272,7 @@ export default function OffBoardPage() {
       </div>
 
       {/* Cards de Métricas Consolidadas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-primary/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/20 before:to-transparent">
-          <CardContent className="p-4 sm:p-5 space-y-1.5">
-            <span className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider block">
-              Passageiros com Atrito
-            </span>
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl sm:text-3xl font-outfit font-black text-foreground">
-                {totalElegiveis}
-              </span>
-              <Badge variant="outline" className="text-[10px] font-bold rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
-                Voo {flightId}
-              </Badge>
-            </div>
-            <p className="text-[10px] text-muted-foreground">Impactados por atraso, bagagem ou SAC</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-primary/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/20 before:to-transparent">
-          <CardContent className="p-4 sm:p-5 space-y-1.5">
-            <span className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider block">
-              Mensagens WhatsApp RAG
-            </span>
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl sm:text-3xl font-outfit font-black text-primary">
-                {totalElegiveis}
-              </span>
-              <Badge variant="outline" className="text-[10px] font-bold rounded-full bg-primary/10 text-primary border-primary/20">
-                100% Prontas
-              </Badge>
-            </div>
-            <p className="text-[10px] text-muted-foreground">Resolução 400 ANAC aplicada</p>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-primary/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/20 before:to-transparent">
           <CardContent className="p-4 sm:p-5 space-y-1.5">
             <span className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider block">
