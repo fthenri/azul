@@ -5,22 +5,14 @@ import {
   X,
   AlertTriangle,
   AlertCircle,
-  Crown,
   Users,
   Coffee,
   HeartHandshake,
   Cookie,
-  TrendingUp,
   Sparkles,
   Check,
   Copy,
-  Clock,
   Plane,
-  Scale,
-  Trophy,
-  CheckCircle,
-  CheckCircle2,
-  BarChart2,
   ChevronDown,
   ChevronUp,
   Gift,
@@ -28,6 +20,8 @@ import {
   Loader2,
   ShieldAlert,
   ShieldCheck,
+  CheckCircle2,
+  BarChart2,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -42,7 +36,7 @@ import {
 } from "recharts";
 import { AssentoVoo, LoteAcoes, SimularBordoResponse } from "@/types/api";
 import { api } from "@/lib/api";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -158,7 +152,7 @@ export function PassengerDrawer({
     // Checagem de ROI negativo
     const clv = Number(seat.dados_cliente?.clv_previsto || 0);
     const risco = Number(seat.dados_cliente?.risco_evasao || 0);
-    const retornoLiquido = (clv * risco * 0.05) - 15.0;
+    const retornoLiquido = clv * risco * 0.05 - 15.0;
     if (retornoLiquido <= 0 && !seat.dados_cliente?.contexto_narrativo_llm) {
       return true;
     }
@@ -182,11 +176,32 @@ export function PassengerDrawer({
     }
 
     const ctx = (seat?.dados_cliente?.contexto_narrativo_llm || "").toLowerCase();
-    const isPet = ctx.includes("petc") || ctx.includes("pet na cabine") || ctx.includes("animal") || ctx.includes("pet");
-    const temFalha = ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria", "atraso", "cancelamento"].some((k) => ctx.includes(k));
+    const isPet =
+      ctx.includes("petc") ||
+      ctx.includes("pet na cabine") ||
+      ctx.includes("animal") ||
+      ctx.includes("pet");
+    const temFalha = [
+      "worldtracer",
+      "bagagem",
+      "sac",
+      "reclamação",
+      "reclamacao",
+      "ouvidoria",
+      "extravio",
+      "avaria",
+      "atraso",
+      "cancelamento",
+    ].some((k) => ctx.includes(k));
 
     if (isPet) return "Kit Snack Premium + Atenção Pet";
-    if (ctx.includes("chml") || ctx.includes("criança") || ctx.includes("kids") || ctx.includes("família")) return "Kit Sobrevivência Kids";
+    if (
+      ctx.includes("chml") ||
+      ctx.includes("criança") ||
+      ctx.includes("kids") ||
+      ctx.includes("família")
+    )
+      return "Kit Sobrevivência Kids";
     if (temFalha) return "Acolhimento Pessoal + Voucher 1000pts";
     return "Bebida Premium Cortesia";
   }, [isAcaoVetada, batchAction, simulationResult, seat]);
@@ -224,12 +239,16 @@ export function PassengerDrawer({
         id_cliente: seat.dados_cliente.id_cliente,
         acao: acaoVencedora,
       });
-      setFeedbackSuccessMessage(res.mensagem || "Ação registrada no Data Lake para Feedback Loop (Holdout Group)");
+      setFeedbackSuccessMessage(
+        res.mensagem || "Ação registrada no Data Lake para Feedback Loop (Holdout Group)"
+      );
       onMarkAttended(seat.assento);
       setTimeout(() => setFeedbackSuccessMessage(null), 7000);
     } catch {
       // Fallback gracioso para visual
-      setFeedbackSuccessMessage("Ação registrada no Data Lake para Feedback Loop (Holdout Group)");
+      setFeedbackSuccessMessage(
+        "Ação registrada no Data Lake para Feedback Loop (Holdout Group)"
+      );
       onMarkAttended(seat.assento);
       setTimeout(() => setFeedbackSuccessMessage(null), 7000);
     } finally {
@@ -260,7 +279,10 @@ export function PassengerDrawer({
 
     // Fatores de Atrito (elevam o risco)
     if (scoreAtrito > 0 || riscoReal > 0.4) {
-      const impactoAtrito = Math.min(0.35, Math.max(0.1, Number((scoreAtrito * 0.06).toFixed(2))));
+      const impactoAtrito = Math.min(
+        0.35,
+        Math.max(0.1, Number((scoreAtrito * 0.06).toFixed(2)))
+      );
       fatores.push({
         variavel: `Atrasos Operacionais Acumulados (${scoreAtrito.toFixed(1)} pts)`,
         impacto_raw: impactoAtrito,
@@ -270,7 +292,9 @@ export function PassengerDrawer({
     }
 
     if (riscoReal > 0.5) {
-      const impactoSensibilidade = Number((Math.max(0.08, (riscoReal - 0.3) * 0.4)).toFixed(2));
+      const impactoSensibilidade = Number(
+        Math.max(0.08, (riscoReal - 0.3) * 0.4).toFixed(2)
+      );
       fatores.push({
         variavel: `Sensibilidade a Atritos na Malha (${c.persona || "Geral"})`,
         impacto_raw: impactoSensibilidade,
@@ -335,7 +359,9 @@ export function PassengerDrawer({
     }
 
     // Ordenação por magnitude do impacto
-    const sorted = [...fatores].sort((a, b) => Math.abs(b.impacto_raw) - Math.abs(a.impacto_raw));
+    const sorted = [...fatores].sort(
+      (a, b) => Math.abs(b.impacto_raw) - Math.abs(a.impacto_raw)
+    );
 
     return {
       riscoBase,
@@ -346,15 +372,15 @@ export function PassengerDrawer({
 
   if (!seat) {
     return (
-      <Card className="h-full border-dashed flex flex-col items-center justify-center p-8 text-center bg-slate-50/50 dark:bg-slate-900/30">
-        <div className="h-14 w-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4 text-muted-foreground">
-          <Plane className="h-7 w-7 opacity-50" />
+      <Card className="h-full border border-dashed border-border/80 rounded-2xl flex flex-col items-center justify-center p-8 text-center bg-card/60 backdrop-blur-xl">
+        <div className="h-16 w-16 rounded-2xl bg-muted/50 border border-border/60 flex items-center justify-center mb-4 text-muted-foreground shadow-inner">
+          <Plane className="h-8 w-8 opacity-60 text-primary" />
         </div>
-        <h4 className="text-base font-semibold text-foreground mb-1">
+        <h4 className="text-base font-outfit font-black text-foreground mb-1">
           Nenhum Assento Selecionado
         </h4>
         <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
-          Clique em qualquer assento do mapa da aeronave para abrir o dossiê analítico do passageiro, explicabilidade SHAP e ranking de ROI.
+          Selecione qualquer poltrona no mapa para inspecionar o perfil analítico completo, pesos SHAP e a recomendação de ação tática da IA.
         </p>
       </Card>
     );
@@ -367,21 +393,21 @@ export function PassengerDrawer({
   const ActionIcon = getActionIcon(acaoVencedora);
 
   return (
-    <Card className="h-full flex flex-col border border-border shadow-md overflow-hidden bg-card">
+    <Card className="h-full flex flex-col border border-border/80 rounded-2xl shadow-xl overflow-hidden bg-card/90 backdrop-blur-2xl">
       {/* Header do Dossiê do Passageiro */}
-      <CardHeader className="p-4 sm:p-5 border-b border-border/80 bg-slate-50/70 dark:bg-slate-900/60 shrink-0">
+      <CardHeader className="p-4 sm:p-5 border-b border-border/70 bg-card/40 backdrop-blur-md shrink-0">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3.5">
             {/* Box com o Número do Assento */}
             <div
               className={cn(
-                "h-12 w-12 rounded-xl flex flex-col items-center justify-center font-mono font-black text-base shrink-0 shadow-xs border",
+                "h-12 w-12 rounded-xl flex flex-col items-center justify-center font-outfit font-black text-base shrink-0 shadow-sm border transition-all",
                 isCritico
-                  ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700"
+                  ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
                   : tierConfig.badge
               )}
             >
-              <span className="text-[10px] font-semibold opacity-75 uppercase">
+              <span className="text-[9px] font-semibold opacity-75 uppercase tracking-wider">
                 Assento
               </span>
               <span>{seat.assento}</span>
@@ -389,47 +415,55 @@ export function PassengerDrawer({
 
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-foreground">
+                <h3 className="text-base font-outfit font-black text-foreground tracking-tight">
                   {cliente.nome}
                 </h3>
                 {isCritico && (
-                  <Badge variant="destructive" className="text-[10px] py-0 px-2 font-bold">
+                  <Badge
+                    variant="destructive"
+                    className="text-[10px] py-0 px-2 font-bold rounded-full uppercase"
+                  >
                     Crítico
                   </Badge>
                 )}
                 <Badge
                   className={cn(
-                    "text-[10px] py-0 px-2 font-bold border",
+                    "text-[10px] py-0 px-2.5 font-bold rounded-full border shadow-2xs",
                     tierConfig.badge
                   )}
                 >
                   {cliente.tier_fidelidade || tierConfig.name}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5 mt-0.5">
+              <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5 mt-1">
                 <span className="font-mono text-[11px] text-foreground font-semibold">
                   {cliente.id_cliente}
                 </span>
                 <span>•</span>
                 <span>
-                  Tier: <strong className={tierConfig.text}>{cliente.tier_fidelidade}</strong>
+                  Tier:{" "}
+                  <strong className={tierConfig.text}>
+                    {cliente.tier_fidelidade}
+                  </strong>
                 </span>
                 <span>•</span>
                 <span>{cliente.persona}</span>
                 {cliente.pnr && (
                   <>
                     <span>•</span>
-                    <span className="font-mono font-bold text-sky-600 dark:text-sky-400">
+                    <span className="font-mono font-bold text-primary">
                       PNR: {cliente.pnr}
                     </span>
                   </>
                 )}
               </p>
               {cliente.is_grupo_familiar && (
-                <div className="mt-1.5 flex items-center gap-1.5 text-[11px] bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 px-2 py-1 rounded-md border border-sky-200 dark:border-sky-800">
+                <div className="mt-2 flex items-center gap-1.5 text-[11px] bg-primary/10 text-primary px-2.5 py-1 rounded-lg border border-primary/20">
                   <Users className="h-3.5 w-3.5 shrink-0" />
                   <span>
-                    Grupo Familiar: <strong>{cliente.tamanho_grupo} pessoas</strong> alocadas contiguamente
+                    Grupo Familiar:{" "}
+                    <strong>{cliente.tamanho_grupo} pessoas</strong> alocadas
+                    contiguamente
                   </span>
                 </div>
               )}
@@ -440,7 +474,7 @@ export function PassengerDrawer({
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 rounded-lg cursor-pointer"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 rounded-xl cursor-pointer"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -450,36 +484,36 @@ export function PassengerDrawer({
       {/* Conteúdo com Scroll */}
       <CardContent className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
         {/* Métricas Analíticas do Passageiro (Camada Gold DuckDB) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-border">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="p-3 rounded-xl bg-card/60 border border-border/70 backdrop-blur-sm">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
               CLV Estimado
             </span>
-            <span className="text-sm font-bold text-foreground block mt-0.5">
+            <span className="text-sm font-outfit font-black text-foreground block mt-0.5">
               {formatCurrency(cliente.clv_previsto)}
             </span>
-            <span className="text-[9px] text-muted-foreground block truncate">
+            <span className="text-[9px] text-muted-foreground block truncate mt-0.5">
               {cliente.faixa_pareto}
             </span>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-border">
+          <div className="p-3 rounded-xl bg-card/60 border border-border/70 backdrop-blur-sm">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
               Risco Evasão
             </span>
             <span
               className={cn(
-                "text-sm font-bold block mt-0.5",
+                "text-sm font-outfit font-black block mt-0.5",
                 riscoPerc >= 60
-                  ? "text-rose-600 dark:text-rose-400"
+                  ? "text-rose-500"
                   : riscoPerc >= 40
-                  ? "text-amber-600 dark:text-amber-400"
-                  : "text-emerald-600 dark:text-emerald-400"
+                  ? "text-amber-500"
+                  : "text-emerald-500"
               )}
             >
               {riscoPerc}% {riscoPerc >= 60 ? "• Crítico" : ""}
             </span>
-            <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 mt-1 overflow-hidden">
+            <div className="w-full bg-muted/60 rounded-full h-1.5 mt-1.5 overflow-hidden">
               <div
                 className={cn(
                   "h-full rounded-full transition-all",
@@ -494,14 +528,14 @@ export function PassengerDrawer({
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-border col-span-2 sm:col-span-1">
+          <div className="p-3 rounded-xl bg-card/60 border border-border/70 backdrop-blur-sm col-span-2 sm:col-span-1">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
               Atrito Acumulado
             </span>
-            <span className="text-sm font-bold text-foreground block mt-0.5">
+            <span className="text-sm font-outfit font-black text-foreground block mt-0.5">
               {cliente.score_atrito_acumulado.toFixed(1)} pts
             </span>
-            <span className="text-[9px] text-muted-foreground block truncate">
+            <span className="text-[9px] text-muted-foreground block truncate mt-0.5">
               {cliente.score_atrito_acumulado > 3
                 ? "Atrasos / Cancelamentos"
                 : "Sem histórico grave"}
@@ -514,31 +548,31 @@ export function PassengerDrawer({
         {/* ================================================================= */}
         {cliente.contexto_narrativo_llm &&
           cliente.contexto_narrativo_llm !== "Sem ocorrências recentes" && (
-            <div className="rounded-2xl border border-sky-200 dark:border-sky-800 bg-sky-50/70 dark:bg-sky-950/40 p-3.5 space-y-2">
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-2.5">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-lg bg-sky-100 dark:bg-sky-900 flex items-center justify-center text-sky-700 dark:text-sky-300">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                     <AlertCircle className="h-3.5 w-3.5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-sky-900 dark:text-sky-200">
+                    <h4 className="text-xs font-outfit font-bold uppercase tracking-wider text-primary">
                       Contexto Operacional & CRM (GST Delta/Azul)
                     </h4>
-                    <p className="text-[10px] text-sky-700/80 dark:text-sky-300/80">
+                    <p className="text-[10px] text-muted-foreground">
                       Enriquecimento nativo via Data Contract (WorldTracer, SSR, SAC/Ouvidoria)
                     </p>
                   </div>
                 </div>
                 <Badge
                   variant="outline"
-                  className="text-[9px] font-mono bg-sky-100 dark:bg-sky-900/60 text-sky-800 dark:text-sky-300 border-sky-300"
+                  className="text-[9px] font-mono bg-primary/10 text-primary border-primary/30 rounded-md"
                 >
                   Data Contract Gold
                 </Badge>
               </div>
 
-              <div className="rounded-xl bg-white/90 dark:bg-slate-900/80 p-3 border border-sky-200/80 dark:border-sky-800/60 text-xs text-foreground leading-relaxed shadow-2xs">
-                <p className="text-[11.5px] font-medium text-slate-800 dark:text-slate-200">
+              <div className="rounded-xl bg-card/80 dark:bg-card/60 p-3.5 border border-border/60 text-xs text-foreground leading-relaxed shadow-xs">
+                <p className="text-[11.5px] font-medium text-foreground">
                   {cliente.contexto_narrativo_llm}
                 </p>
               </div>
@@ -548,12 +582,12 @@ export function PassengerDrawer({
         {/* ================================================================= */}
         {/* COMPONENTE TRANSPLANTADO 1: GRÁFICO SHAP (EXPLICABILIDADE REAL)   */}
         {/* ================================================================= */}
-        <div className="rounded-2xl border border-border bg-slate-50/40 dark:bg-slate-900/40 p-3.5 space-y-3">
+        <div className="rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md p-4 space-y-3.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart2 className="h-4 w-4 text-[#0077C8] dark:text-[#38BDF8]" />
+            <div className="flex items-center gap-2.5">
+              <BarChart2 className="h-4 w-4 text-primary" />
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                <h4 className="text-xs font-outfit font-bold uppercase tracking-wider text-foreground">
                   Explicabilidade de Risco (Pesos SHAP)
                 </h4>
                 <p className="text-[10px] text-muted-foreground">
@@ -566,29 +600,33 @@ export function PassengerDrawer({
               variant="ghost"
               size="sm"
               onClick={() => setShowShapDetails(!showShapDetails)}
-              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 p-0 rounded-lg text-muted-foreground hover:text-foreground"
             >
-              {showShapDetails ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              {showShapDetails ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </Button>
           </div>
 
           {showShapDetails && shapData && (
-            <div className="space-y-3 pt-1">
+            <div className="space-y-3.5 pt-1">
               {/* Resumo Risco Base vs Risco Ponderado Final */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2 rounded-lg bg-background border border-border">
-                  <span className="text-muted-foreground block text-[9px] font-semibold uppercase">
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                <div className="p-2.5 rounded-xl bg-background/60 border border-border/70 backdrop-blur-xs">
+                  <span className="text-muted-foreground block text-[9px] font-semibold uppercase tracking-wider">
                     Risco Base (Prior da Carteira)
                   </span>
-                  <span className="text-xs font-bold text-foreground">
+                  <span className="text-xs font-outfit font-black text-foreground mt-0.5 block">
                     {formatPercent(shapData.riscoBase)}
                   </span>
                 </div>
-                <div className="p-2 rounded-lg bg-[#0077C8]/10 border border-[#0077C8]/30">
-                  <span className="text-[#0077C8] dark:text-[#38BDF8] block text-[9px] font-semibold uppercase">
+                <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 backdrop-blur-xs">
+                  <span className="text-primary block text-[9px] font-semibold uppercase tracking-wider">
                     Risco Ponderado Final
                   </span>
-                  <span className="text-xs font-bold text-[#0077C8] dark:text-[#38BDF8]">
+                  <span className="text-xs font-outfit font-black text-primary mt-0.5 block">
                     {formatPercent(shapData.riscoFinal)}
                   </span>
                 </div>
@@ -602,35 +640,40 @@ export function PassengerDrawer({
                     data={shapData.fatores}
                     margin={{ top: 5, right: 25, left: 5, bottom: 5 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" className="text-border" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      horizontal={false}
+                      stroke="hsl(var(--border))"
+                      strokeOpacity={0.4}
+                    />
                     <XAxis
                       type="number"
                       unit="%"
-                      tick={{ fontSize: 10, fill: "currentColor" }}
-                      className="text-muted-foreground"
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                       tickLine={false}
                     />
                     <YAxis
                       type="category"
                       dataKey="variavel"
                       width={130}
-                      tick={{ fontSize: 9, fill: "currentColor" }}
-                      className="text-foreground"
+                      tick={{ fontSize: 9, fill: "hsl(var(--foreground))" }}
                       tickLine={false}
                     />
-                    <ReferenceLine x={0} stroke="#94a3b8" strokeWidth={1.5} />
+                    <ReferenceLine x={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1} strokeOpacity={0.5} />
                     <Tooltip
                       content={({ active, payload }) => {
                         if (!active || !payload || !payload.length) return null;
                         const item = payload[0].payload as ShapFatorItem;
                         const isAumenta = item.impacto_raw > 0;
                         return (
-                          <div className="rounded-lg border border-border bg-card p-2.5 shadow-md text-xs space-y-1">
-                            <p className="font-bold text-foreground">{item.variavel}</p>
+                          <div className="rounded-xl border border-border/80 bg-popover/95 backdrop-blur-xl p-3 shadow-xl text-xs space-y-1">
+                            <p className="font-outfit font-bold text-foreground">
+                              {item.variavel}
+                            </p>
                             <p
                               className={cn(
                                 "font-semibold",
-                                isAumenta ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
+                                isAumenta ? "text-rose-500" : "text-emerald-500"
                               )}
                             >
                               Impacto no Risco: {item.impacto_raw > 0 ? "+" : ""}
@@ -649,7 +692,7 @@ export function PassengerDrawer({
                       {shapData.fatores.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={entry.impacto_raw > 0 ? "#E11D48" : "#10B981"}
+                          fill={entry.impacto_raw > 0 ? "#f43f5e" : "#10b981"}
                         />
                       ))}
                     </Bar>
@@ -658,13 +701,13 @@ export function PassengerDrawer({
               </div>
 
               {/* Legenda de Pesos SHAP */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/70 text-[10px] text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/60 text-[10px] text-muted-foreground">
                 <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-xs bg-rose-600" />
+                  <span className="h-2 w-2 rounded-full bg-rose-500" />
                   <span>Eleva Risco (Atrito Operacional)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-xs bg-emerald-500" />
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
                   <span>Reduz Risco (Fidelidade Ativa)</span>
                 </div>
               </div>
@@ -681,30 +724,34 @@ export function PassengerDrawer({
           return (
             <div
               className={cn(
-                "rounded-2xl p-4 space-y-3.5 shadow-xs transition-colors",
+                "rounded-2xl p-4.5 space-y-3.5 shadow-sm transition-all border",
                 isVetoPolitica
-                  ? "border border-purple-300 dark:border-purple-800 bg-linear-to-b from-purple-50/90 to-purple-100/40 dark:from-purple-950/40 dark:to-slate-900/60"
+                  ? "border-purple-500/30 bg-purple-500/5 backdrop-blur-sm"
                   : isVetada
-                  ? "border border-amber-300 dark:border-amber-700/80 bg-linear-to-b from-amber-50/90 to-amber-100/40 dark:from-amber-950/40 dark:to-slate-900/60"
-                  : "border border-sky-300 dark:border-sky-800 bg-linear-to-b from-sky-50/70 to-white dark:from-slate-900/80 dark:to-slate-900/40"
+                  ? "border-amber-500/30 bg-amber-500/5 backdrop-blur-sm"
+                  : "border-primary/30 bg-primary/5 backdrop-blur-sm"
               )}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5">
                   <div
                     className={cn(
-                      "h-7 w-7 rounded-lg flex items-center justify-center shrink-0",
+                      "h-8 w-8 rounded-xl flex items-center justify-center shrink-0 shadow-2xs",
                       isVetoPolitica
-                        ? "bg-purple-200/80 dark:bg-purple-900 text-purple-800 dark:text-purple-200"
+                        ? "bg-purple-500/20 text-purple-600 dark:text-purple-300"
                         : isVetada
-                        ? "bg-amber-200/80 dark:bg-amber-900 text-amber-800 dark:text-amber-200"
-                        : "bg-[#0077C8]/10 text-[#0077C8] dark:text-[#38BDF8]"
+                        ? "bg-amber-500/20 text-amber-600 dark:text-amber-300"
+                        : "bg-primary/20 text-primary"
                     )}
                   >
-                    {isVetada ? <ShieldAlert className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+                    {isVetada ? (
+                      <ShieldAlert className="h-4 w-4" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    <h4 className="text-xs font-outfit font-bold uppercase tracking-wider text-foreground">
                       {isVetoPolitica
                         ? "Decisão Analítica — Política Comercial"
                         : isVetada
@@ -723,18 +770,18 @@ export function PassengerDrawer({
 
                 <Badge
                   className={cn(
-                    "text-[10px] font-bold text-white",
+                    "text-[10px] font-bold rounded-full px-2.5 py-0.5 border shadow-2xs",
                     isVetoPolitica
-                      ? "bg-purple-700 hover:bg-purple-700"
+                      ? "bg-purple-600/90 text-white border-purple-500"
                       : isVetada
-                      ? "bg-amber-600 hover:bg-amber-600"
-                      : "bg-[#0077C8] hover:bg-[#0077C8]"
+                      ? "bg-amber-600/90 text-white border-amber-500"
+                      : "bg-primary text-primary-foreground border-primary"
                   )}
                 >
                   {isVetoPolitica
-                    ? "Status: Intervenção Cancelada (Veto de Política)"
+                    ? "Status: Veto de Política"
                     : isVetada
-                    ? "Status: Intervenção Cancelada (Veto Analítico)"
+                    ? "Status: Veto Analítico"
                     : "Ação Vencedora"}
                 </Badge>
               </div>
@@ -742,38 +789,40 @@ export function PassengerDrawer({
               {/* Título da Ação Vencedora / Veto */}
               <div
                 className={cn(
-                  "p-3 rounded-xl border flex items-center justify-between shadow-2xs",
+                  "p-3 rounded-xl border flex items-center justify-between shadow-2xs backdrop-blur-xs",
                   isVetoPolitica
-                    ? "bg-purple-100/60 dark:bg-purple-950/40 border-purple-300 dark:border-purple-800"
+                    ? "bg-purple-500/10 border-purple-500/30"
                     : isVetada
-                    ? "bg-amber-100/60 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800"
-                    : "bg-white dark:bg-slate-900 border-sky-200 dark:border-sky-900/80"
+                    ? "bg-amber-500/10 border-amber-500/30"
+                    : "bg-card/90 border-border/80"
                 )}
               >
                 <div className="flex items-center gap-2.5">
                   <div
                     className={cn(
-                      "h-9 w-9 rounded-xl flex items-center justify-center shrink-0 font-bold",
+                      "h-9 w-9 rounded-xl flex items-center justify-center shrink-0 font-bold shadow-inner",
                       isVetoPolitica
-                        ? "bg-purple-200/80 dark:bg-purple-900 text-purple-800 dark:text-purple-200"
+                        ? "bg-purple-500/20 text-purple-600 dark:text-purple-300"
                         : isVetada
-                        ? "bg-amber-200/80 dark:bg-amber-900 text-amber-800 dark:text-amber-200"
-                        : "bg-sky-100 dark:bg-sky-950/70 text-[#0077C8] dark:text-[#38BDF8]"
+                        ? "bg-amber-500/20 text-amber-600 dark:text-amber-300"
+                        : "bg-primary/10 text-primary"
                     )}
                   >
                     <ActionIcon className="h-5 w-5" />
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                      {isVetada ? "Status da Ação para o Assento" : "Ação Recomendada para o Assento"}
+                      {isVetada
+                        ? "Status da Ação para o Assento"
+                        : "Ação Recomendada para o Assento"}
                     </span>
                     <span
                       className={cn(
-                        "text-sm font-bold block",
+                        "text-sm font-outfit font-black block mt-0.5",
                         isVetoPolitica
-                          ? "text-purple-900 dark:text-purple-200"
+                          ? "text-purple-600 dark:text-purple-300"
                           : isVetada
-                          ? "text-amber-900 dark:text-amber-200"
+                          ? "text-amber-600 dark:text-amber-300"
                           : "text-foreground"
                       )}
                     >
@@ -790,20 +839,20 @@ export function PassengerDrawer({
                     className={cn(
                       "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5",
                       isVetoPolitica
-                        ? "text-purple-900 dark:text-purple-300"
+                        ? "text-purple-600 dark:text-purple-400"
                         : isVetada
-                        ? "text-amber-900 dark:text-amber-300"
-                        : "text-amber-800 dark:text-amber-400"
+                        ? "text-amber-600 dark:text-amber-400"
+                        : "text-amber-600 dark:text-amber-400"
                     )}
                   >
                     {isVetoPolitica ? (
                       <>
-                        <ShieldAlert className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                        <ShieldAlert className="h-3.5 w-3.5 text-purple-500" />
                         DECISÃO ANALÍTICA — POLÍTICA DE ELEGIBILIDADE
                       </>
                     ) : isVetada ? (
                       <>
-                        <ShieldAlert className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                        <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
                         DECISÃO ANALÍTICA — PROTEÇÃO DE CAIXA
                       </>
                     ) : (
@@ -820,11 +869,11 @@ export function PassengerDrawer({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleCopyInstruction(instrucaoTatica)}
-                      className="h-6 text-[10px] gap-1 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
+                      className="h-6 text-[10px] gap-1 px-2.5 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
                     >
                       {copied ? (
                         <>
-                          <Check className="h-3 w-3 text-emerald-600" />
+                          <Check className="h-3 w-3 text-emerald-500" />
                           <span>Copiado</span>
                         </>
                       ) : (
@@ -839,28 +888,28 @@ export function PassengerDrawer({
 
                 <div
                   className={cn(
-                    "rounded-xl p-3.5 shadow-inner border",
+                    "rounded-xl p-3.5 border backdrop-blur-xs",
                     isVetoPolitica
-                      ? "bg-purple-100/90 dark:bg-purple-950/70 border-purple-300 dark:border-purple-700/80"
+                      ? "bg-purple-500/10 border-purple-500/20"
                       : isVetada
-                      ? "bg-amber-100/90 dark:bg-amber-950/70 border-amber-300 dark:border-amber-700/80"
-                      : "bg-amber-50/80 dark:bg-amber-950/40 border-amber-200/90 dark:border-amber-800/60"
+                      ? "bg-amber-500/10 border-amber-500/20"
+                      : "bg-amber-500/5 border-amber-500/20"
                   )}
                 >
                   <div className="flex items-start gap-2">
                     {isVetoPolitica ? (
-                      <ShieldAlert className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                      <ShieldAlert className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
                     ) : isVetada ? (
-                      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                     ) : null}
                     <p
                       className={cn(
                         "text-xs leading-relaxed",
                         isVetoPolitica
-                          ? "text-purple-950 dark:text-purple-100 font-semibold"
+                          ? "text-foreground font-medium"
                           : isVetada
-                          ? "text-amber-950 dark:text-amber-100 font-semibold"
-                          : "text-amber-950 dark:text-amber-100 font-medium italic"
+                          ? "text-foreground font-medium"
+                          : "text-foreground font-medium italic"
                       )}
                     >
                       {isVetada ? instrucaoTatica : `“${instrucaoTatica}”`}
@@ -880,12 +929,17 @@ export function PassengerDrawer({
         })()}
 
         {/* Status de Sincronização e Governança */}
-        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-border text-xs text-muted-foreground flex items-center justify-between">
+        <div className="p-3 rounded-xl bg-card/60 border border-border/70 text-xs text-muted-foreground flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5 text-[#0077C8]" />
-            <span>Despacho via <strong>Lote Único de 5 Ações</strong></span>
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span>
+              Despacho via <strong>Lote Único de 5 Ações</strong>
+            </span>
           </div>
-          <Badge variant="outline" className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+          <Badge
+            variant="outline"
+            className="text-[10px] font-mono text-emerald-500 border-emerald-500/30 rounded-full"
+          >
             Plano On-Board Aprovado
           </Badge>
         </div>
@@ -893,19 +947,19 @@ export function PassengerDrawer({
 
       {/* Mensagem de confirmação do MLOps Feedback Loop */}
       {feedbackSuccessMessage && (
-        <div className="mx-4 mb-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 text-xs flex items-center gap-2 animate-in fade-in slide-in-from-bottom duration-200">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+        <div className="mx-4 mb-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2 animate-in fade-in slide-in-from-bottom duration-200">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
           <span className="font-semibold">{feedbackSuccessMessage}</span>
         </div>
       )}
 
       {/* Footer do Dossiê: Botões de Ação */}
-      <div className="p-4 border-t border-border bg-slate-50/70 dark:bg-slate-900/60 shrink-0 flex items-center justify-between gap-3">
+      <div className="p-4 border-t border-border/70 bg-card/40 backdrop-blur-md shrink-0 flex items-center justify-between gap-3">
         <Button
           variant="outline"
           size="sm"
           onClick={onClose}
-          className="text-xs text-muted-foreground cursor-pointer"
+          className="text-xs text-muted-foreground cursor-pointer rounded-xl"
         >
           Fechar
         </Button>
@@ -915,17 +969,17 @@ export function PassengerDrawer({
           disabled={isSubmittingFeedback || isAcaoVetada}
           onClick={handleMarkCompleted}
           className={cn(
-            "text-xs gap-1.5 font-bold transition-colors",
+            "text-xs gap-1.5 font-outfit font-bold rounded-xl transition-all shadow-md",
             isAcaoVetada
-              ? "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed border border-border"
+              ? "bg-muted text-muted-foreground cursor-not-allowed border border-border/70"
               : isAttended
               ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-              : "bg-[#0077C8] hover:bg-[#005a99] text-white cursor-pointer"
+              : "bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
           )}
         >
           {isAcaoVetada ? (
             <>
-              <ShieldCheck className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+              <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Intervenção Dispensada</span>
             </>
           ) : isSubmittingFeedback ? (
@@ -949,4 +1003,3 @@ export function PassengerDrawer({
     </Card>
   );
 }
-

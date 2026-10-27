@@ -7,11 +7,10 @@ import {
   CheckCircle2,
   User,
   Users,
-  ShieldAlert,
   Sparkles,
   Plane,
 } from "lucide-react";
-import { AssentoVoo, MetadataAeronave } from "@/types/api";
+import { AssentoVoo } from "@/types/api";
 import { Mission } from "@/lib/flight-state";
 import { SyncMission } from "@/lib/sync-storage";
 import { cn } from "@/lib/utils";
@@ -43,13 +42,8 @@ export function SeatMap({
   onSelectSeat,
   filter = "todos",
   attendedSeats = new Set(),
-  role = "gestor",
-  missions = [],
-  onSelectMissionSeat,
   layout: layoutProp,
   aircraftModel,
-  isDirectionalOnly = false,
-  missionSeatMap,
 }: SeatMapProps) {
   // Indexa assentos por código (ex: "1A", "34D") para acesso O(1)
   const seatMap = useMemo(() => {
@@ -57,18 +51,6 @@ export function SeatMap({
     seats.forEach((s) => map.set(s.assento, s));
     return map;
   }, [seats]);
-
-  // Indexa missões por assento
-  const activeMissionMap = useMemo(() => {
-    const map = new Map<string, SyncMission | Mission>();
-    if (Array.isArray(missions)) {
-      missions.forEach((m) => map.set(m.assento, m));
-    }
-    if (missionSeatMap) {
-      missionSeatMap.forEach((m, k) => map.set(k, m));
-    }
-    return map;
-  }, [missions, missionSeatMap]);
 
   // Determina o layout exato a partir da prop layout recebida do storage ou do metadata
   const effectiveLayout = useMemo(() => {
@@ -136,7 +118,7 @@ export function SeatMap({
         <div
           key={seatCode}
           className={cn(
-            "h-14 w-11 sm:w-13 md:w-14 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-center text-[10px] text-muted-foreground transition-all duration-300",
+            "h-14 w-11 sm:w-13 md:w-14 rounded-xl border border-dashed border-border/60 bg-muted/20 flex items-center justify-center text-[10px] text-muted-foreground transition-all duration-300 font-mono",
             hasSelection ? "opacity-30" : "opacity-40"
           )}
         >
@@ -168,8 +150,8 @@ export function SeatMap({
 
     if (seat.status === "critico") {
       statusStyles = cn(
-        "bg-rose-50 text-rose-950 border-rose-400 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-100 dark:border-rose-600 dark:hover:bg-rose-900/50 shadow-xs",
-        isSelected && "ring-2 ring-rose-500 ring-offset-2 dark:ring-offset-slate-950"
+        "bg-rose-500/10 text-rose-950 dark:text-rose-100 border-rose-500/40 hover:bg-rose-500/20 shadow-xs",
+        isSelected && "ring-2 ring-rose-500 ring-offset-2 ring-offset-background"
       );
       indicatorIcon = (
         <AlertTriangle className="h-3 w-3 text-rose-600 dark:text-rose-400 shrink-0" />
@@ -177,7 +159,7 @@ export function SeatMap({
     } else {
       statusStyles = cn(
         tierConfig.seat,
-        isSelected && "ring-2 ring-[#0077C8] ring-offset-2 dark:ring-offset-slate-950"
+        isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
       );
       if (tierConfig.key === "diamante") {
         indicatorIcon = (
@@ -204,13 +186,13 @@ export function SeatMap({
         type="button"
         onClick={() => onSelectSeat(seat)}
         className={cn(
-          "relative group flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-lg border text-left transition-all duration-300 cursor-pointer",
+          "relative group flex flex-col items-center justify-between p-1 sm:p-1.5 h-14 w-11 sm:w-13 md:w-14 rounded-xl border text-left transition-all duration-200 cursor-pointer",
           statusStyles,
-          isFamily && !isGroupMember && "ring-1 ring-sky-400/60 dark:ring-sky-500/50",
+          isFamily && !isGroupMember && "ring-1 ring-primary/40",
           isGroupMember &&
-            "ring-4 ring-blue-500 ring-offset-2 scale-105 z-10 bg-blue-50 dark:bg-blue-950/70 dark:ring-blue-400 shadow-md transition-all duration-300",
+            "ring-2 ring-primary ring-offset-2 ring-offset-background scale-105 z-10 bg-primary/10 shadow-sm",
           isSelected &&
-            "scale-105 z-20 shadow-xl ring-4 ring-blue-600 dark:ring-blue-500 ring-offset-2 dark:ring-offset-slate-950",
+            "scale-105 z-20 shadow-lg ring-2 ring-primary ring-offset-2 ring-offset-background",
           isDimmed && "opacity-60 hover:opacity-100",
           !highlighted && "opacity-25 hover:opacity-100 scale-95",
           highlighted && !isDimmed && "hover:scale-105 active:scale-95"
@@ -220,7 +202,7 @@ export function SeatMap({
         {/* Header do Assento: Código + Ícone de Grupo/Status */}
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-0.5">
-            <span className="font-mono text-[11px] sm:text-xs font-black tracking-tight">
+            <span className="font-mono text-[11px] sm:text-xs font-black tracking-tight font-outfit">
               {seatCode}
             </span>
             {isFamily && (
@@ -228,10 +210,10 @@ export function SeatMap({
                 className={cn(
                   "h-2.5 w-2.5 shrink-0 transition-colors duration-200",
                   isGroupMember
-                    ? "text-blue-600 dark:text-blue-300 font-bold animate-pulse"
+                    ? "text-primary font-bold animate-pulse"
                     : tierConfig.key === "diamante"
                     ? "text-indigo-200 dark:text-indigo-300"
-                    : "text-sky-600 dark:text-sky-400"
+                    : "text-primary"
                 )}
               />
             )}
@@ -239,20 +221,20 @@ export function SeatMap({
           {indicatorIcon}
         </div>
 
-        {/* Nome Resumido / Iniciais */}
-        <div className="w-full truncate text-[9px] sm:text-[10px] font-medium leading-tight">
+        {/* Nome Resumido */}
+        <div className="w-full truncate text-[9px] sm:text-[10px] font-semibold leading-tight">
           {seat.dados_cliente.nome.split(" ")[0]}
         </div>
 
         {/* Rodapé do Assento: Tier ou Selo de Atendido */}
-        <div className="flex items-center justify-between w-full text-[8px] opacity-80 font-semibold uppercase">
+        <div className="flex items-center justify-between w-full text-[8px] opacity-80 font-bold uppercase">
           <span className="truncate">
             {seat.dados_cliente.tier_fidelidade.slice(0, 3)}
           </span>
           {isAttended ? (
             <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400 ml-0.5" />
           ) : seat.status === "critico" ? (
-            <span className="text-[8px] font-bold text-rose-600 dark:text-rose-400">
+            <span className="text-[8px] font-black text-rose-600 dark:text-rose-400 font-outfit">
               {Math.round(seat.dados_cliente.risco_evasao * 100)}%
             </span>
           ) : isEspacoAzul ? (
@@ -261,7 +243,7 @@ export function SeatMap({
                 "text-[7px] font-bold",
                 tierConfig.key === "diamante"
                   ? "text-indigo-200 dark:text-indigo-300"
-                  : "text-sky-700 dark:text-sky-300"
+                  : "text-primary"
               )}
             >
               ESP
@@ -275,13 +257,13 @@ export function SeatMap({
             <span
               className={cn(
                 "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                seat.status === "critico" ? "bg-rose-400" : "bg-sky-400"
+                seat.status === "critico" ? "bg-rose-400" : "bg-primary"
               )}
             />
             <span
               className={cn(
                 "relative inline-flex rounded-full h-2.5 w-2.5",
-                seat.status === "critico" ? "bg-rose-500" : "bg-sky-500"
+                seat.status === "critico" ? "bg-rose-500" : "bg-primary"
               )}
             />
           </span>
@@ -301,24 +283,24 @@ export function SeatMap({
 
   return (
     <div className="flex flex-col items-center w-full">
-      {/* Fuselagem Dinâmica da Aeronave */}
+      {/* Fuselagem Dinâmica da Aeronave com Pulso Glassmorphism */}
       <div
         className={cn(
-          "relative w-full bg-white dark:bg-[#071324] border border-border rounded-3xl p-4 sm:p-6 shadow-sm overflow-hidden transition-all duration-200",
+          "relative w-full bg-card/80 backdrop-blur-xl border border-border/80 rounded-3xl p-4 sm:p-6 shadow-xs overflow-hidden transition-all duration-200",
           is6Seats ? "max-w-xl" : "max-w-md sm:max-w-lg"
         )}
       >
         {/* Cabine de Comando (Cockpit) */}
         <div className="relative mx-auto -mt-2 mb-6 flex flex-col items-center">
-          <div className="h-6 w-28 bg-gradient-to-b from-sky-500/20 to-transparent rounded-t-full border-t border-sky-400/30 flex items-center justify-center gap-1.5">
-            <Plane className="h-3 w-3 text-sky-600 dark:text-sky-300" />
-            <span className="text-[9px] font-mono tracking-widest text-sky-700 dark:text-sky-300 font-bold uppercase">
+          <div className="h-7 w-32 bg-gradient-to-b from-primary/20 to-transparent rounded-t-full border-t border-primary/30 flex items-center justify-center gap-1.5">
+            <Plane className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[10px] font-mono tracking-widest text-primary font-bold uppercase">
               COCKPIT
             </span>
           </div>
-          <div className="w-full flex items-center justify-between text-[10px] text-muted-foreground px-4 pt-1 border-b border-border/60 pb-2">
+          <div className="w-full flex items-center justify-between text-[10px] text-muted-foreground px-4 pt-1 border-b border-border/80 pb-2">
             <div className="flex items-center gap-1.5 font-medium">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
               <span>Porta 1L / Galley Dianteira</span>
             </div>
             <div className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
@@ -327,7 +309,7 @@ export function SeatMap({
           </div>
         </div>
 
-        {/* Indicadores Dinâmicos de Coluna (A B C | Corredor | D E F) ou (A B | Corredor | C D) */}
+        {/* Indicadores Dinâmicos de Coluna */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 mb-3 px-2">
           {/* Lado Esquerdo */}
           <div
@@ -363,39 +345,24 @@ export function SeatMap({
           </div>
         </div>
 
-        {/* Separador Espaço Azul */}
-        <div className="mb-3 px-2 py-1 rounded-md bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/60 flex items-center justify-between text-[11px] text-[#002855] dark:text-blue-200 font-semibold">
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-[#0077C8] dark:text-[#38BDF8]" />
-            <span>Espaço Azul Premium (Fileiras 1 a {espacoAzulLimit}) - Prioridade de Bordo</span>
-          </div>
-          <span className="text-[10px] opacity-75 uppercase tracking-wide">
-            {is6Seats ? "Pitch 86cm (3x3)" : "Pitch 84cm (2x2)"}
-          </span>
-        </div>
-
-        {/* Fileiras de Assentos com Altura Confortável */}
-        <div className="space-y-2 max-h-[750px] overflow-y-auto pr-1">
+        {/* Fileiras de Assentos */}
+        <div className="space-y-2">
           {rows.map((row) => {
-            const isMainCabinStart = row === espacoAzulLimit + 1;
-            const isEmergency = row === emergencyRow;
+            const isEspaco = row <= espacoAzulLimit;
+            const isEmergency = row === emergencyRow || row === emergencyRow + 1;
 
             return (
               <React.Fragment key={row}>
-                {isMainCabinStart && (
-                  <div className="my-3 px-2 py-1 rounded-md bg-slate-100/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-[10px] font-semibold text-muted-foreground text-center uppercase tracking-wider">
-                    Cabine Principal (Fileiras {isMainCabinStart ? espacoAzulLimit + 1 : row} a {numFileiras})
+                {/* Divisor de Saída de Emergência */}
+                {row === emergencyRow && (
+                  <div className="py-1 text-center my-1 border-y border-dashed border-rose-500/30 bg-rose-500/5 rounded-md">
+                    <span className="text-[9px] font-mono font-bold tracking-wider text-rose-600 dark:text-rose-400 uppercase">
+                      ⚠️ Saída de Emergência (Asas)
+                    </span>
                   </div>
                 )}
 
-                {isEmergency && (
-                  <div className="px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400 flex items-center justify-center gap-1">
-                    <ShieldAlert className="h-3 w-3" />
-                    <span>Saída de Emergência Sobre as Asas (Fileira {emergencyRow})</span>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 px-1 sm:px-2">
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
                   {/* Assentos Lado Esquerdo */}
                   <div
                     className={cn(
@@ -406,11 +373,16 @@ export function SeatMap({
                     {leftCols.map((col) => renderSeat(row, col))}
                   </div>
 
-                  {/* Corredor Central com Número da Fileira */}
-                  <div className="w-8 sm:w-10 h-14 flex items-center justify-center">
-                    <div className="h-7 w-7 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-border flex items-center justify-center font-mono text-xs font-bold text-muted-foreground shadow-xs">
+                  {/* Número da Fileira Central */}
+                  <div className="w-8 sm:w-10 flex flex-col items-center justify-center">
+                    <span className="font-mono text-xs font-bold text-muted-foreground">
                       {row}
-                    </div>
+                    </span>
+                    {isEspaco && (
+                      <span className="text-[7px] font-bold text-primary font-mono leading-none mt-0.5">
+                        ESP
+                      </span>
+                    )}
                   </div>
 
                   {/* Assentos Lado Direito */}
@@ -429,14 +401,14 @@ export function SeatMap({
         </div>
 
         {/* Galley Traseira */}
-        <div className="mt-6 pt-3 border-t border-border/60 flex items-center justify-between text-[10px] text-muted-foreground px-4">
-          <span>Galley Traseira / Toaletes L e R</span>
-          <span>Saída Traseira 2L / 2R</span>
+        <div className="mt-6 pt-3 border-t border-border/80 flex items-center justify-between text-[10px] text-muted-foreground px-4">
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="h-2 w-2 rounded-full bg-slate-400" />
+            <span>Galley Traseira / Lavatórios</span>
+          </div>
+          <span className="font-mono text-[9px] uppercase">Fim da Cabine</span>
         </div>
       </div>
     </div>
   );
 }
-
-// Alias para compatibilidade retroativa
-export const CrewSeatMap = SeatMap;
