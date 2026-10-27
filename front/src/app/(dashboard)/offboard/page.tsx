@@ -21,6 +21,8 @@ import {
   Loader2,
   TrendingUp,
   ChevronDown,
+  Clock,
+  X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -221,177 +223,212 @@ export default function OffBoardPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 relative">
+    <div className="space-y-7 animate-in fade-in duration-300 relative">
       {/* Luz ambiente aero de fundo */}
-      <div className="pointer-events-none absolute -top-10 left-1/4 h-80 w-80 rounded-full bg-primary/10 blur-[120px] -z-10" />
-      <div className="pointer-events-none absolute top-40 right-10 h-72 w-72 rounded-full bg-sky-500/10 blur-[100px] -z-10" />
+      <div className="pointer-events-none absolute -top-12 left-1/4 h-96 w-96 rounded-full bg-primary/10 blur-[130px] -z-10" />
+      <div className="pointer-events-none absolute top-48 right-8 h-80 w-80 rounded-full bg-sky-500/10 blur-[110px] -z-10" />
 
-      {/* Header Principal */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-6">
+      {/* Header Principal Pulso */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 border-b border-border/80 pb-6">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2.5 flex-wrap">
             <span className="h-6 px-3 rounded-full bg-primary/10 text-primary text-[11px] font-bold border border-primary/20 flex items-center gap-1.5 shadow-2xs">
               <Sparkles className="h-3 w-3 text-primary" />
-              Gestor de CRM Multicanal
+              Central de Relacionamento & Retenção Proativa
             </span>
             <span className="h-6 px-3 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold border border-emerald-500/20 flex items-center gap-1.5 shadow-2xs">
               <ShieldCheck className="h-3 w-3 text-emerald-500" />
               Conformidade LGPD (Art. 7º e 18)
             </span>
+            <Badge variant="outline" className="text-[10px] font-mono rounded-full border-border/70 text-muted-foreground bg-muted/30">
+              Voo {flightId} • Viracopos (VCP)
+            </Badge>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-outfit font-black tracking-tight text-foreground">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-outfit font-black tracking-tight text-foreground">
             Central de Ações Off-Board (Pós-Voo)
           </h1>
-          <p className="text-sm text-muted-foreground mt-1.5 max-w-3xl leading-relaxed">
+          <p className="text-sm text-muted-foreground mt-2 max-w-3xl leading-relaxed">
             Gestão humanizada e disparo proativo via WhatsApp e E-mail para clientes que sofreram atrito operacional.
             Comunicações calibradas pelo Árbitro Contextual com a Resolução 400 da ANAC.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="h-10 gap-2 text-xs font-outfit font-bold rounded-xl border-border/80 bg-card/60 backdrop-blur-md px-4 shadow-sm hover:bg-card/90 cursor-pointer transition-all"
+            className="h-10 gap-2 text-xs font-outfit font-bold rounded-xl border-border/80 bg-card/70 backdrop-blur-md px-4 shadow-sm hover:bg-card/95 cursor-pointer transition-all"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin text-primary" : ""}`} />
             <span>Atualizar Fila</span>
           </Button>
 
-          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 backdrop-blur-md p-2.5 px-4 shadow-sm text-right">
+          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 backdrop-blur-md p-2.5 px-4 shadow-sm text-right relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-emerald-500/40 before:to-transparent">
             <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
               Recuperação Estimada
             </span>
-            <span className="text-lg font-outfit font-black text-emerald-500 block">
+            <span className="text-xl font-outfit font-black text-emerald-500 block leading-tight mt-0.5">
               +48 pts NPS
             </span>
           </div>
         </div>
       </div>
 
-      {/* Cards de Métricas Consolidadas */}
+      {/* Cards de Métricas Consolidadas (2 KPIs Rebalanceados) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-primary/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/20 before:to-transparent">
-          <CardContent className="p-4 sm:p-5 space-y-1.5">
-            <span className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider block">
-              Disparos Pendentes
-            </span>
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl sm:text-3xl font-outfit font-black text-amber-500">
-                {totalPendentes}
+        {/* Card 1: Disparos Pendentes */}
+        <Card className="rounded-2xl border border-amber-500/25 bg-card/75 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-amber-500/40 hover:shadow-xl before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-amber-500/40 before:to-transparent">
+          <CardContent className="p-5 sm:p-6 flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider block">
+                Disparos Pendentes (Fila de Retenção)
               </span>
-              <span className="text-xs font-outfit font-bold text-muted-foreground">Aguardando CRM</span>
+              <div className="flex items-baseline gap-3">
+                <span className="text-3xl sm:text-4xl font-outfit font-black text-amber-500 tracking-tight">
+                  {totalPendentes}
+                </span>
+                <span className="text-xs font-outfit font-semibold text-muted-foreground">
+                  de {totalElegiveis} passageiros
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
+                Mensagens geradas pelo Árbitro RAG aguardando conferência e disparo do gestor de CRM.
+              </p>
             </div>
-            <p className="text-[10px] text-muted-foreground">Requer cópia e envio do gestor</p>
+
+            <div className="h-12 w-12 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-500 flex items-center justify-center shrink-0 shadow-inner">
+              <Clock className="h-6 w-6" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-primary/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-white/20 before:to-transparent">
-          <CardContent className="p-4 sm:p-5 space-y-1.5">
-            <span className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wider block">
-              Ações Concluídas
-            </span>
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl sm:text-3xl font-outfit font-black text-emerald-500">
-                {totalEnviados}
+        {/* Card 2: Ações Concluídas */}
+        <Card className="rounded-2xl border border-emerald-500/25 bg-card/75 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all hover:border-emerald-500/40 hover:shadow-xl before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-emerald-500/40 before:to-transparent">
+          <CardContent className="p-5 sm:p-6 flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider block">
+                Ações Concluídas (MLOps Loop)
               </span>
-              <Badge variant="outline" className="text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                MLOps Gravado
-              </Badge>
+              <div className="flex items-baseline gap-3">
+                <span className="text-3xl sm:text-4xl font-outfit font-black text-emerald-500 tracking-tight">
+                  {totalEnviados}
+                </span>
+                <Badge variant="outline" className="text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-500 border-emerald-500/25">
+                  MLOps Gravado
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
+                Comunicações enviadas e registradas no banco de auditoria SQLite para mensuração de retenção.
+              </p>
             </div>
-            <p className="text-[10px] text-muted-foreground">Registros confirmados no SQLite</p>
+
+            <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-500 flex items-center justify-center shrink-0 shadow-inner">
+              <CheckCircle2 className="h-6 w-6" />
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Seleção de Canal Multicanal */}
-      <div className="flex items-center gap-2 border-b border-border/70 pb-3 overflow-x-auto">
-        <Button
-          variant={selectedChannel === "whatsapp" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setSelectedChannel("whatsapp")}
-          className={cn(
-            "h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer transition-all",
-            selectedChannel === "whatsapp"
-              ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <MessageSquare className="h-4 w-4" />
-          <span>WhatsApp Concierge ({totalElegiveis})</span>
-        </Button>
+      {/* Toolbar Unificada: Multicanal + Busca + Filtros */}
+      <div className="rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl p-3 sm:p-3.5 shadow-md space-y-3.5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Seletor de Canais */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+            <Button
+              variant={selectedChannel === "whatsapp" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSelectedChannel("whatsapp")}
+              className={cn(
+                "h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer transition-all",
+                selectedChannel === "whatsapp"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>WhatsApp Concierge ({totalElegiveis})</span>
+            </Button>
 
-        <Button
-          variant={selectedChannel === "email" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setSelectedChannel("email")}
-          className="h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/40"
-        >
-          <Mail className="h-4 w-4" />
-          <span>E-mail Transacional</span>
-        </Button>
+            <Button
+              variant={selectedChannel === "email" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSelectedChannel("email")}
+              className="h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/40"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              <span>E-mail Transacional</span>
+            </Button>
 
-        <Button
-          variant={selectedChannel === "push" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setSelectedChannel("push")}
-          className="h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/40"
-        >
-          <Bell className="h-4 w-4" />
-          <span>Push Notification</span>
-        </Button>
-      </div>
+            <Button
+              variant={selectedChannel === "push" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSelectedChannel("push")}
+              className="h-9 text-xs font-outfit font-bold rounded-xl gap-2 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/40"
+            >
+              <Bell className="h-3.5 w-3.5" />
+              <span>Push Notification</span>
+            </Button>
+          </div>
 
-      {/* Barra de Filtros e Busca */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3.5 top-3 h-3.5 w-3.5 text-muted-foreground" />
+          {/* Filtros de Status */}
+          <div className="flex items-center gap-1.5 self-end lg:self-auto shrink-0">
+            <span className="text-xs text-muted-foreground mr-1 font-medium">Filtrar:</span>
+            <Button
+              variant={filter === "todos" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("todos")}
+              className={cn(
+                "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all",
+                filter === "todos" && "bg-primary/10 text-primary border border-primary/20"
+              )}
+            >
+              Todos ({totalElegiveis})
+            </Button>
+            <Button
+              variant={filter === "pendentes" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("pendentes")}
+              className={cn(
+                "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all text-amber-600 dark:text-amber-400",
+                filter === "pendentes" && "bg-amber-500/10 border border-amber-500/20"
+              )}
+            >
+              Pendentes ({totalPendentes})
+            </Button>
+            <Button
+              variant={filter === "enviados" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("enviados")}
+              className={cn(
+                "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all text-emerald-600 dark:text-emerald-400",
+                filter === "enviados" && "bg-emerald-500/10 border border-emerald-500/20"
+              )}
+            >
+              Concluídos ({totalEnviados})
+            </Button>
+          </div>
+        </div>
+
+        {/* Input de Busca com Clear Button */}
+        <div className="relative w-full">
+          <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Buscar por passageiro, PNR, assento ou tier..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-9.5 pl-9.5 pr-3 text-xs rounded-xl border border-border/80 bg-card/60 backdrop-blur-md focus:outline-none focus:ring-1 focus:ring-primary shadow-xs transition-all placeholder:text-muted-foreground/70"
+            className="w-full h-10 pl-10 pr-9 text-xs rounded-xl border border-border/80 bg-background/60 backdrop-blur-md focus:outline-none focus:ring-1 focus:ring-primary shadow-xs transition-all placeholder:text-muted-foreground/70"
           />
-        </div>
-
-        <div className="flex items-center gap-1.5 self-end sm:self-auto">
-          <span className="text-xs text-muted-foreground mr-1.5 font-medium">Filtrar:</span>
-          <Button
-            variant={filter === "todos" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setFilter("todos")}
-            className={cn(
-              "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all",
-              filter === "todos" && "bg-primary/10 text-primary border border-primary/20"
-            )}
-          >
-            Todos ({totalElegiveis})
-          </Button>
-          <Button
-            variant={filter === "pendentes" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setFilter("pendentes")}
-            className={cn(
-              "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all text-amber-600 dark:text-amber-400",
-              filter === "pendentes" && "bg-amber-500/10 border border-amber-500/20"
-            )}
-          >
-            Pendentes ({totalPendentes})
-          </Button>
-          <Button
-            variant={filter === "enviados" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setFilter("enviados")}
-            className={cn(
-              "h-8 text-xs font-outfit font-bold rounded-xl px-3 cursor-pointer transition-all text-emerald-600 dark:text-emerald-400",
-              filter === "enviados" && "bg-emerald-500/10 border border-emerald-500/20"
-            )}
-          >
-            Concluídos ({totalEnviados})
-          </Button>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-3 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -400,13 +437,13 @@ export default function OffBoardPage() {
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="rounded-2xl border border-border/80 bg-card/60 backdrop-blur-xl">
-              <CardContent className="p-5 space-y-3">
+              <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <Skeleton className="h-5 w-48 rounded-lg" />
-                  <Skeleton className="h-5 w-24 rounded-lg" />
+                  <Skeleton className="h-6 w-48 rounded-lg" />
+                  <Skeleton className="h-6 w-24 rounded-lg" />
                 </div>
                 <Skeleton className="h-16 w-full rounded-xl" />
-                <Skeleton className="h-8 w-32 rounded-xl" />
+                <Skeleton className="h-10 w-32 rounded-xl" />
               </CardContent>
             </Card>
           ))}
@@ -428,20 +465,22 @@ export default function OffBoardPage() {
         </Card>
       ) : passageirosFiltrados.length === 0 ? (
         <Card className="rounded-2xl border border-dashed border-border/80 bg-card/60 backdrop-blur-xl">
-          <CardContent className="p-10 text-center space-y-2">
-            <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto" />
-            <h3 className="font-outfit font-bold text-sm text-foreground">
+          <CardContent className="p-12 text-center space-y-2.5">
+            <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20">
+              <CheckCircle2 className="h-6 w-6" />
+            </div>
+            <h3 className="font-outfit font-black text-base text-foreground pt-1">
               Nenhum passageiro pendente encontrado
             </h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
               {searchTerm
-                ? "Nenhum resultado corresponde à sua busca."
+                ? "Nenhum resultado corresponde à sua busca por texto."
                 : "Todas as mensagens de retenção para este lote foram disparadas com sucesso!"}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4.5">
           {passageirosFiltrados.map((p) => {
             const tierConf = getTierConfig(p.tier);
             const isCopied = copiedId === p.seatKey;
@@ -453,14 +492,15 @@ export default function OffBoardPage() {
                   "rounded-2xl border transition-all duration-300 shadow-md backdrop-blur-xl relative overflow-hidden",
                   p.isEnviado
                     ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/10"
-                    : "border-border/80 bg-card/80 hover:border-primary/40 hover:shadow-lg"
+                    : "border-border/80 bg-card/85 hover:border-primary/40 hover:shadow-xl"
                 )}
               >
-                <CardContent className="p-4 sm:p-5 space-y-4">
+                <CardContent className="p-5 sm:p-6 space-y-4.5">
                   {/* Topo do Card: Identificação do Passageiro e Status */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-border/70">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className="h-7 px-3 rounded-xl bg-muted/80 text-foreground font-outfit font-black text-xs flex items-center border border-border/70 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-border/70">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {/* Box do Assento */}
+                      <span className="h-8 px-3 rounded-xl bg-muted/80 text-foreground font-outfit font-black text-xs flex items-center border border-border/70 shadow-2xs">
                         {p.assento}
                       </span>
                       <span className="font-outfit font-black text-base text-foreground tracking-tight">
@@ -480,13 +520,13 @@ export default function OffBoardPage() {
                     <div className="flex items-center gap-2">
                       <span
                         className={cn(
-                          "text-[11px] font-outfit font-bold px-2.5 py-0.5 rounded-full border shadow-2xs",
+                          "text-[11px] font-outfit font-bold px-3 py-0.5 rounded-full border shadow-2xs",
                           p.risco_evasao > 0.6
                             ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
                             : "bg-amber-500/10 text-amber-500 border-amber-500/30"
                         )}
                       >
-                        Risco: {formatPercent(p.risco_evasao, 0)}
+                        Risco Churn: {formatPercent(p.risco_evasao, 0)}
                       </span>
                       {p.isEnviado ? (
                         <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] gap-1 font-bold rounded-full shadow-2xs">
@@ -502,8 +542,8 @@ export default function OffBoardPage() {
                   </div>
 
                   {/* Diagnóstico do Atrito e Ação Recomendada */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                    <div className="p-3 rounded-xl bg-card/60 border border-border/70 space-y-1 backdrop-blur-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
+                    <div className="p-3.5 rounded-xl bg-card/60 border border-border/70 space-y-1.5 backdrop-blur-xs">
                       <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider flex items-center gap-1.5">
                         <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                         Diagnóstico de Atrito Operacional (XAI)
@@ -511,7 +551,7 @@ export default function OffBoardPage() {
                       <p className="text-foreground font-medium leading-relaxed">{p.contexto}</p>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-1 backdrop-blur-xs">
+                    <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/20 space-y-1.5 backdrop-blur-xs">
                       <span className="text-[10px] text-primary uppercase font-bold tracking-wider flex items-center gap-1.5">
                         <HeartHandshake className="h-3.5 w-3.5 text-primary" />
                         Ação Aprovada pelo Árbitro (Uplift)
@@ -525,7 +565,7 @@ export default function OffBoardPage() {
                     </div>
                   </div>
 
-                  {/* Balão da Mensagem WhatsApp Pronta para Envio */}
+                  {/* Balão da Mensagem WhatsApp (Autêntico Concierge) */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="font-semibold text-muted-foreground flex items-center gap-1.5">
@@ -549,7 +589,7 @@ export default function OffBoardPage() {
                   </div>
 
                   {/* Barra de Ações: Botão Copiar, Botão Confirmar Disparo e Botão XAI */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
                     <div className="flex items-center gap-2">
                       <Button
                         type="button"
@@ -627,7 +667,7 @@ export default function OffBoardPage() {
 
                   {/* Painel Expansível de Explicabilidade (XAI: SHAP + Árbitro Contextual + RAG) */}
                   {expandedXaiId === p.seatKey && (
-                    <div className="mt-3 p-4 rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-xl space-y-3.5 animate-in fade-in duration-200">
+                    <div className="mt-3.5 p-4 rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-xl space-y-3.5 animate-in fade-in duration-200">
                       <div className="flex items-center justify-between border-b border-primary/20 pb-2.5 flex-wrap gap-2">
                         <div className="flex items-center gap-2">
                           <div className="h-6 w-6 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
