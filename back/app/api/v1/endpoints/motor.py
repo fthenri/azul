@@ -12,6 +12,8 @@ from back.app.api.dependencies import (
 from back.app.modules.simulation.crew_service import CrewService
 from back.app.modules.simulation.service import SimulationService
 from back.app.schemas.simulation import (
+    AcaoConcluidaPayload,
+    AcaoConcluidaResponse,
     AssentoVoo,
     SimularBordoPayload,
     SimularBordoResponse,
@@ -70,3 +72,18 @@ async def get_voo_simulado_motor(
     crew_service: CrewService = Depends(get_crew_service),
 ) -> VooSimuladoResponse:
     return crew_service.get_simulated_flight(modelo_aeronave=modelo)
+
+
+@router.post(
+    "/acao-concluida",
+    response_model=AcaoConcluidaResponse,
+    summary="Registrar Ação Concluída para Feedback Loop (MLOps)",
+    description="Registra a conclusão de uma ação (ONBOARD_CREW ou OFFBOARD_CRM), alimentando o log transacional SQLite de Feedback Loop com trava anti-duplicação.",
+)
+async def registrar_acao_concluida(
+    payload: AcaoConcluidaPayload,
+    _user: RequireCommissionerOrManagerDep = None,
+    crew_service: CrewService = Depends(get_crew_service),
+) -> AcaoConcluidaResponse:
+    res = crew_service.register_action_feedback(flight_id=payload.flight_id, payload=payload)
+    return AcaoConcluidaResponse(**res)

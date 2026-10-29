@@ -4,13 +4,13 @@ from typing import Annotated, Any, List, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from back.app.core.security import decode_access_token
-from back.app.infrastructure.persistence.user_store import UserStore
+from back.app.infrastructure.persistence.user_store import UserStore, get_user_store as get_user_store_singleton
 from back.app.schemas.auth import UserOut
 from fastapi import Depends
 from back.app.config import Settings, get_settings
 from back.app.infrastructure.analytics.duckdb_client import DuckDBClient, get_duckdb_client
 from back.app.infrastructure.integrations.decision_executor import DecisionExecutorAdapter
-from back.app.infrastructure.persistence.audit_store import AuditStore
+from back.app.infrastructure.persistence.audit_store import AuditStore, get_audit_store as get_audit_store_singleton
 from back.app.modules.audit.repository import AuditRepository
 from back.app.modules.audit.service import AuditService
 from back.app.modules.dashboard.repository import DashboardRepository
@@ -63,7 +63,7 @@ ExecutorAdapterDep = Annotated[DecisionExecutorAdapter, Depends(get_executor_ada
 
 
 def get_audit_store(settings: Settings = Depends(get_settings)) -> AuditStore:
-    return AuditStore(settings=settings)
+    return get_audit_store_singleton(settings=settings)
 
 
 AuditStoreDep = Annotated[AuditStore, Depends(get_audit_store)]
@@ -117,7 +117,7 @@ CrewServiceDep = Annotated[Any, Depends(get_crew_service)]
 # ============================================================================
 
 def get_user_store(settings: Settings = Depends(get_settings)) -> UserStore:
-    return UserStore(settings=settings)
+    return get_user_store_singleton(settings=settings)
 
 
 UserStoreDep = Annotated[UserStore, Depends(get_user_store)]

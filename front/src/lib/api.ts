@@ -9,8 +9,12 @@ import {
   ShapResponse,
   AssentoVoo,
   VooSimuladoResponse,
+  ListaVoosResponse,
+  VooDetalheResponse,
   SimularBordoPayload,
   SimularBordoResponse,
+  RegistrarAcaoPayload,
+  AcaoConcluidaResponse,
   LoginPayload,
   TokenResponse,
   UserOut,
@@ -120,12 +124,38 @@ export const api = {
   getDecisaoShap: (decisaoId: string): Promise<ShapResponse> =>
     request<ShapResponse>(`/auditoria/decisoes/${encodeURIComponent(decisaoId)}/shap`),
 
-  // Tela 4: Visão da Tripulação (Commissioner & Manager)
+  // Tela 4: Visão da Tripulação & Malha Aérea (Commissioner & Manager)
+  getFlights: (limit: number = 50): Promise<ListaVoosResponse> =>
+    request<ListaVoosResponse>(`/flights?limit=${limit}`),
+
+  getFlightById: (flightId: string): Promise<VooDetalheResponse> =>
+    request<VooDetalheResponse>(`/flights/${encodeURIComponent(flightId)}`),
+
   getVooSimulado: (modelo?: string): Promise<VooSimuladoResponse> =>
     request<VooSimuladoResponse>(`/voo-simulado${modelo ? `?modelo=${encodeURIComponent(modelo)}` : ""}`),
 
   simularBordo: (payload: SimularBordoPayload): Promise<SimularBordoResponse> =>
     request<SimularBordoResponse>("/motor/simular-bordo", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  executeAction: (
+    flightId: string,
+    payload: { assento: string; id_cliente?: string; acao?: string }
+  ): Promise<{ status: string; mensagem: string; mlops_status?: string }> =>
+    request<{ status: string; mensagem: string; mlops_status?: string }>(
+      `/flights/${encodeURIComponent(flightId)}/execute-action`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    ),
+
+  registrarAcaoConcluida: (
+    payload: RegistrarAcaoPayload
+  ): Promise<AcaoConcluidaResponse> =>
+    request<AcaoConcluidaResponse>("/motor/acao-concluida", {
       method: "POST",
       body: JSON.stringify(payload),
     }),

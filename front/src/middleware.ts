@@ -5,7 +5,6 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const token = request.cookies.get("azul_auth_token")?.value;
-  const role = request.cookies.get("azul_user_role")?.value;
 
   // Rotas estáticas ou de assets internas do Next.js
   if (
@@ -17,51 +16,32 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Raiz (/): Redireciona diretamente para o portal do perfil autenticado ou para /login
+  // Raiz (/): Redireciona diretamente para o dashboard ou para /login
   if (pathname === "/") {
     if (token) {
-      if (role === "commissioner") {
-        return NextResponse.redirect(new URL("/crew", request.url));
-      }
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Tela de Login (/login): Se já estiver autenticado, pula o login e abre a home do perfil
+  // Tela de Login (/login): Se já estiver autenticado, pula o login e abre o dashboard
   if (pathname === "/login") {
     if (token) {
-      if (role === "commissioner") {
-        return NextResponse.redirect(new URL("/crew", request.url));
-      }
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
     return NextResponse.next();
   }
 
-  // Rotas restritas ao Gestor (Manager)
-  const isManagerRoute =
+  // Rotas restritas protegidas por autenticação
+  const isProtectedRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/executive") ||
-    pathname.startsWith("/simulator") ||
-    pathname.startsWith("/audit-logs");
+    pathname.startsWith("/flights") ||
+    pathname.startsWith("/dispatch") ||
+    pathname.startsWith("/flight-dispatch") ||
+    pathname.startsWith("/offboard");
 
-  if (isManagerRoute) {
-    if (!token) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    if (role === "commissioner") {
-      // Comissário tentando acessar cockpit executivo é direcionado à sua área de bordo
-      return NextResponse.redirect(new URL("/crew", request.url));
-    }
-  }
-
-  // Rotas restritas de Tripulação (Crew / Guest Service Tool)
-  const isCrewRoute = pathname.startsWith("/crew");
-  if (isCrewRoute) {
+  if (isProtectedRoute) {
     if (!token) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);

@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import os
-import sys
 from pathlib import Path
+import re
+import sys
 from typing import Any
 
 from dotenv import load_dotenv
@@ -22,25 +23,40 @@ logger = logging.getLogger("azul.gold.executor")
 DEFAULT_SEED: int = 42
 
 CATALOGO_ACOES: dict[str, dict[str, float]] = {
-    "UPGRADE_EXECUTIVA": {"custo": 1500.00, "eficacia": 0.90},
-    "ACESSO_LOUNGE_VCP": {"custo": 120.00, "eficacia": 0.70},
-    "BONUS_5000_PONTOS": {"custo": 150.00, "eficacia": 0.60},
-    "ISENCAO_BAGAGEM_EXTRA": {"custo": 100.00, "eficacia": 0.50},
-    "CORTESIA_ESPACO_AZUL": {"custo": 50.00, "eficacia": 0.40},
-    "MENSAGEM_EXECUTIVA_VIP": {"custo": 1.00, "eficacia": 0.20},
+    "UPGRADE_EXECUTIVA": {"custo": 1500.00, "eficacia": 0.30},
+    "ACESSO_LOUNGE_VCP": {"custo": 120.00, "eficacia": 0.15},
+    "BONUS_5000_PONTOS": {"custo": 150.00, "eficacia": 0.12},
+    "ISENCAO_BAGAGEM_EXTRA": {"custo": 100.00, "eficacia": 0.10},
+    "CORTESIA_ESPACO_AZUL": {"custo": 50.00, "eficacia": 0.08},
+    "MENSAGEM_EXECUTIVA_VIP": {"custo": 1.00, "eficacia": 0.02},
     "NAO_FAZER_NADA": {"custo": 0.00, "eficacia": 0.00},
 }
 
 CATALOGO_ACOES_BORDO: dict[str, dict[str, float]] = {
-    "BEBIDA_CORTESIA": {"custo": 15.00, "eficacia": 0.70},
-    "SNACK_EXTRA": {"custo": 5.00, "eficacia": 0.50},
-    "ABORDAGEM_CHEFE_CABINE": {"custo": 0.00, "eficacia": 0.35},
+    "KIT_PET": {"custo": 10.00, "eficacia": 0.15},
+    "KIT_KIDS": {"custo": 12.00, "eficacia": 0.12},
+    "ACOLHIMENTO_VOUCHER": {"custo": 50.00, "eficacia": 0.15},
+    "BEBIDA_CORTESIA": {"custo": 15.00, "eficacia": 0.05},
+    "SNACK_EXTRA": {"custo": 5.00, "eficacia": 0.03},
+    "ABORDAGEM_CHEFE_CABINE": {"custo": 0.00, "eficacia": 0.02},
 }
 
+MENSAGEM_VETO_POLITICA: str = (
+    "Decisão Analítica: Veto de Política. Categoria Básico sem histórico de atrito operacional não é elegível a cortesias proativas."
+)
+FALLBACK_ROI_NEGATIVO: str = (
+    "Decisão Analítica: Intervenção cancelada. O custo da ação supera a projeção do valor recuperado (ROI Negativo)."
+)
+
 ROTULOS_ACOES_BORDO: dict[str, str] = {
-    "BEBIDA_CORTESIA": "Bebida Cortesia (Vinho / Cerveja / Suco Especial)",
-    "SNACK_EXTRA": "Snack Premium Extra / Pacote Especial",
+    "KIT_PET": "Kit Snack Premium + Atenção Pet",
+    "KIT_KIDS": "Kit Sobrevivência Kids",
+    "ACOLHIMENTO_VOUCHER": "Acolhimento Pessoal + Voucher 1000pts",
+    "BEBIDA_CORTESIA": "Bebida Premium Cortesia",
+    "SNACK_EXTRA": "Snack Premium Extra",
     "ABORDAGEM_CHEFE_CABINE": "Abordagem Pessoal do Chefe de Cabine",
+    "NENHUMA_ACAO": "Nenhuma Ação",
+    "Nenhuma Ação": "Nenhuma Ação",
 }
 
 
@@ -135,6 +151,36 @@ def arbitrar_melhor_acao(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
             "avaliacoes_uplift": {},
         }
 
+    persona = str(perfil_cliente.get("persona", "")).strip()
+    score_atrito = float(perfil_cliente.get("score_atrito_acumulado", 0.0) or 0.0)
+    ctx_crm = str(
+        perfil_cliente.get("contexto_narrativo_llm")
+        or perfil_cliente.get("descricao_ssr")
+        or perfil_cliente.get("contexto")
+        or ""
+    ).lower()
+    has_friction = (
+        score_atrito > 0.0
+        or any(k in ctx_crm for k in ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria", "atraso", "cancelamento"])
+    )
+    is_base = (
+        tier_fidelidade.lower() in ("basico", "básico", "azul")
+        or "turista" in persona.lower()
+    )
+
+    # POLÍTICAS DE ELEGIBILIDADE (HARD GATES)
+    # Regra 1 (Sem Atrito na Base): Se o cliente for do nível 'Básico' (ou persona 'Turista Eventual')
+    # E possuir atrito acumulado baixo/zero, force a ação para 'NAO_FAZER_NADA' e defina o custo como 0.
+    if is_base and not has_friction:
+        return {
+            "acao_vencedora": "NAO_FAZER_NADA",
+            "retorno_liquido": 0.0,
+            "custo_acao": 0.0,
+            "tipo_veto": "POLITICA",
+            "motivo_bloqueio": MENSAGEM_VETO_POLITICA,
+            "avaliacoes_uplift": {},
+        }
+
     melhor_acao = "NAO_FAZER_NADA"
     maior_retorno_liquido = 0.0
     custo_escolhido = 0.0
@@ -148,6 +194,12 @@ def arbitrar_melhor_acao(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
         if tier_fidelidade == "Diamante" and nome_acao in (
             "CORTESIA_ESPACO_AZUL",
             "ISENCAO_BAGAGEM_EXTRA",
+        ):
+            continue
+
+        # Regra 2 (Proteção de Ações Premium): Ações caras como 'Upgrade Executiva' só podem ser cogitadas se o CLV > 5000 ou se o nível for Safira/Diamante.
+        if nome_acao in ("UPGRADE_EXECUTIVA", "KIT_PREMIUM") and not (
+            clv_previsto > 5000.0 or tier_fidelidade in ("Safira", "Diamante")
         ):
             continue
 
@@ -196,6 +248,13 @@ def _obter_mock_padronizado(
         }
 
     if acao_vencedora == "NAO_FAZER_NADA":
+        if perfil_cliente.get("motivo_bloqueio"):
+            return {
+                "notificacao_interna": (
+                    f"Decisão interna: Veto de Política Comercial para titular #{id_curto} ({persona}, {tier})."
+                ),
+                "mensagem_crm": str(perfil_cliente["motivo_bloqueio"]),
+            }
         return {
             "notificacao_interna": (
                 f"Decisão interna: Sem ação por falta de ROI para cliente #{id_curto} "
@@ -380,37 +439,108 @@ Responda ESTRITAMENTE em formato JSON (sem nenhum texto ou formatação fora do 
 
 
 def arbitrar_acao_bordo(perfil_cliente: dict[str, Any]) -> dict[str, Any]:
-    clv_previsto = float(perfil_cliente.get("clv_previsto", 0.0))
-    risco_evasao = float(perfil_cliente.get("risco_evasao", 0.0))
-    tier = str(perfil_cliente.get("tier_fidelidade", "Basico")).strip()
-    faixa_pareto = str(perfil_cliente.get("faixa_pareto", "Cauda Longa")).strip()
+    clv_previsto = float(perfil_cliente.get("clv_previsto", 0.0) or 0.0)
+    risco_evasao = float(perfil_cliente.get("risco_evasao", 0.0) or 0.0)
+    tier_raw = str(perfil_cliente.get("tier_fidelidade", "Basico") or "Basico").strip()
+    persona_raw = str(perfil_cliente.get("persona", "") or "").strip()
+    score_atrito = float(perfil_cliente.get("score_atrito_acumulado", 0.0) or 0.0)
+
+    # Blindagem determinística de Case Sensitivity e unificação de contexto
+    ctx_raw = str(
+        perfil_cliente.get("contexto_narrativo_llm")
+        or perfil_cliente.get("descricao_ssr")
+        or perfil_cliente.get("contexto")
+        or ""
+    )
+    if perfil_cliente.get("ssr_codigo"):
+        ctx_raw += f" {perfil_cliente.get('ssr_codigo')}"
+    if perfil_cliente.get("sac_motivo"):
+        ctx_raw += f" {perfil_cliente.get('sac_motivo')}"
+    if perfil_cliente.get("tem_sac"):
+        ctx_raw += " sac reclamacao"
+    if perfil_cliente.get("tem_alerta_bagagem"):
+        ctx_raw += " bagagem"
+    ctx = ctx_raw.strip().lower()
+
+    # Blindagem para Pets: cobre 'petc', 'pet na cabine', 'animal' e 'pet' via regex e operador in
+    is_pet = bool(
+        any(k in ctx for k in ["petc", "pet na cabine", "animal", "pet"])
+        or re.search(r"\b(petc|animal|pet)\b|pet na cabine", ctx, re.IGNORECASE)
+    )
+
+    has_friction = (
+        score_atrito > 0.0
+        or any(k in ctx for k in ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria", "atraso", "cancelamento"])
+    )
+
+    is_base = (
+        tier_raw.lower() in ("basico", "básico", "azul")
+        or "turista" in persona_raw.lower()
+    )
+
+    # REGRA 1 (Sem Atrito na Base): Se o cliente for do nível 'Básico' (ou persona 'Turista Eventual')
+    # E possuir atrito acumulado baixo/zero (ex: atrito_acumulado <= 0 ou ausência de falhas recentes),
+    # force a ação para 'Nenhuma Ação' e defina o custo como 0.
+    if is_base and not has_friction and not is_pet:
+        return {
+            "acao_vencedora": "Nenhuma Ação",
+            "retorno_liquido": 0.0,
+            "custo_acao": 0.0,
+            "tipo_veto": "POLITICA",
+            "motivo_bloqueio": MENSAGEM_VETO_POLITICA,
+            "avaliacoes": {},
+        }
 
     avaliacoes: dict[str, float] = {}
     for nome_acao, dados in CATALOGO_ACOES_BORDO.items():
         custo = dados["custo"]
-        eficacia = dados["eficacia"]
-        retorno = (clv_previsto * risco_evasao * eficacia) - custo
+        taxa_recuperacao = dados["eficacia"]
+        # Fórmula de Uplift realista com Probabilidade de Recuperação:
+        # Valor_Recuperado = CLV * Probabilidade_Evasao * Taxa_Recuperacao_Acao
+        # Retorno_Liquido = Valor_Recuperado - Custo_Acao
+        valor_recuperado = clv_previsto * risco_evasao * taxa_recuperacao
+        retorno = valor_recuperado - custo
         avaliacoes[nome_acao] = round(retorno, 2)
 
-    acoes_ordenadas = sorted(avaliacoes.items(), key=lambda x: x[1], reverse=True)
-
-    if (risco_evasao > 0.60 or "Top 10%" in faixa_pareto or tier == "Diamante") and "BEBIDA_CORTESIA" in avaliacoes:
-        melhor_acao = "BEBIDA_CORTESIA"
-        retorno_escolhido = avaliacoes["BEBIDA_CORTESIA"]
-        custo_escolhido = CATALOGO_ACOES_BORDO["BEBIDA_CORTESIA"]["custo"]
-    elif acoes_ordenadas and acoes_ordenadas[0][1] > 0:
-        melhor_acao = acoes_ordenadas[0][0]
-        retorno_escolhido = acoes_ordenadas[0][1]
-        custo_escolhido = CATALOGO_ACOES_BORDO[melhor_acao]["custo"]
+    # Roteamento Contextual Inteligente (Context-Aware / Data Contract Satélites)
+    if is_pet:
+        melhor_acao = "KIT_PET"
+    elif any(k in ctx for k in ["chml", "criança", "criancas", "kids", "infantil", "família", "familia"]):
+        melhor_acao = "KIT_KIDS"
+    elif any(k in ctx for k in ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria"]):
+        melhor_acao = "ACOLHIMENTO_VOUCHER"
     else:
-        melhor_acao = "ABORDAGEM_CHEFE_CABINE"
-        retorno_escolhido = avaliacoes.get("ABORDAGEM_CHEFE_CABINE", 0.0)
+        # Se não houver contexto anômalo: Ação Vencedora = 'Bebida Premium Cortesia'
+        melhor_acao = "BEBIDA_CORTESIA"
+
+    # REGRA 2 (Proteção de Ações Premium): Ações caras como 'Upgrade Executiva' ou 'Kit Premium' só podem ser cogitadas se o CLV > 5000 ou se o nível for Safira/Diamante.
+    if melhor_acao in ("UPGRADE_EXECUTIVA", "KIT_PREMIUM") and not (
+        clv_previsto > 5000.0 or tier_raw in ("Safira", "Diamante")
+    ):
+        melhor_acao = "BEBIDA_CORTESIA"
+
+    retorno_escolhido = avaliacoes.get(
+        melhor_acao,
+        (clv_previsto * risco_evasao * CATALOGO_ACOES_BORDO[melhor_acao]["eficacia"]) - CATALOGO_ACOES_BORDO[melhor_acao]["custo"]
+    )
+    custo_escolhido = CATALOGO_ACOES_BORDO[melhor_acao]["custo"]
+
+    # Trava do ROI (Proteção de Caixa): se Retorno_Liquido <= 0, veto estrito da ação
+    tipo_veto = None
+    motivo_bloqueio = None
+    if retorno_escolhido <= 0.0:
+        melhor_acao = "Nenhuma Ação"
+        retorno_escolhido = 0.0
         custo_escolhido = 0.0
+        tipo_veto = "ROI_NEGATIVO"
+        motivo_bloqueio = FALLBACK_ROI_NEGATIVO
 
     return {
         "acao_vencedora": melhor_acao,
         "retorno_liquido": round(retorno_escolhido, 2),
         "custo_acao": round(custo_escolhido, 2),
+        "tipo_veto": tipo_veto,
+        "motivo_bloqueio": motivo_bloqueio,
         "avaliacoes": avaliacoes,
     }
 
@@ -419,19 +549,86 @@ def _obter_mock_bordo_padronizado(
     perfil_cliente: dict[str, Any],
     assento: str,
     acao_vencedora: str,
+    motivo_bloqueio: str | None = None,
 ) -> dict[str, str]:
+    if acao_vencedora in ("NENHUMA_ACAO", "Nenhuma Ação"):
+        if motivo_bloqueio:
+            return {"instrucao_comissario": motivo_bloqueio}
+        if perfil_cliente.get("motivo_bloqueio"):
+            return {"instrucao_comissario": str(perfil_cliente["motivo_bloqueio"])}
+
+        tier = str(perfil_cliente.get("tier_fidelidade", "Basico") or "Basico").strip().lower()
+        persona = str(perfil_cliente.get("persona", "") or "").strip().lower()
+        score_atrito = float(perfil_cliente.get("score_atrito_acumulado", 0.0) or 0.0)
+        ctx = str(
+            perfil_cliente.get("contexto_narrativo_llm")
+            or perfil_cliente.get("descricao_ssr")
+            or perfil_cliente.get("contexto")
+            or ""
+        ).strip().lower()
+        if perfil_cliente.get("ssr_codigo"):
+            ctx += f" {str(perfil_cliente.get('ssr_codigo')).lower()}"
+        if perfil_cliente.get("sac_motivo"):
+            ctx += f" {str(perfil_cliente.get('sac_motivo')).lower()}"
+        if perfil_cliente.get("tem_sac"):
+            ctx += " sac reclamacao"
+        if perfil_cliente.get("tem_alerta_bagagem"):
+            ctx += " bagagem"
+
+        has_friction = (
+            score_atrito > 0.0
+            or any(k in ctx for k in ["worldtracer", "bagagem", "sac", "reclamação", "reclamacao", "ouvidoria", "extravio", "avaria", "atraso", "cancelamento"])
+        )
+        is_pet = bool(
+            any(k in ctx for k in ["petc", "pet na cabine", "animal", "pet"])
+            or re.search(r"\b(petc|animal|pet)\b|pet na cabine", ctx, re.IGNORECASE)
+        )
+        is_base = tier in ("basico", "básico", "azul") or "turista" in persona
+
+        if is_base and not has_friction and not is_pet:
+            return {"instrucao_comissario": MENSAGEM_VETO_POLITICA}
+
+        return {
+            "instrucao_comissario": FALLBACK_ROI_NEGATIVO
+        }
     tier = str(perfil_cliente.get("tier_fidelidade", "Basico"))
     risco = float(perfil_cliente.get("risco_evasao", 0.0))
     id_curto = str(perfil_cliente.get("id_cliente", ""))[:8].upper()
+    ctx_narrativo = str(perfil_cliente.get("contexto_narrativo_llm") or "").strip()
+    tem_contexto = ctx_narrativo and ctx_narrativo != "Sem ocorrências recentes"
 
-    if acao_vencedora == "BEBIDA_CORTESIA":
+    if acao_vencedora in ("KIT_PET", "Kit Snack Premium + Atenção Pet"):
         msg = (
-            f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) enfrentou atrito operacional em voo recente "
-            f"(risco de evasão {risco * 100:.1f}%). Ao iniciar o serviço de bordo, ofereça uma bebida cortesia "
-            "(suco premium, cerveja especial ou refrigerante), peça desculpas em nome da Azul pelos imprevistos passados "
-            "e agradeça calorosamente por sua fidelidade."
+            f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) viaja acompanhado de Pet na cabine ({ctx_narrativo if tem_contexto else 'Atenção especial ao tutor e ao pet'}). "
+            "Ao iniciar o serviço de bordo, ofereça carinhosamente o Kit Snack Premium com atenção especial e água fresca para o pet, "
+            "reforçando o cuidado, respeito e hospitalidade pet-friendly da Azul."
         )
-    elif acao_vencedora == "SNACK_EXTRA":
+    elif acao_vencedora in ("KIT_KIDS", "Kit Sobrevivência Kids"):
+        msg = (
+            f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) viaja com família/crianças ({ctx_narrativo if tem_contexto else 'Atenção especial à família'}). "
+            "Ao iniciar o serviço de bordo, entregue carinhosamente o Kit Sobrevivência Kids (livro de colorir e snacks lúdicos), "
+            "desejando uma viagem tranquila aos responsáveis e colocando a tripulação à total disposição."
+        )
+    elif acao_vencedora in ("ACOLHIMENTO_VOUCHER", "Acolhimento Pessoal + Voucher 1000pts"):
+        msg = (
+            f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) enfrentou atrito operacional registrado no CRM: {ctx_narrativo}. "
+            "O Chefe de Cabine deve realizar uma acolhida pessoal e reservada, pedir sinceras desculpas em nome da Azul "
+            "e entregar a cortesia de 1.000 pontos no Azul Fidelidade, assegurando que o cliente se sinta acolhido e valorizado."
+        )
+    elif acao_vencedora in ("BEBIDA_CORTESIA", "Bebida Premium Cortesia"):
+        if tem_contexto:
+            msg = (
+                f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) possui registro operacional: {ctx_narrativo}. "
+                "Ao passar o serviço de bordo, ofereça uma bebida premium cortesia (cerveja especial, vinho selecionado ou suco premium), "
+                "agradecendo por voar Azul e desejando um excelente voo."
+            )
+        else:
+            msg = (
+                f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) é passageiro prioritário (risco de evasão {risco * 100:.1f}%). "
+                "Ao iniciar o serviço de bordo, ofereça uma bebida premium cortesia (suco premium, cerveja especial ou vinho), "
+                "agradecendo calorosamente por sua fidelidade à Azul."
+            )
+    elif acao_vencedora in ("SNACK_EXTRA", "Snack Premium Extra"):
         msg = (
             f"Passageiro(a) no assento {assento} (#{id_curto}, {tier}) demonstrou atrito recente com a malha. "
             "Durante a passagem da tripulação, ofereça um snack premium extra como cortesia personalizada, "
@@ -452,7 +649,12 @@ def gerar_instrucao_bordo_llm(
     assento: str,
     acao_vencedora: str,
     contexto_rag: str,
+    motivo_bloqueio: str | None = None,
 ) -> dict[str, str]:
+    # Trava estrita de ROI: Se a ação foi cancelada/vetada, não invoca o LLM
+    if acao_vencedora in ("NENHUMA_ACAO", "Nenhuma Ação"):
+        return _obter_mock_bordo_padronizado(perfil_cliente, assento, acao_vencedora, motivo_bloqueio)
+
     # Bloco de chamada à API de LLM para instruções de bordo da tripulação
     try:
         load_dotenv(resolve_project_root() / ".env")
@@ -469,6 +671,14 @@ def gerar_instrucao_bordo_llm(
         clv = float(perfil_cliente.get("clv_previsto", 0.0))
         risco = float(perfil_cliente.get("risco_evasao", 0.0))
         atrito = float(perfil_cliente.get("score_atrito_acumulado", 0.0))
+        ctx_narrativo = str(perfil_cliente.get("contexto_narrativo_llm") or "Sem ocorrências recentes")
+        ctx_prompt = (
+            f"- Contexto Operacional & Ocorrências CRM (WorldTracer/SSR/SAC): {ctx_narrativo}\n"
+            if ctx_narrativo != "Sem ocorrências recentes"
+            else ""
+        )
+
+        rotulo_acao = ROTULOS_ACOES_BORDO.get(acao_vencedora, acao_vencedora)
 
         prompt = f"""Você é o Assistente Digital da Tripulação de Cabine da Azul Linhas Aéreas (Guest Service Tool).
 Sua missão é instruir diretamente os comissários de voo e o chefe de cabine sobre como agir presencialmente com o passageiro no assento {assento}.
@@ -483,9 +693,9 @@ Sua missão é instruir diretamente os comissários de voo e o chefe de cabine s
 - CLV Previsto: R$ {clv:,.2f}
 - Risco de Evasão (Churn): {risco * 100:.1f}%
 - Histórico de Atrito: {atrito:.2f}
-
+{ctx_prompt}
 ### AÇÃO DE BORDO ARBITRADA:
-- Ação: {acao_vencedora}
+- Ação: {rotulo_acao}
 
 ### INSTRUÇÕES OBRIGATÓRIAS:
 Responda EXCLUSIVAMENTE em formato JSON (sem formatações markdown adicionais) com a seguinte chave:
@@ -536,6 +746,124 @@ Responda EXCLUSIVAMENTE em formato JSON (sem formatações markdown adicionais) 
     except Exception as exc:
         logger.warning("Falha na chamada LLM de bordo: %s. Usando mock.", exc)
         return _obter_mock_bordo_padronizado(perfil_cliente, assento, acao_vencedora)
+
+
+def gerar_instrucoes_bordo_lote_llm(
+    itens_lote: list[dict[str, Any]],
+    numero_voo: str,
+    contexto_rag: str,
+) -> list[str]:
+    """Gera em lote (batch único) as instruções táticas para comissários para os passageiros prioritários."""
+    if not itens_lote:
+        return []
+
+    try:
+        load_dotenv(resolve_project_root() / ".env")
+        load_dotenv(resolve_project_root() / "back" / ".env")
+
+        gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+
+        if not gemini_key and not openai_key:
+            return [
+                _obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"]
+                for item in itens_lote
+            ]
+
+        linhas_pax = []
+        for i, item in enumerate(itens_lote):
+            p = item["perfil"]
+            nome_pax = p.get("nome", f"Passageiro {item['assento']}")
+            ctx_narrativo = str(p.get("contexto_narrativo_llm") or "").strip()
+            ctx_str = (
+                f" [Contexto/Ocorrências: {ctx_narrativo}]"
+                if ctx_narrativo and ctx_narrativo != "Sem ocorrências recentes"
+                else ""
+            )
+            acao_label = ROTULOS_ACOES_BORDO.get(item['acao_vencedora'], item['acao_vencedora'])
+            linhas_pax.append(
+                f"{i+1}. Assento {item['assento']} (PNR {item.get('pnr', 'N/A')}): {nome_pax}, "
+                f"Tier {p.get('tier_fidelidade', 'Basico')}, Persona {p.get('persona', 'Viajante')}, "
+                f"CLV R$ {float(p.get('clv_previsto', 0)):,.2f}, Risco Churn {float(p.get('risco_evasao', 0))*100:.1f}%, "
+                f"Atrito {float(p.get('score_atrito_acumulado', 0)):.2f}{ctx_str}. Ação Arbitrada: {acao_label}."
+            )
+        pax_texto = "\n".join(linhas_pax)
+
+        prompt = f"""Você é o Copiloto de Inteligência da Tripulação de Cabine da Azul Linhas Aéreas.
+Para o voo {numero_voo}, aqui estão os {len(itens_lote)} passageiros de maior prioridade/risco identificados pelo modelo preditivo:
+
+### REGRAS DA AZUL (RAG):
+{contexto_rag}
+
+### PASSAGEIROS PRIORITÁRIOS:
+{pax_texto}
+
+### INSTRUÇÃO:
+Gere uma instrução tática, curta, humanizada e empática para o comissário abordar cada um dos {len(itens_lote)} passageiros no momento do serviço de bordo.
+Responda EXCLUSIVAMENTE em formato JSON com o seguinte formato exato:
+{{
+  "instrucoes": [
+    {{"assento": "...", "instrucao": "Instrução tática de abordagem..."}}
+  ]
+}}
+"""
+        conteudo_raw = ""
+        if gemini_key:
+            from google.generativeai.client import configure
+            from google.generativeai.generative_models import GenerativeModel
+
+            configure(api_key=gemini_key)
+            model = GenerativeModel(
+                model_name="gemini-1.5-flash",
+                generation_config={"response_mime_type": "application/json"},
+            )
+            response = model.generate_content(prompt)
+            conteudo_raw = response.text.strip()
+        elif openai_key:
+            from openai import OpenAI
+            client = OpenAI(api_key=openai_key)
+            completion = client.chat.completions.create(
+                model="gpt-4o-mini",
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": "Você é o Copiloto de Cabine da Azul Linhas Aéreas. Responda estritamente em JSON."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,
+            )
+            conteudo_raw = completion.choices[0].message.content or ""
+
+        if conteudo_raw.startswith("```"):
+            linhas = conteudo_raw.splitlines()
+            if linhas[0].startswith("```"):
+                linhas = linhas[1:]
+            if linhas and linhas[-1].startswith("```"):
+                linhas = linhas[:-1]
+            conteudo_raw = "\n".join(linhas).strip()
+
+        dados_json = json.loads(conteudo_raw)
+        lista_instrucoes = dados_json.get("instrucoes", [])
+        if isinstance(lista_instrucoes, list) and len(lista_instrucoes) == len(itens_lote):
+            res = []
+            for item, item_llm in zip(itens_lote, lista_instrucoes):
+                if item["acao_vencedora"] in ("NENHUMA_ACAO", "Nenhuma Ação"):
+                    res.append(_obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"])
+                else:
+                    msg = item_llm.get("instrucao") if isinstance(item_llm, dict) else str(item_llm)
+                    res.append(msg or _obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"])
+            return res
+
+        return [
+            _obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"]
+            for item in itens_lote
+        ]
+
+    except Exception as exc:
+        logger.warning("Falha na chamada LLM em lote: %s. Usando fallback padronizado.", exc)
+        return [
+            _obter_mock_bordo_padronizado(item["perfil"], item["assento"], item["acao_vencedora"])["instrucao_comissario"]
+            for item in itens_lote
+        ]
 
 
 def selecionar_clientes_teste_gold(

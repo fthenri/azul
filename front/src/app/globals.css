@@ -1,83 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Design Tokens Oficiais - Azul Linhas Aéreas (Tema Claro) */
-    --azul-navy: #003b7a;
-    --azul-navy-dark: #002855;
-    --azul-action: #0077c8;
-    --azul-action-hover: #005fa0;
-    --azul-soft: #eaf4fc;
-    --azul-bg: #f4f7fa;
+    /* Design Tokens Oficiais - Azul Linhas Aéreas (Tema Claro de Alto Contraste) */
+    --azul-navy: #003066;
+    --azul-navy-dark: #002046;
+    --azul-action: #006eb8;
+    --azul-action-hover: #005691;
+    --azul-soft: #e5f1fb;
+    --azul-bg: #f1f5f9;
     --azul-surface: #ffffff;
-    --azul-text: #243447;
-    --azul-text-muted: #5b6e84;
-    --azul-border: #e2e8f0;
-    --azul-success: #16805d;
-    --azul-warning: #b96b08;
-    --azul-danger: #c43d4b;
+    --azul-text: #172638;
+    --azul-text-muted: #475d74;
+    --azul-border: #cbd7e4;
+    --azul-success: #0f7654;
+    --azul-warning: #9e5b06;
+    --azul-danger: #b82d3b;
 
-    /* Mapeamento HSL Shadcn UI & Tailwind */
+    /* Mapeamento HSL Shadcn UI & Tailwind (Claro - Alto Contraste) */
     --background: 210 33% 97%;      /* #F4F7FA */
-    --foreground: 213 33% 21%;      /* #243447 */
+    --foreground: 213 42% 16%;      /* #172638 - Texto escuro com alto contraste */
     --card: 0 0% 100%;              /* #FFFFFF */
-    --card-foreground: 213 33% 21%; /* #243447 */
+    --card-foreground: 213 42% 16%; /* #172638 */
     --popover: 0 0% 100%;
-    --popover-foreground: 213 33% 21%;
-    --primary: 204 100% 39%;        /* #0077C8 - Azul de Ação */
+    --popover-foreground: 213 42% 16%;
+    --primary: 204 100% 36%;        /* #006EB8 - Azul de Ação nítido e acessível */
     --primary-foreground: 0 0% 100%;
-    --secondary: 207 75% 95%;       /* #EAF4FC - Azul Suave */
-    --secondary-foreground: 211 100% 24%; /* #003B7A - Azul Marinho */
-    --muted: 210 25% 94%;
-    --muted-foreground: 212 18% 44%;/* #5B6E84 */
-    --accent: 207 75% 95%;          /* #EAF4FC */
-    --accent-foreground: 211 100% 24%;
-    --destructive: 354 55% 50%;     /* #C43D4B - Crítico */
+    --secondary: 207 75% 94%;       /* #E3F0FB */
+    --secondary-foreground: 211 100% 22%; /* #003066 */
+    --muted: 210 25% 93%;
+    --muted-foreground: 212 25% 38%;/* #475D74 - Subtítulos e labels perfeitamente legíveis */
+    --accent: 207 75% 94%;
+    --accent-foreground: 211 100% 22%;
+    --destructive: 354 65% 45%;     /* Crítico */
     --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;          /* #E2E8F0 */
-    --input: 214 32% 91%;
-    --ring: 204 100% 39%;
+    --border: 214 25% 85%;          /* #CBD7E4 - Bordas e divisores bem definidos */
+    --input: 214 25% 85%;
+    --ring: 204 100% 36%;
     --radius: 0.625rem;
   }
 
   .dark {
-    /* Design Tokens Oficiais - Azul Linhas Aéreas (Tema Escuro - Aero Navy) */
+    /* Design Tokens Oficiais - Azul Linhas Aéreas (Tema Escuro - Alto Contraste Aero Navy) */
     --azul-navy: #38bdf8;
     --azul-navy-dark: #001c3d;
-    --azul-action: #0096df;
+    --azul-action: #00a3ff;
     --azul-action-hover: #38bdf8;
-    --azul-soft: #162a45;
-    --azul-bg: #091629;
-    --azul-surface: #112340;
+    --azul-soft: #172c47;
+    --azul-bg: #070e1a;
+    --azul-surface: #101c2e;
     --azul-text: #f8fafc;
-    --azul-text-muted: #94a3b8;
-    --azul-border: #1e3a5f;
+    --azul-text-muted: #cbd5e1;
+    --azul-border: #233b5c;
     --azul-success: #34d399;
     --azul-warning: #fbbf24;
     --azul-danger: #f87171;
 
-    /* Mapeamento HSL Shadcn UI & Tailwind (Escuro) */
-    --background: 216 65% 10%;      /* #091629 - Azul Marinho Noturno */
-    --foreground: 210 40% 98%;      /* #F8FAFC */
-    --card: 218 55% 15%;            /* #112340 - Superfície Meia-Noite */
+    /* Mapeamento HSL Shadcn UI & Tailwind (Escuro - Alto Contraste) */
+    --background: 218 50% 7%;       /* #09101d - Fundo navy profundo e imersivo */
+    --foreground: 210 40% 98%;      /* #F8FAFC - Branco nítido */
+    --card: 218 42% 13%;            /* #132035 - Superfície de card destacada do fundo */
     --card-foreground: 210 40% 98%;
-    --popover: 218 55% 15%;
+    --popover: 218 42% 13%;
     --popover-foreground: 210 40% 98%;
-    --primary: 204 100% 48%;        /* #0096DF - Azul Celeste Iluminado */
+    --primary: 201 100% 48%;        /* #00A3FF - Azul Celeste vivo e de alto impacto visual */
     --primary-foreground: 0 0% 100%;
-    --secondary: 214 45% 22%;       /* #1A2F4C */
+    --secondary: 215 45% 20%;       /* #1c304d */
     --secondary-foreground: 210 40% 98%;
-    --muted: 214 45% 18%;
-    --muted-foreground: 215 20% 65%;/* #94A3B8 */
-    --accent: 214 45% 22%;
+    --muted: 215 40% 18%;           /* #1b2d47 */
+    --muted-foreground: 215 25% 73%;/* #a5b9ce - Texto secundário com alto contraste e legibilidade */
+    --accent: 215 45% 20%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 354 70% 55%;     /* #F87171 */
+    --destructive: 354 75% 58%;     /* #F87171 */
     --destructive-foreground: 0 0% 100%;
-    --border: 214 35% 24%;          /* #1E3A5F */
-    --input: 214 35% 24%;
-    --ring: 204 100% 48%;
+    --border: 217 35% 28%;          /* #2f4569 - Bordas nítidas que delimitam os cards */
+    --input: 217 35% 28%;
+    --ring: 201 100% 48%;
   }
 }
 
@@ -87,4 +88,136 @@ body {
   font-family: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@layer utilities {
+  .mesh-grid {
+    background-image: linear-gradient(to right, rgba(128, 128, 128, 0.08) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(128, 128, 128, 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  
+  .glass-card-liquid {
+    background: hsl(var(--card) / 0.5);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.2), 0 12px 40px -10px rgba(0, 0, 0, 0.15);
+  }
+
+  .dark .glass-card-liquid {
+    background: hsl(var(--card) / 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.12), 0 20px 50px -12px rgba(0, 0, 0, 0.45);
+  }
+}
+
+
+/* ==========================================================================
+   DRIVER.JS - TEMA MINIMALISTA E MODERNO (PULSO / AZUL)
+   ========================================================================== */
+.pulso-driver-popover {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 0.875rem !important;
+  box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.22), 0 0 0 1px hsl(var(--border) / 0.4) !important;
+  font-family: var(--font-inter), sans-serif !important;
+  padding: 1.25rem !important;
+  max-width: 380px !important;
+}
+
+.pulso-driver-popover .driver-popover-title {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  color: hsl(var(--foreground)) !important;
+  margin-bottom: 0.375rem !important;
+}
+
+.pulso-driver-popover .driver-popover-description {
+  font-size: 0.8125rem !important;
+  line-height: 1.5 !important;
+  color: hsl(var(--muted-foreground)) !important;
+  margin-bottom: 1.125rem !important;
+}
+
+.pulso-driver-popover .driver-popover-close-btn {
+  color: hsl(var(--muted-foreground)) !important;
+  font-size: 1.25rem !important;
+  top: 0.75rem !important;
+  right: 0.75rem !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 0.375rem !important;
+  transition: all 0.15s ease !important;
+}
+
+.pulso-driver-popover .driver-popover-close-btn:hover {
+  color: hsl(var(--foreground)) !important;
+  background-color: hsl(var(--muted)) !important;
+}
+
+.pulso-driver-popover .driver-popover-footer {
+  margin-top: 0.5rem !important;
+  padding-top: 0.75rem !important;
+  border-top: 1px solid hsl(var(--border) / 0.5) !important;
+}
+
+.pulso-driver-popover .driver-popover-progress-text {
+  font-size: 0.6875rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.pulso-driver-popover .driver-popover-footer-btn {
+  border-radius: 0.5rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 0.4rem 0.85rem !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+}
+
+.pulso-driver-popover .driver-popover-next-btn {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border: 1px solid transparent !important;
+}
+
+.pulso-driver-popover .driver-popover-next-btn:hover {
+  opacity: 0.92 !important;
+  transform: translateY(-1px) !important;
+}
+
+.pulso-driver-popover .driver-popover-prev-btn {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+.pulso-driver-popover .driver-popover-prev-btn:hover {
+  background-color: hsl(var(--muted) / 0.8) !important;
+}
+
+.pulso-driver-popover .driver-popover-arrow-side-left {
+  border-left-color: hsl(var(--card)) !important;
+}
+
+.pulso-driver-popover .driver-popover-arrow-side-right {
+  border-right-color: hsl(var(--card)) !important;
+}
+
+.pulso-driver-popover .driver-popover-arrow-side-top {
+  border-top-color: hsl(var(--card)) !important;
+}
+
+.pulso-driver-popover .driver-popover-arrow-side-bottom {
+  border-bottom-color: hsl(var(--card)) !important;
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plane, BarChart3, Cpu, FileText } from "lucide-react";
+import { Plane, BarChart3, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
@@ -10,25 +10,27 @@ export function Navbar() {
 
   const navItems = [
     {
-      href: "/executive",
-      label: "1. Painel de Valor",
+      href: "/dashboard",
+      label: "Painel de Valor",
       icon: BarChart3,
-      description: "Visão Executiva & Financeira",
-      active: pathname === "/executive" || pathname === "/",
+      description: "Visão Executiva & ROI",
+      active: pathname === "/dashboard" || pathname === "/executive" || pathname === "/",
     },
     {
-      href: "/simulator",
-      label: "2. Central de Decisões",
-      icon: Cpu,
-      description: "Simulador com Árbitro & LLM",
-      active: pathname === "/simulator",
+      href: "/dashboard/flights",
+      label: "Ações On-Board (Em Voo)",
+      icon: Plane,
+      description: "IA na Cabine & Mapa de Assentos",
+      active:
+        Boolean(pathname?.startsWith("/dashboard/flights")) ||
+        Boolean(pathname?.startsWith("/flights")),
     },
     {
-      href: "/audit-logs",
-      label: "3. Logs & Explicabilidade",
-      icon: FileText,
-      description: "Auditoria & SHAP",
-      active: pathname === "/audit-logs",
+      href: "/offboard",
+      label: "Ações Off-Board (Fora do Voo)",
+      icon: MessageSquare,
+      description: "IA no Pós-Voo & Canais Digitais",
+      active: Boolean(pathname?.startsWith("/offboard")),
     },
   ];
 

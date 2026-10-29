@@ -120,6 +120,35 @@ export interface ShapResponse {
   fatores_risco?: FatorRiscoShap[];
 }
 
+export interface AcaoConcorrente {
+  acao: string;
+  custo: number;
+  retorno_liquido: number;
+  status: "VENCEDORA" | "SUPERADA" | "VETADA_ROI";
+  motivo: string;
+}
+
+export interface RacionalArbitro {
+  acao_vencedora: string;
+  custo: number;
+  retorno_liquido: number;
+  formula?: string;
+  motivo_escolha: string;
+  acoes_avaliadas?: AcaoConcorrente[];
+}
+
+export interface FundamentacaoRag {
+  norma: string;
+  artigo?: string;
+  regra_fidelidade: string;
+}
+
+export interface ExplicabilidadeDecisao {
+  fatores_shap: FatorShap[];
+  racional_arbitro?: RacionalArbitro;
+  fundamentacao_rag?: FundamentacaoRag;
+}
+
 // ==========================================
 // Parâmetros de Simulação do Frontend
 // ==========================================
@@ -146,6 +175,17 @@ export interface AssentoCliente {
   faixa_pareto: string;
   risco_evasao: number;
   score_atrito_acumulado: number;
+  pnr?: string;
+  tamanho_grupo?: number;
+  is_grupo_familiar?: boolean;
+  contexto_narrativo_llm?: string;
+  mensagem_llm_batch?: string;
+  llm_mensagem_comissaria?: string;
+  mensagem_llm_offboard?: string;
+  acao_vencedora?: string;
+  custo_acao?: number;
+  retorno_liquido?: number;
+  explicabilidade?: ExplicabilidadeDecisao;
 }
 
 export interface AssentoVoo {
@@ -162,9 +202,80 @@ export interface MetadataAeronave {
   total_assentos: number;
 }
 
-export interface VooSimuladoResponse {
+export interface AcaoRecomendadaLote {
+  id_missao: string;
+  assento: string;
+  id_cliente: string;
+  pnr: string;
+  passageiro: string;
+  tier: string;
+  persona: string;
+  tipo: "atrito" | "vip";
+  status_badge: string;
+  gatilho: string;
+  acao_sugerida: string;
+  custo_acao: number;
+  retorno_liquido: number;
+  instrucao_comissario: string;
+  valor_em_risco?: number;
+  contexto_narrativo_llm?: string;
+  mensagem_llm_batch?: string;
+  llm_mensagem_comissaria?: string;
+  mensagem_llm_offboard?: string;
+  acao_vencedora?: string;
+}
+
+export interface ResumoLote {
+  total_acoes: number;
+  custo_total: number;
+  retorno_liquido_total: number;
+  roi_projetado: number;
+}
+
+export interface LoteAcoes {
+  resumo: ResumoLote;
+  acoes: AcaoRecomendadaLote[];
+}
+
+export interface VooMalhaResumo {
+  id: string;
+  numero_voo: string;
+  rota: string;
+  origem: string;
+  destino: string;
+  partida_prevista: string;
+  partida_real?: string | null;
+  status_operacional: string;
+  total_passageiros: number;
+  total_pnrs: number;
+  passageiros_criticos: number;
+  passageiros_vip: number;
+  atraso_medio_minutos: number;
+}
+
+export interface ListaVoosResponse {
+  total_voos: number;
+  voos: VooMalhaResumo[];
+}
+
+export interface VooDetalheResponse {
+  id: string;
+  numero_voo: string;
+  rota: string;
+  origem: string;
+  destino: string;
+  partida_prevista: string;
+  status_operacional: string;
   metadata_aeronave: MetadataAeronave;
   assentos: AssentoVoo[];
+  lote_acoes: LoteAcoes;
+}
+
+export interface VooSimuladoResponse {
+  flight_id?: string;
+  metadata_aeronave: MetadataAeronave;
+  assentos: AssentoVoo[];
+  lote_acoes?: LoteAcoes;
 }
 
 export interface SimularBordoPayload {
@@ -180,6 +291,36 @@ export interface SimularBordoResponse {
   retorno_liquido: number;
   instrucao_comissario: string;
   dados_cliente: Record<string, unknown>;
+}
+
+export interface RegistrarAcaoPayload {
+  flight_id: string;
+  assento: string;
+  id_cliente?: string;
+  acao: string;
+  custo?: number;
+  origem: "ONBOARD_CREW" | "OFFBOARD_CRM";
+}
+
+export interface AcaoConcluidaResponse {
+  status: string;
+  mensagem: string;
+  registro_id?: number | null;
+  flight_id: string;
+  assento: string;
+  id_cliente?: string | null;
+  acao_executada: string;
+  custo: number;
+  origem: string;
+  timestamp: string;
+  ciclo_mlops?: {
+    status: string;
+    banco: string;
+    tabela: string;
+    registro_id: number;
+    grupo_controle: string;
+    total_registros_persistidos: number;
+  };
 }
 
 export interface ApiErrorResponse {

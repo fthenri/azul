@@ -66,21 +66,18 @@ class DashboardRepository:
         return self.duckdb_client.query(sql)
 
     def get_kpis_aggregation(self) -> Dict[str, Any]:
-        """Consulta os agregados financeiros da carteira de clientes."""
+        """Consulta os agregados financeiros da carteira de clientes calculados dinamicamente no DuckDB."""
         sql = """
         SELECT 
-            coalesce(round(sum(c.clv_previsto * e.risco_evasao), 2), 0.0) as valor_protegido,
-            coalesce(round(sum(c.valor_monetario_expandido - c.valor_monetario_base), 2), 0.0) as valor_gerado,
-            coalesce(round(sum(
-                CASE 
-                    WHEN e.risco_evasao >= 0.7 THEN 300.0
-                    WHEN e.risco_evasao >= 0.4 THEN 150.0
-                    ELSE 50.0 
-                END
-            ), 2), 0.0) as custo_total
+            coalesce(round(sum(CASE WHEN e.risco_evasao >= 0.60 THEN c.clv_previsto ELSE 0 END), 2), 0.0) as valor_protegido,
+            coalesce(round(sum(CASE WHEN e.risco_evasao >= 0.40 THEN (c.valor_monetario_expandido - c.valor_monetario_base) * 0.4285 ELSE 0 END), 2), 0.0) as valor_gerado,
+            coalesce(round(
+                (sum(CASE WHEN c.faixa_pareto IN ('Top 10% Receita', 'Top 20% Receita') THEN 1 ELSE 0 END) * 23.47 * 5.2) +
+                (sum(CASE WHEN e.risco_evasao >= 0.60 THEN 1 ELSE 0 END) * 16.85 * 3.4),
+                2
+            ), 0.0) as custo_total
         FROM gold_clv c
         JOIN gold_evasao e ON c.id_cliente = e.id_cliente
-        WHERE e.risco_evasao >= 0.35
         """
         row = self.duckdb_client.query_row(sql)
         return row or {"valor_protegido": 0.0, "valor_gerado": 0.0, "custo_total": 0.0}

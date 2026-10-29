@@ -14,6 +14,16 @@ logger = logging.getLogger("azul.core.security")
 
 # Tenta carregar bibliotecas externas; caso não estejam disponíveis, os fallbacks nativos são ativados.
 try:
+    import bcrypt
+    # Compatibilidade com passlib 1.7.4 quando bcrypt >= 4.1.0 está instalado:
+    # passlib acessa _bcrypt.__about__.__version__, que foi removido no bcrypt 4.1+.
+    if not hasattr(bcrypt, "__about__"):
+        import types
+        bcrypt.__about__ = types.SimpleNamespace(__version__=getattr(bcrypt, "__version__", "4.0.1"))
+except Exception:
+    bcrypt = None
+
+try:
     from passlib.context import CryptContext
     pwd_context: Optional[CryptContext] = CryptContext(schemes=["bcrypt"], deprecated="auto")
 except Exception:
@@ -30,14 +40,23 @@ except Exception:
 # ============================================================================
 
 def get_password_hash(password: str) -> str:
-    """Gera o hash seguro da senha com bcrypt ou PBKDF2-HMAC-SHA256 como fallback nativo."""
+    """Gera o hash seguro da senha com bcrypt direto, passlib ou PBKDF2-HMAC-SHA256 como fallback nativo."""
+    # 1. Tenta uso direto de bcrypt (evita limitações do passlib 1.7.4)
+    if bcrypt is not None:
+        try:
+            salt = bcrypt.gensalt()
+            return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+        except Exception as exc:
+            logger.warning("Falha ao usar bcrypt direto (%s). Tentando passlib...", exc)
+
+    # 2. Tenta passlib CryptContext
     if pwd_context is not None:
         try:
             return pwd_context.hash(password)
         except Exception as exc:
             logger.warning("Falha ao usar passlib bcrypt (%s). Utilizando fallback nativo PBKDF2.", exc)
 
-    # Fallback nativo: PBKDF2 com HMAC-SHA256 e 100.000 iterações (OWASP compliant)
+    # 3. Fallback nativo: PBKDF2 com HMAC-SHA256 e 100.000 iterações (OWASP compliant)
     salt = secrets.token_hex(16)
     key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100_000)
     return f"pbkdf2:sha256:100000${salt}${key.hex()}"
@@ -45,6 +64,10 @@ def get_password_hash(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica se a senha em texto plano confere com o hash armazenado."""
+    if not hashed_password or not plain_password:
+        return False
+
+    # Suporte a senhas com PBKDF2 geradas em fallback
     if hashed_password.startswith("pbkdf2:sha256:"):
         try:
             parts = hashed_password.split("$")
@@ -58,6 +81,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
             logger.error("Erro na verificação nativa PBKDF2: %s", exc)
             return False
 
+    # Suporte a hashes bcrypt ($2a$, $2b$, $2y$) via bcrypt direto
+    if hashed_password.startswith(("$2a$", "$2b$", "$2y$")) and bcrypt is not None:
+        try:
+            return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+        except Exception as exc:
+            logger.warning("Falha na verificação com bcrypt direto (%s). Tentando passlib...", exc)
+
+    # Suporte via passlib
     if pwd_context is not None:
         try:
             return pwd_context.verify(plain_password, hashed_password)

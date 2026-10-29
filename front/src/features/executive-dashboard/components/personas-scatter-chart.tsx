@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
   ScatterChart,
@@ -11,54 +11,76 @@ import {
   Tooltip,
   CartesianGrid,
   Cell,
+  ReferenceLine,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useTheme } from "next-themes";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { InfoTooltip } from "@/components/shared/info-tooltip";
 import { PersonaData } from "@/types/api";
-import { formatCurrency, formatNumber } from "@/lib/formatters";
+import { formatCurrency, formatNumber, formatPercent } from "@/lib/formatters";
+import { Compass } from "lucide-react";
 
 interface PersonasScatterChartProps {
   data?: PersonaData[];
   isLoading: boolean;
 }
 
-// Paleta visual corporativa Azul para os 4 quadrantes de negócio
-const PERSONA_COLORS: Record<string, { fill: string; stroke: string }> = {
-  "Gestor Corporativo": { fill: "#003B7A", stroke: "#002855" }, // Azul Marinho Institucional (Alto CLV / Alta Influência)
-  "Viajante Solo Premium": { fill: "#0077C8", stroke: "#005a99" }, // Azul Royal (Alto CLV / Foco Individual)
-  "Líder Familiar": { fill: "#16805D", stroke: "#0f5b42" }, // Verde Esmeralda (Alta Influência PNR / Fim de Semana)
-  "Turista Eventual": { fill: "#B96B08", stroke: "#8c5006" }, // Âmbar / Ocre (Baixo CLV / Baixa Frequência)
+const getPersonaColor = (nome: string, isDark: boolean = false) => {
+  if (nome.includes("Corporativo")) {
+    return isDark
+      ? { fill: "#3b82f6", stroke: "#60a5fa", label: "Gestor Corporativo" }
+      : { fill: "#003066", stroke: "#001c3d", label: "Gestor Corporativo" };
+  }
+  if (nome.includes("Solo")) {
+    return isDark
+      ? { fill: "#00a3ff", stroke: "#38bdf8", label: "Viajante Solo Premium" }
+      : { fill: "#006eb8", stroke: "#004d80", label: "Viajante Solo Premium" };
+  }
+  if (nome.includes("Familiar")) {
+    return isDark
+      ? { fill: "#38bdf8", stroke: "#7dd3fc", label: "Líder Familiar" }
+      : { fill: "#0284c7", stroke: "#0369a1", label: "Líder Familiar" };
+  }
+  return isDark
+    ? { fill: "#93c5fd", stroke: "#bfdbfe", label: "Turista Eventual" }
+    : { fill: "#60a5fa", stroke: "#2563eb", label: "Turista Eventual" };
 };
 
-const DEFAULT_COLOR = { fill: "#5B6E84", stroke: "#3d4b5a" };
-
 export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartProps) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted && resolvedTheme === "dark";
+
   if (isLoading) {
     return (
-      <Card className="h-[430px] bg-card border-border shadow-xs">
-        <CardHeader>
-          <Skeleton className="h-5 w-48" />
-          <Skeleton className="h-4 w-72" />
-        </CardHeader>
-        <CardContent className="flex h-[320px] items-center justify-center">
-          <Skeleton className="h-[270px] w-full" />
-        </CardContent>
-      </Card>
+      <div className="relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-6 shadow-sm space-y-4 h-[440px]">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-6 w-56" />
+          <Skeleton className="h-5 w-28 rounded-full" />
+        </div>
+        <Skeleton className="h-4 w-72" />
+        <Skeleton className="h-[290px] w-full rounded-xl" />
+      </div>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Card className="h-[430px] bg-card border-border shadow-xs">
-        <CardHeader>
-          <CardTitle className="text-base text-foreground">Mapeamento de Personas: CLV vs Influência</CardTitle>
-          <CardDescription className="text-xs text-muted-foreground">Sem dados disponíveis</CardDescription>
-        </CardHeader>
-        <CardContent className="flex h-[320px] items-center justify-center text-sm text-muted-foreground">
-          Nenhuma persona retornada pelo backend.
-        </CardContent>
-      </Card>
+      <div className="relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-6 shadow-sm h-[440px] flex flex-col justify-between">
+        <div>
+          <h3 className="text-base font-bold text-foreground">Mapeamento de Personas: CLV vs Influência</h3>
+          <p className="text-xs text-muted-foreground mt-1">Sem registros no momento.</p>
+        </div>
+        <div className="flex h-[280px] items-center justify-center text-sm text-muted-foreground">
+          Nenhuma persona carregada pelo backend.
+        </div>
+      </div>
     );
   }
 
@@ -66,15 +88,16 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
     const clv = Number(item.clv_previsto ?? item.clv_medio ?? 0);
     const influencia = Number((item.score_influencia ?? 50).toFixed(1));
     const personaNome = item.persona_nome || item.persona;
-    const colorScheme = PERSONA_COLORS[personaNome] || DEFAULT_COLOR;
+    const colors = getPersonaColor(personaNome, isDark);
 
     return {
       ...item,
       persona: personaNome,
-      clv_previsto: clv,
       score_influencia: influencia,
-      fillColor: colorScheme.fill,
-      strokeColor: colorScheme.stroke,
+      clv_previsto: clv,
+      tamanho_bolha: item.tamanho_bolha,
+      fillColor: colors.fill,
+      strokeColor: colors.stroke,
     };
   });
 
@@ -82,100 +105,186 @@ export function PersonasScatterChart({ data, isLoading }: PersonasScatterChartPr
   const minVolume = Math.min(...data.map((d) => d.tamanho_bolha), 10);
 
   return (
-    <Card className="flex flex-col bg-card border-border shadow-xs">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
+    <div
+      data-tour="personas-chart"
+      className="group relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col"
+    >
+      {/* Feixe Superior Luminous Edge Highlight */}
+      <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
+      {/* Header do Gráfico */}
+      <div className="p-6 pb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
           <div>
-            <CardTitle className="text-base font-bold text-foreground flex items-center">
-              Mapeamento de Personas: CLV vs Influência
-              <InfoTooltip text="Segmentação multidimensional orientada a valor: cruza o Poder de Influência do passageiro (PNR de grupo, rede e tier) com a projeção futura de CLV." />
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">
-              Eixo X: Poder de Influência (0 - 100) | Eixo Y: CLV (Valor Vitalício) | Tamanho da Bolha: Volume de Clientes
-            </CardDescription>
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                <Compass className="h-4 w-4" />
+              </span>
+              <h3 className="text-base font-bold text-foreground flex items-center gap-1.5 font-sans">
+                Mapeamento Multidimensional: CLV vs Influência
+                <InfoTooltip
+                  title="Matriz de Segmentação Analítica"
+                  badge="Clusterização"
+                  text="Cruza o valor vitalício do cliente (CLV) com seu score de influência no ecossistema Azul para direcionar o atendimento personalizado."
+                  side="bottom"
+                />
+              </h3>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Tamanho do ponto proporcional ao volume total de clientes em cada cluster
+            </p>
           </div>
+
+          <Badge className="w-fit bg-secondary text-secondary-foreground border border-primary/20 text-[11px] font-semibold py-1 px-3">
+            {data.length} Clusters Identificados
+          </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="pt-2">
-        <div className="h-[280px] w-full">
+      </div>
+
+      {/* Área do Gráfico de Dispersão */}
+      <div className="px-4 pt-2 pb-3 flex-1 min-h-[300px]">
+        <div className="h-[290px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 20, right: 25, bottom: 20, left: 25 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <ScatterChart
+              margin={{ top: 15, right: 20, bottom: 15, left: 10 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--border) / 0.6)"
+              />
+
               <XAxis
                 type="number"
                 dataKey="score_influencia"
-                name="Poder de Influência (0 - 100)"
-                unit=""
+                name="Score de Influência"
                 domain={[0, 100]}
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                unit=" pts"
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 tickLine={false}
+                axisLine={{ stroke: "hsl(var(--border))" }}
               />
+
               <YAxis
                 type="number"
                 dataKey="clv_previsto"
-                name="CLV (Valor Vitalício)"
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                name="CLV Médio"
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 tickFormatter={(val) => `R$ ${(val / 1000).toFixed(0)}k`}
                 tickLine={false}
                 axisLine={false}
+                width={50}
               />
+
               <ZAxis
                 type="number"
                 dataKey="tamanho_bolha"
-                range={[160, 900]}
+                range={[200, 1000]}
                 domain={[minVolume, maxVolume]}
               />
+
+              {/* Linhas de Referência dos Quadrantes Estratégicos */}
+              <ReferenceLine
+                x={50}
+                stroke="hsl(var(--primary) / 0.3)"
+                strokeDasharray="4 4"
+              />
+              <ReferenceLine
+                y={15000}
+                stroke="hsl(var(--primary) / 0.3)"
+                strokeDasharray="4 4"
+              />
+
               <Tooltip
-                cursor={{ strokeDasharray: "3 3" }}
+                cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--primary))" }}
                 content={({ active, payload }) => {
                   if (!active || !payload || !payload.length) return null;
                   const item = payload[0].payload as PersonaData & {
                     score_influencia: number;
                     clv_previsto: number;
                   };
+
                   return (
-                    <div className="rounded-lg border border-border bg-popover p-3 shadow-md text-xs space-y-1.5">
-                      <p className="font-bold text-azul-navy dark:text-[#38BDF8] text-sm border-b border-border pb-1">
-                        {item.persona}
-                      </p>
-                      <p className="text-azul-action font-semibold">
-                        CLV (Valor Vitalício): {formatCurrency(item.clv_previsto || item.clv_medio)}
-                      </p>
-                      <p className="text-[#003B7A] dark:text-sky-300 font-semibold">
-                        Poder de Influência: {item.score_influencia} / 100
-                      </p>
-                      <p className="text-muted-foreground font-medium">
-                        Base de Clientes: {formatNumber(item.tamanho_bolha)} clientes
-                      </p>
+                    <div className="rounded-xl border border-border/80 bg-popover/95 backdrop-blur-xl p-3.5 shadow-xl text-xs space-y-2 min-w-[220px]">
+                      <div className="flex items-center justify-between border-b border-border pb-1.5">
+                        <span className="font-bold text-foreground text-sm font-sans">
+                          {item.persona}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                          Cluster Gold
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">CLV Médio:</span>
+                          <span className="font-bold text-foreground font-sans">
+                            {formatCurrency(item.clv_previsto || item.clv_medio)}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Poder de Influência:</span>
+                          <span className="font-bold text-primary font-sans">
+                            {item.score_influencia} / 100
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Tamanho da Base:</span>
+                          <span className="font-semibold text-foreground">
+                            {formatNumber(item.tamanho_bolha)} clientes
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-1 border-t border-border/50">
+                          <span className="text-muted-foreground">Risco de Evasão:</span>
+                          <span className="font-bold text-amber-600 dark:text-amber-400">
+                            {formatPercent(item.risco_evasao_medio)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   );
                 }}
               />
-              <Scatter name="Personas" data={chartData}>
+
+              <Scatter
+                name="Personas"
+                data={chartData}
+                isAnimationActive={false}
+              >
                 {chartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={entry.fillColor}
-                    fillOpacity={0.85}
                     stroke={entry.strokeColor}
                     strokeWidth={2}
+                    fillOpacity={0.85}
                   />
                 ))}
               </Scatter>
             </ScatterChart>
           </ResponsiveContainer>
         </div>
+      </div>
 
-        {/* Legenda visual dos 4 quadrantes para o pitch */}
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-xs pt-3 border-t border-border/50">
-          {Object.entries(PERSONA_COLORS).map(([name, { fill }]) => (
-            <div key={name} className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: fill }} />
-              <span className="font-medium text-foreground">{name}</span>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+      {/* Legenda dos 4 Clusters */}
+      <div className="px-6 py-3 bg-muted/40 border-t border-border/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+        {[
+          { name: "Gestor Corporativo", conf: getPersonaColor("Corporativo", isDark) },
+          { name: "Viajante Solo Premium", conf: getPersonaColor("Solo", isDark) },
+          { name: "Líder Familiar", conf: getPersonaColor("Familiar", isDark) },
+          { name: "Turista Eventual", conf: getPersonaColor("Eventual", isDark) },
+        ].map(({ name, conf }) => (
+          <div key={name} className="flex items-center gap-1.5">
+            <span
+              className="h-2.5 w-2.5 rounded-full border shadow-xs"
+              style={{ backgroundColor: conf.fill, borderColor: conf.stroke }}
+            />
+            <span className="text-muted-foreground font-medium text-[11px]">{name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

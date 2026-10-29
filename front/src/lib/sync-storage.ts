@@ -122,3 +122,44 @@ export function clearMissions(): void {
     emitLocalStorageUpdate();
   }
 }
+
+/**
+ * Despacha formalmente em lote um voo e suas missões para a cabine (/crew).
+ * Grava atomicamente em azul_active_flight e azul_active_missions, disparando
+ * eventos de sincronização cross-tab e locais.
+ */
+export function dispatchBatchFlightAndMissions(
+  flightData: Partial<ActiveFlight>,
+  missions: Partial<SyncMission>[]
+): { flight: ActiveFlight; missions: SyncMission[] } {
+  const formattedMissions: SyncMission[] = missions.map((m, idx) => ({
+    id: m.id || `mis_${m.assento || idx}_${Date.now()}`,
+    assento: m.assento || "1A",
+    passageiro: m.passageiro || `Passageiro Assento ${m.assento}`,
+    instrucao: m.instrucao || "Instrução de atendimento tático gerada pela IA.",
+    status: (m.status as "pendente" | "concluida") || "pendente",
+    tipo: (m.tipo as "atrito" | "vip") || "vip",
+    persona: m.persona || "Cliente Especial",
+    tier: m.tier || "Diamante",
+    statusBadge: m.statusBadge || (m.tipo === "atrito" ? "Alerta de Atrito" : "Fidelização VIP"),
+    gatilho: m.gatilho || "Ação despachada pelo simulador de decisões",
+    acao: m.acao || "Abordagem com Cortesia",
+    criadaEm: m.criadaEm || new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+  }));
+
+  const flight = dispatchFlight({
+    ...flightData,
+    missions: formattedMissions,
+  });
+
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formattedMissions));
+    } catch (e) {
+      console.error("Erro ao salvar lote de missões no localStorage:", e);
+    }
+    emitLocalStorageUpdate();
+  }
+
+  return { flight, missions: formattedMissions };
+}

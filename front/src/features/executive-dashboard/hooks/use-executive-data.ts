@@ -2,38 +2,34 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { useDemoMode } from "@/components/providers/demo-mode-context";
-import { DEMO_KPIS, DEMO_PERSONAS, DEMO_PARETO } from "@/lib/demo-data";
 import { DashboardKPIs, PersonaData, ParetoData } from "@/types/api";
 
 export function useExecutiveData() {
-  const { isDemoMode } = useDemoMode();
-
-  // Conexão de estado: chamada à API para KPIs consolidados
+  // Chamada à API real para KPIs consolidados (DuckDB Camada Gold)
   const kpisQuery = useQuery<DashboardKPIs, Error>({
-    queryKey: ["dashboard-kpis", isDemoMode],
+    queryKey: ["dashboard-kpis"],
     queryFn: async () => {
-      if (isDemoMode) return DEMO_KPIS;
       return api.getKPIs();
     },
+    refetchOnWindowFocus: true,
   });
 
-  // Conexão de estado: chamada à API para matriz e mapa de personas
+  // Chamada à API real para matriz e mapa de personas (DuckDB)
   const personasQuery = useQuery<PersonaData[], Error>({
-    queryKey: ["dashboard-personas", isDemoMode],
+    queryKey: ["dashboard-personas"],
     queryFn: async () => {
-      if (isDemoMode) return DEMO_PERSONAS;
       return api.getPersonas();
     },
+    refetchOnWindowFocus: true,
   });
 
-  // Conexão de estado: chamada à API para curva de concentração de Pareto
+  // Chamada à API real para curva de concentração de Pareto (DuckDB)
   const paretoQuery = useQuery<ParetoData[], Error>({
-    queryKey: ["dashboard-pareto", isDemoMode],
+    queryKey: ["dashboard-pareto"],
     queryFn: async () => {
-      if (isDemoMode) return DEMO_PARETO;
       return api.getPareto();
     },
+    refetchOnWindowFocus: true,
   });
 
   const isLoading =
@@ -59,6 +55,5 @@ export function useExecutiveData() {
     isError,
     error,
     refetchAll,
-    isDemoMode,
   };
 }

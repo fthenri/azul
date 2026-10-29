@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     gold_dir: Path | None = None
     audit_db_path: Path | None = None
     auth_db_path: Path | None = None
+    mlops_db_path: Path | None = None
     jwt_secret_key: str = Field(
         default="azul-retention-secret-key-change-in-production-2026",
         description="Chave secreta para assinatura de tokens JWT",
@@ -68,6 +69,8 @@ class Settings(BaseSettings):
             self.audit_db_path = self.project_root / "back" / "audit.db"
         if self.auth_db_path is None:
             self.auth_db_path = self.project_root / "back" / "audit.db"
+        if self.mlops_db_path is None:
+            self.mlops_db_path = self.project_root / "back" / "mlops_logs.db"
         if self.rag_rules_path is None:
             self.rag_rules_path = self.project_root / "regras_azul_fidelidade.md"
 
