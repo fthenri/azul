@@ -9,11 +9,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // Rotas independentes (Gateway na raiz '/' e Azul CrewApp em '/crew'):
+  // Rotas independentes (Gateway na raiz '/' e Autenticação em '/login'):
   // Renderizam tela cheia dedicada, sem a barra lateral do gestor
   const isBarePage =
     pathname === "/" ||
-    pathname?.startsWith("/crew") ||
     pathname?.startsWith("/login");
   if (isBarePage) {
     return <>{children}</>;

@@ -129,17 +129,9 @@ export function SimulatorView() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 self-end sm:self-auto">
-                    <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold hidden md:inline">
+                    <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold">
                       Sincronizado via LocalStorage (Tempo Real)
                     </span>
-                    <a
-                      href="/crew"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors shrink-0"
-                    >
-                      Ver no App da Comissária ↗
-                    </a>
                   </div>
                 </div>
               )}
